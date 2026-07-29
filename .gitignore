@@ -1,0 +1,56 @@
+########################################
+# 1. OS & IDE (운영체제 및 개발툴)
+########################################
+.DS_Store
+Thumbs.db
+
+# IntelliJ / Eclipse / NetBeans
+.idea/
+*.iml
+out/
+bin/
+.classpath
+.project
+.settings/
+
+# VS Code (설정 파일 제외, 기본 개인 설정만 무시)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+
+########################################
+# 2. Node.js & Build (의존성 및 빌드 결과물)
+########################################
+node_modules/
+dist/
+build/
+.next/
+.cache/
+coverage/
+
+
+########################################
+# 3. Java & Gradle (백엔드 컴파일/빌드)
+########################################
+*.class
+.gradle/
+
+
+########################################
+# 4. Environment & Logs (보안 및 로그)
+########################################
+.env
+.env.*.local
+*.log
+
+
+########################################
+# 5. Lock Files (팀 협업 시 패키지 버전 고정)
+# *팀 프로젝트 시 lock 파일 공유를 권장하므로 주석 처리해두었습니다.
+########################################
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
