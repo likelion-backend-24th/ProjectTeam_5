@@ -1,3 +1,9 @@
 spring:
   application:
     name: findAnswer
+
+  datasource:
+    url: jdbc:mysql://dev-db-instance.cl8i8mcky5jd.ap-northeast-2.rds.amazonaws.com:3306/dev_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: admin
+    password: qwer1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
