@@ -18,7 +18,7 @@ COPY src src
 RUN ./gradlew clean bootJar --no-daemon -x test
 
 # 이미지
-FROM eclipse-temirin:17-jre-alpine
+FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 
