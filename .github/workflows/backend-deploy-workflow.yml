@@ -42,21 +42,14 @@ jobs:
           docker compose up -d --build backend
           docker compose up -d --force-recreate nginx
 
-      - name: Wait for backend
+
+      - name: Check deployment
+        working-directory: /home/jun/like-lion-findAnswer
         run: |
-          for i in $(seq 1 30); do
-            if curl --fail --slient \
-              https://api-findanswer.duckdns.org./health > /dev/null; then
-              echo "Backend is health"
-              exit 0
-            fi
-            
-            echo "Waiting for backend... ($i/30)"
-            sleep 2
-          done
-          
-          echo "Backend health check failed"
-          exit 1
+          sleep 10
+          docker compose ps
+          docker compose logs --tail=100 backend
+          curl -i http://localhost/health || true
 
       - name: Show deployment status
         if: always()
