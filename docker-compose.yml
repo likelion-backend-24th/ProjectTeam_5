@@ -1,35 +1,55 @@
 services:
   backend:
-    image: 
-    container_name: 
-    restart:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
 
-    ports:
-      - "8080:8080"
-    
+    image: findanswer-backend:local
+    container_name: findanswer-backend
+
+    restart: unless-stopped
+
+    expose:
+      - "8080"
+
     environment:
       SPRING_PROFILES_ACTIVE: prod
 
-      DB_URL:
-      DB_USERNAME:
-      DB_PASSWORD:
+    networks:
+      - findanswer-network
 
-      JWT_SECRET_KEY:
+  nginx:
+    image: nginx:alpine
+    container_name: findanswer-nginx
 
-
-  mysql:
-    image: mysql:8.0
-    container_name: findanswer-mysql
     restart: unless-stopped
 
-    environment:
-      MYSQL_DATABASE:
-      MYSQL_USER:
-      MYSQL_PASSWORD:
-      MYSQL_ROOT_PASSWORD:
+    ports:
+      - "80:80"
+      - "443:443"
+
 
     volumes:
-      - mysql-data:/var/lib/mysql
-      
-      
-      
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+
+    depends_on:
+      - backend
+
+    networks:
+      - findanswer-network
+
+
+  certbot:
+    image: certbot/certbot
+    container_name: findanswer-certbot
+
+    volumes:
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
+
+
+networks:
+  findanswer-network:
+    name: findanswer-network
