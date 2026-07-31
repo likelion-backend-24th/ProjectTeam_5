@@ -15,8 +15,8 @@ public class User extends BaseTimeEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_id") //사용자 PK
-    private Long id;
+
+    private Long id; //사용자 PK
 
     @Column(nullable = false, unique = true, length = 100)
     private String email;
@@ -40,5 +40,7 @@ public class User extends BaseTimeEntity{
     public void updatePassword(String encodedPassword) {
         this.password = encodedPassword;
     }
+
+    //enum으로 유로회원 role 추가 해서 User entity에 추가
 
 }

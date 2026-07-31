@@ -13,7 +13,7 @@ public class Answer extends BaseTimeEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "answer_id")
+
     private Long id; //답변 PK
 
     @ManyToOne(fetch = FetchType.LAZY) // 여러개 답변이 하나의 질문에 등록 가능
