@@ -15,7 +15,7 @@ export default async function  Home() {
       <p>{backendStatus}</p>
 
       <a
-        href="https://api-findanswer.example.com/swagger-ui/index.html"
+        href="https://api-findanswer.duckdns.org/swagger-ui/index.html"
         target="_blank"
         rel="noopener noreferrer"
       >
