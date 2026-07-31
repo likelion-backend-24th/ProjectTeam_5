@@ -15,8 +15,14 @@ public class User extends BaseTimeEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_id") //사용자 PK
+    @Column(name = "user_id")
     private Long id;
+
+    @Column(name = "refresh_token")
+    private String refreshToken;
+
+    @Column(name = "mentor_approved")
+    private boolean mentorApproved;
 
     @Column(nullable = false, unique = true, length = 100)
     private String email;
@@ -31,14 +37,13 @@ public class User extends BaseTimeEntity{
     @Column(nullable = false, length = 30)
     private Role role;
 
-    // 프로필 이름 수정
     public void updateProfile(String name) {
         this.name = name;
     }
 
-    //비밀번호 변경
-    public void updatePassword(String encodedPassword) {
-        this.password = encodedPassword;
-    }
+    public void updatePassword(String encodedPassword) {this.password = encodedPassword;}
 
+    public void updateRefreshToken(String refreshToken) {this.refreshToken = refreshToken;}
+
+    public void approveMentor() {this.mentorApproved = true;}
 }
