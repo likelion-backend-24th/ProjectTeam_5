@@ -23,7 +23,7 @@ public class SwaggerConfig {
 
     @Bean
     public GroupedOpenApi customGroupedOpenAPI() {
-        String[] paths = {"/api/**"};
+        String[] paths = {"/api/**", "/", "/health"};
         String[] packagesToScan = {"com.example.findAnswer"};
 
         return GroupedOpenApi.builder()
