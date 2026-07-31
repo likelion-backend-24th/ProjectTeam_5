@@ -15,8 +15,8 @@ public class User extends BaseTimeEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    //사용자 PK
-    private Long id;
+
+    private Long id; //사용자 PK
 
     @Column(nullable = false, unique = true, length = 100)
     private String email;
