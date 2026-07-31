@@ -15,7 +15,7 @@ public class Question extends BaseTimeEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "question_id") //질문 게시글 PK
+    //질문 게시글 PK
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
