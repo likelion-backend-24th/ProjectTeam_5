@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:findanswer;MODE=MySQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+
+jwt:
+  secret: dGVzdC1zZWNyZXQta2V5LWZvci1jaS10ZXN0aW5nLW9ubHktMTIzNDU2Nzg5MA==
+  access-token-expiration-ms: 900000
+  refresh-token-expiration-ms: 1209600000

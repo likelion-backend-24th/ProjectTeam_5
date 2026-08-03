@@ -2,15 +2,13 @@ package com.example.findAnswer.dev.entity;
 
 import com.example.findAnswer.dev.domain.Role;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.context.annotation.Profile;
 
 @Entity
 @Table(name = "users")
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseTimeEntity{
 
     @Id

@@ -1,0 +1,158 @@
+name: Backend Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "backend/**"
+      - "docker-compose.yml"
+      - "nginx/**"
+      - ".github/workflows/backend-deploy-workflow.yml"
+
+concurrency:
+  group: findanswer-backend-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy Backend
+    runs-on:
+      - self-hosted
+      - linux
+      - ARM64
+      - findanswer
+
+    defaults:
+      run:
+        working-directory: /home/jun/like-lion-findAnswer
+
+    steps:
+      - name: Update main branch
+        run: |
+          set -euo pipefail
+
+          git fetch origin main
+          git reset --hard origin/main
+
+      - name: Check environment file
+        run: |
+          set -euo pipefail
+
+          test -f .env.dev
+
+          docker compose \
+            --env-file .env.dev \
+            config --quiet
+
+
+
+
+      - name: Start MySQL
+        run: |
+          set -euo pipefail
+
+          docker compose \
+            --env-file .env.dev \
+            up -d mysql
+
+      - name: Wait for MySQL
+        run: |
+          set -euo pipefail
+
+          for i in $(seq 1 30); do
+            STATUS=$(docker inspect \
+              --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' \
+              findanswer-mysql 2>/dev/null || true)
+
+            echo "MySQL status: ${STATUS:-not-created} ($i/30)"
+
+            if [ "$STATUS" = "healthy" ]; then
+              echo "MySQL is ready."
+              exit 0
+            fi
+
+            if [ "$STATUS" = "unhealthy" ]; then
+              docker compose \
+                --env-file .env.dev \
+                logs --tail=100 mysql
+
+              exit 1
+            fi
+
+            sleep 5
+          done
+
+          echo "MySQL health check timed out."
+
+          docker compose \
+            --env-file .env.dev \
+            logs --tail=100 mysql
+
+          exit 1
+
+      - name: Build and deploy backend
+        run: |
+          set -euo pipefail
+
+          docker compose \
+            --env-file .env.dev \
+            up -d --build backend
+
+      - name: Validate Nginx configuration
+        run: |
+          set -euo pipefail
+
+          docker exec findanswer-nginx nginx -t
+          
+      - name: Deploy Nginx
+        run: |
+          set -euo pipefail
+
+          docker compose \
+            --env-file .env.dev \
+            up -d --force-recreate nginx
+
+      - name: Check deployment
+        run: |
+          set -euo pipefail
+
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://localhost/health > /dev/null; then
+              echo "Backend health check passed."
+              curl -i http://localhost/health
+              exit 0
+            fi
+
+            echo "Waiting for backend... ($i/30)"
+            sleep 5
+          done
+
+          echo "Backend health check failed."
+          exit 1
+
+      - name: Show deployment status
+        if: always()
+        run: |
+          docker compose \
+            --env-file .env.dev \
+            ps
+
+          echo "===== MySQL logs ====="
+          docker compose \
+            --env-file .env.dev \
+            logs --tail=100 mysql
+
+          echo "===== Backend logs ====="
+          docker compose \
+            --env-file .env.dev \
+            logs --tail=100 backend
+
+          echo "===== Nginx logs ====="
+          docker compose \
+            --env-file .env.dev \
+            logs --tail=100 nginx
+
+      - name: Remove unused images
+        if: success()
+        run: docker image prune -f
