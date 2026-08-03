@@ -50,10 +50,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          docker compose \
-            --env-file .env.dev \
-            up -d nginx
-
           docker exec findanswer-nginx nginx -t
 
       - name: Start MySQL
