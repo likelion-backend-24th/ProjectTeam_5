@@ -38,9 +38,6 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
 
-    ports:
-      - "3306:3306"
-
     volumes:
       - findanswer-mysql-data:/var/lib/mysql
 
@@ -77,6 +74,7 @@ services:
 
     networks:
       - findanswer-network
+      - proxy-network
 
   certbot:
     image: certbot/certbot
@@ -89,6 +87,10 @@ services:
 networks:
   findanswer-network:
     name: findanswer-network
+
+  proxy-network:
+    external: true
+    name: devvault-edge
 
 volumes:
   findanswer-mysql-data:
