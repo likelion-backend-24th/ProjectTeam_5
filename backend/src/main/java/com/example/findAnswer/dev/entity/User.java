@@ -50,6 +50,6 @@ public class User extends BaseTimeEntity{
         this.role = role;
     }
 
-    //enum으로 유로회원 role 추가 해서 User entity에 추가
+    //enum으로 유로회원 role 추가 해서 User entity에 추가//
 
 }
