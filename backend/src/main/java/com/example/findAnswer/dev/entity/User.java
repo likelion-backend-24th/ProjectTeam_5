@@ -16,7 +16,7 @@ public class User extends BaseTimeEntity{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
 
-    private Long id; //사용자 PK
+    private Long id;
 
     @Column(name = "refresh_token")
     private String refreshToken;
@@ -45,5 +45,12 @@ public class User extends BaseTimeEntity{
 
     public void approveMentor() {this.mentorApproved = true;}
 
-    //enum으로 유로회원 role 추가 해서 User entity에 추가
+    public User(String email, String password, String name, Role role) {
+        this.email = email;
+        this.password = password;
+        this.name = name;
+        this.role = role;
+        this.mentorApproved = false;
+    }
+
 }
