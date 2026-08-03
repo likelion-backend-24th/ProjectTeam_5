@@ -6,7 +6,6 @@ services:
 
     image: findanswer-backend:local
     container_name: findanswer-backend
-
     restart: unless-stopped
 
     expose:
@@ -16,7 +15,7 @@ services:
       - .env
 
     environment:
-      SPRING_PROFILES_ACTIVE: prod
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
 
     networks:
       - findanswer-network
@@ -24,13 +23,11 @@ services:
   nginx:
     image: nginx:alpine
     container_name: findanswer-nginx
-
     restart: unless-stopped
 
     ports:
       - "80:80"
       - "443:443"
-
 
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
@@ -43,7 +40,6 @@ services:
     networks:
       - findanswer-network
 
-
   certbot:
     image: certbot/certbot
     container_name: findanswer-certbot
@@ -51,7 +47,6 @@ services:
     volumes:
       - ./certbot/www:/var/www/certbot
       - ./certbot/conf:/etc/letsencrypt
-
 
 networks:
   findanswer-network:
