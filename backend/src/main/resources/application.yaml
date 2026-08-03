@@ -3,15 +3,7 @@ spring:
     name: findAnswer
 
   datasource:
-      driver-class-name: org.h2.Driver
-      url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1
-      username: sa
-      password:
-
-  jpa:
-      hibernate:
-        ddl-auto: create-drop
-      show-sql: true
-      properties:
-        hibernate:
-          format_sql: true
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver

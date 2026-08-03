@@ -1,0 +1,65 @@
+name: Backend Deploy
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "backend/**"
+      - "docker-compose.yml"
+      - "nginx/**"
+      - ".github/workflows/backend-deploy-workflow.yml"
+
+concurrency:
+  group: findanswer-backend-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy Backend
+    runs-on:
+      - self-hosted
+      - linux
+      - ARM64
+      - findanswer
+
+    steps:
+      - name: Update main branch
+        working-directory: /home/jun/like-lion-findAnswer
+        run: |
+          set -e
+          
+          git fetch origin main
+          git reset --hard origin/main
+
+      - name: Validate Nginx configuration
+        working-directory: /home/jun/like-lion-findAnswer
+        run: |
+          docker compose run --rm --no-deps nginx nginx -t
+
+      - name: Build and deploy backend
+        working-directory: /home/jun/like-lion-findAnswer
+        run: |
+          docker compose up -d --build backend
+          docker compose up -d --force-recreate nginx
+
+
+      - name: Check deployment
+        working-directory: /home/jun/like-lion-findAnswer
+        run: |
+          sleep 10
+          docker compose ps
+          docker compose logs --tail=100 backend
+          curl -i http://localhost/health || true
+
+      - name: Show deployment status
+        if: always()
+        working-directory: /home/jun/like-lion-findAnswer
+        run : |
+          docker compose ps
+          docker compose logs --tail=100 backend
+          docker compose logs --tail=50 nginx
+
+      - name: Remove unused images
+        if: success()
+        run: docker image prune -f
+          
