@@ -46,11 +46,7 @@ jobs:
             config --quiet
 
 
-      - name: Validate Nginx configuration
-        run: |
-          set -euo pipefail
 
-          docker exec findanswer-nginx nginx -t
 
       - name: Start MySQL
         run: |
@@ -103,6 +99,12 @@ jobs:
             --env-file .env.dev \
             up -d --build backend
 
+      - name: Validate Nginx configuration
+        run: |
+          set -euo pipefail
+
+          docker exec findanswer-nginx nginx -t
+          
       - name: Deploy Nginx
         run: |
           set -euo pipefail
