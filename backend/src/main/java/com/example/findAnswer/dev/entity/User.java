@@ -2,15 +2,13 @@ package com.example.findAnswer.dev.entity;
 
 import com.example.findAnswer.dev.domain.Role;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.context.annotation.Profile;
 
 @Entity
 @Table(name = "users")
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseTimeEntity{
 
     @Id
@@ -36,9 +34,20 @@ public class User extends BaseTimeEntity{
         this.name = name;
     }
 
+    //이메일 변경
+    public void updateEmail(String email) {this.email = email;}
+
     //비밀번호 변경
     public void updatePassword(String encodedPassword) {
         this.password = encodedPassword;
+    }
+
+    @Builder
+    public User(String email, String password, String name, Role role) {
+        this.email = email;
+        this.password = password;
+        this.name = name;
+        this.role = role;
     }
 
     //enum으로 유로회원 role 추가 해서 User entity에 추가

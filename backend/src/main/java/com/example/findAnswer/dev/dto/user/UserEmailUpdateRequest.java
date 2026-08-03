@@ -1,15 +1,12 @@
 package com.example.findAnswer.dev.dto.user;
 
-import com.example.findAnswer.dev.domain.Role;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-//로그인 요청
+//이메일 변경 요청
 @Getter
 @NoArgsConstructor
-public class LoginRequest {
+public class UserEmailUpdateRequest {
 
     private String email;
-    private String password;
-    private Role role;
 }
