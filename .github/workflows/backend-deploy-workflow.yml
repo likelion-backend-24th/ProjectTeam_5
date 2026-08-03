@@ -45,13 +45,16 @@ jobs:
             --env-file .env.dev \
             config --quiet
 
+
       - name: Validate Nginx configuration
         run: |
           set -euo pipefail
 
           docker compose \
             --env-file .env.dev \
-            run --rm --no-deps nginx nginx -t
+            up -d nginx
+
+          docker exec findanswer-nginx nginx -t
 
       - name: Start MySQL
         run: |
