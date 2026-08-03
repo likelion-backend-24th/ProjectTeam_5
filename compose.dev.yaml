@@ -1,0 +1,44 @@
+services:
+  backend:
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: findanswer
+      DB_USERNAME: findanswer
+      DB_PASSWORD: findanswer123
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:8.4
+    container_name: findanswer-mysql
+    restart: unless-stopped
+
+    environment:
+      MYSQL_DATABASE: findanswer
+      MYSQL_USER: findanswer
+      MYSQL_PASSWORD: findanswer123
+      MYSQL_ROOT_PASSWORD: root123
+
+    volumes:
+      - findanswer-mysql-data:/var/lib/mysql
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+    networks:
+      - findanswer-network
+
+volumes:
+  findanswer-mysql-data:

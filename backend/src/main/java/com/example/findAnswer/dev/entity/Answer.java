@@ -1,14 +1,12 @@
 package com.example.findAnswer.dev.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
 @Table(name = "answers")
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Answer extends BaseTimeEntity{
 
     @Id
@@ -29,6 +27,13 @@ public class Answer extends BaseTimeEntity{
 
     // 답변 수정
     public void update(String content) {
+        this.content = content;
+    }
+
+    @Builder
+    public Answer(Question question, User user, String content) {
+        this.question = question;
+        this.user = user;
         this.content = content;
     }
 }
