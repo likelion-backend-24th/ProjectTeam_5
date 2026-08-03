@@ -1,116 +1,53 @@
 package com.example.findAnswer.dev.service;
 
 import com.example.findAnswer.dev.domain.Role;
-import com.example.findAnswer.dev.dto.user.*;
+import com.example.findAnswer.dev.dto.user.LoginRequest;
+import com.example.findAnswer.dev.dto.user.SignupRequest;
+import com.example.findAnswer.dev.dto.user.TokenResponse;
+import com.example.findAnswer.dev.dto.user.UserResponse;
 import com.example.findAnswer.dev.entity.User;
+import com.example.findAnswer.dev.jwt.JwtTokenProvider;
 import com.example.findAnswer.dev.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
 
-    //회원가입
-    @Transactional
-    public long signUp(SignupRequest dto) {
-
-        if(userRepository.existsByEmail(dto.getEmail())) {
-            throw new IllegalArgumentException("이미 사용중인 이메일 입니다. : " + dto.getEmail());
+    public UserResponse signup(SignupRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new IllegalStateException("이미 가입된 이메일입니다.");
+        }
+        if (request.getRole() == Role.ADMIN) {
+            throw new IllegalStateException("회원가입으로 관리자 계정을 만들 수 없습니다.");
         }
 
-        String encodedPassword = passwordEncoder.encode(dto.getPassword());
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
+        User user = new User(request.getEmail(), encodedPassword, request.getName(), request.getRole());
+        userRepository.save(user);
 
-        User user = User.builder()
-                .email(dto.getEmail())
-                .password(encodedPassword)
-                .name(dto.getName())
-                .role(dto.getRole() != null ? dto.getRole() : Role.USER) // 가입시 선택 권한 적용 (USER, EXPERT, ADMIN)
-                .build();
-
-        return  userRepository.save(user).getId();
+        return UserResponse.from(user);
     }
+    public TokenResponse login(LoginRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new IllegalStateException("이메일 또는 비밀번호가 일치하지 않습니다."));
 
-    //(일반/전문가/관리자)별 맞춤 로그인
-    public UserResponse login(LoginRequest dto) {
-
-        User user = userRepository.findByEmail(dto.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("가입되지 않은 이메일 입니다."));
-
-        if(!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new IllegalStateException("이메일 또는 비밀번호가 일치하지 않습니다.");
         }
 
-        //로그인 시도한 탭의 권한이 실제 계정 권한과 일치한지 여부 확인
-        if(user.getRole() != dto.getRole()) {
-            throw new SecurityException("해당 로그인 탭 ["+user.getRole()+"] 으로 접근할 수 없는 계정입니다.");
-        }
+        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(), user.getRole());
+        String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
 
-        return new UserResponse(user);
+        user.updateRefreshToken(refreshToken);
+        userRepository.save(user);
+
+        return new TokenResponse(accessToken, refreshToken);
     }
-
-    //프로필 단건 조회
-    public UserResponse getUserProfile(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 회원이 존재하지 않습니다. ID : " + userId));
-        return new UserResponse(user);
-    }
-
-    //프로필 정보 수정(이름 변경)
-    @Transactional
-    public void updateProfile(Long userId, UserProfileUpdateRequest dto) {
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 회원이 존재하지 않습니다. ID : " + userId));
-
-        user.updateProfile(dto.getName());
-    }
-
-    //이메일 수정
-    @Transactional
-    public void updateEmail(Long userId, UserEmailUpdateRequest dto) {
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 회원이 존재하지 않습니다. ID : " + userId));
-
-        if(userRepository.existsByEmail(dto.getEmail())) {
-            throw new IllegalArgumentException("이미 사용중인 이메일 입니다.");
-        }
-
-        user.updateEmail(dto.getEmail());
-    }
-
-    //비밀번호 변경
-    @Transactional
-    public void updatePassword(Long userId, UserPasswordUpdateRequest dto) {
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 회원이 존재하지 않습니다. ID : " + userId));
-
-        if (!passwordEncoder.matches(dto.getCurrentPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
-        }
-
-        String encodedNewPassword = passwordEncoder.encode(dto.getNewPassword());
-        user.updatePassword(encodedNewPassword);
-    }
-
-    //회원 탈퇴
-    @Transactional
-
-    public void deleteUser(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 회원이 존재하지 않습니다. id=" + userId));
-
-        userRepository.delete(user);
-    }
-
-    //
-
 }

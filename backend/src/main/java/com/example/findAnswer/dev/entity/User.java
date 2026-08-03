@@ -14,7 +14,13 @@ public class User extends BaseTimeEntity{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
 
-    private Long id; //사용자 PK
+    private Long id;
+
+    @Column(name = "refresh_token")
+    private String refreshToken;
+
+    @Column(name = "mentor_approved")
+    private boolean mentorApproved;
 
     @Column(nullable = false, unique = true, length = 100)
     private String email;
@@ -29,27 +35,20 @@ public class User extends BaseTimeEntity{
     @Column(nullable = false, length = 30)
     private Role role;
 
-    // 프로필 이름 수정
-    public void updateProfile(String name) {
-        this.name = name;
-    }
+    public void updateProfile(String name) {this.name = name;}
 
-    //이메일 변경
-    public void updateEmail(String email) {this.email = email;}
+    public void updatePassword(String encodedPassword) {this.password = encodedPassword;}
 
-    //비밀번호 변경
-    public void updatePassword(String encodedPassword) {
-        this.password = encodedPassword;
-    }
+    public void updateRefreshToken(String refreshToken) {this.refreshToken = refreshToken;}
 
-    @Builder
+    public void approveMentor() {this.mentorApproved = true;}
+
     public User(String email, String password, String name, Role role) {
         this.email = email;
         this.password = password;
         this.name = name;
         this.role = role;
+        this.mentorApproved = false;
     }
-
-    //enum으로 유로회원 role 추가 해서 User entity에 추가//
 
 }
