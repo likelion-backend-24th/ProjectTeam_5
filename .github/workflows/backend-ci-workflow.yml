@@ -27,8 +27,15 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run test
-        run: ./gradlew clean test --no-daemon
+        run: ./gradlew clean test --no-daemon --stacktrace
 
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-report
+          path: backend/build/reports/tests/test
+          
       - name: Build Spring Boot jar
         run: ./gradlew bootJar --no-daemon
 
