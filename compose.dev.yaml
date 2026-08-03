@@ -23,9 +23,6 @@ services:
       MYSQL_PASSWORD: findanswer123
       MYSQL_ROOT_PASSWORD: root123
 
-    ports:
-      - "3306:3306"
-
     volumes:
       - findanswer-mysql-data:/var/lib/mysql
 
