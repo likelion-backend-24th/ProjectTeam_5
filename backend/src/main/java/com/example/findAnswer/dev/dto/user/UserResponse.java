@@ -13,6 +13,15 @@ public class UserResponse {
     private String name;
     private Role role;
 
+    public UserResponse() {}
+
+    public UserResponse(User user) {
+        this.id = user.getId();
+        this.email = user.getEmail();
+        this.name = user.getName();
+        this.role = user.getRole();
+    }
+
     public static  UserResponse from(User user){
 
         UserResponse response = new UserResponse();
