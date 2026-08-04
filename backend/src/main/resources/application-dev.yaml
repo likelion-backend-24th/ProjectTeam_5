@@ -18,3 +18,25 @@ jwt:
   secret: ${JWT_SECRET_KEY:sJTRcN0TIqSRtYdbHF1h0fY4eA0lIiZ5t2uND9rasib}
   access-token-expiration-ms: ${JWT_ACCESS_TOKEN_EXPIRATION_MS:900000}
   refresh-token-expiration-ms: ${JWT_REFRESH_TOKEN_EXPIRATION_MS:1209600000}
+
+
+#  spring:
+#    datasource:
+#      url: jdbc:postgresql://${DB_HOST:aws-1-ap-northeast-2.pooler.supabase.com}:${DB_PORT:5432}/${DB_NAME:postgres}
+#      username: ${DB_USERNAME:postgres.jlvnmegmaoksqbnaveef}
+#      password: ${DB_PASSWORD:findanser-dev}
+#      driver-class-name: org.postgresql.Driver
+#
+#    jpa:
+#      hibernate:
+#        ddl-auto: update
+#      show-sql: true
+#      properties:
+#        hibernate:
+#          dialect: org.hibernate.dialect.PostgreSQLDialect
+#          format_sql: true
+#
+#  jwt:
+#    secret: ${JWT_SECRET_KEY:sJTRcN0TIqSRtYdbHF1h0fY4eA0lIiZ5t2uND9rasib}
+#    access-token-expiration-ms: ${JWT_ACCESS_TOKEN_EXPIRATION_MS:900000}
+#    refresh-token-expiration-ms: ${JWT_REFRESH_TOKEN_EXPIRATION_MS:1209600000}
