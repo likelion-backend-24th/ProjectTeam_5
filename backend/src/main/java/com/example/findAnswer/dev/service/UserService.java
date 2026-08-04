@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class UserService {
 
     private final UserRepository userRepository;
@@ -46,6 +47,7 @@ public class UserService {
         return UserResponse.from(user);
     }
 
+    //로그인
     public TokenResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.AUTH_INVALID_CREDENTIALS));
@@ -78,7 +80,7 @@ public class UserService {
     public UserResponse updateEmail(Long userId, UserEmailUpdateRequest request) {
         User user = getUserById(userId);
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalStateException("이미 사용 중인 이메일입니다.");
+            throw new CustomException(ErrorCode.EMAIL_DUPLICATE);
         }
         user.updateEmail(request.getEmail());
         return UserResponse.from(user);
@@ -89,7 +91,7 @@ public class UserService {
     public void updatePassword(Long userId, UserPasswordUpdateRequest request) {
         User user = getUserById(userId);
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new IllegalStateException("현재 비밀번호가 일치하지 않습니다.");
+            throw new CustomException(ErrorCode.AUTH_INVALID_CREDENTIALS);
         }
         String encodedNewPassword = passwordEncoder.encode(request.getNewPassword());
         user.updatePassword(encodedNewPassword);
@@ -113,11 +115,11 @@ public class UserService {
     //사용자 예외처리
     private User getUserById(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 
 
-
+    @Transactional
     public TokenResponse reissue(String refreshToken) {
         if (refreshToken == null) {
             throw new CustomException(ErrorCode.AUTH_REFRESH_INVALID);
