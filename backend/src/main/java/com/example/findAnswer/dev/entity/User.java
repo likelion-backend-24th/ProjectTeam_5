@@ -36,6 +36,8 @@ public class User extends BaseTimeEntity{
 
     public void updatePassword(String encodedPassword) {this.password = encodedPassword;}
 
+    public void updateEmail(String email) {this.email = email;}
+
     public void approveMentor() {this.mentorApproved = true;}
 
     public User(String email, String password, String name, Role role) {
