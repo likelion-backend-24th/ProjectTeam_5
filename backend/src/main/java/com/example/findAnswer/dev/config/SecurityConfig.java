@@ -40,7 +40,7 @@ public class SecurityConfig {
                 //API 명세서 기준 접근 권한 설정
                 .authorizeHttpRequests(auth -> auth
 
-                        .requestMatchers("/api/auth/signup", "/api/auth/login", "/api/auth/refresh").permitAll()
+                        .requestMatchers("/api/auth/signup", "/api/auth/login", "/api/auth/refresh", "/api/auth/logout").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/questions/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/questions/{id}/answers").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/h2-console/**").permitAll()
