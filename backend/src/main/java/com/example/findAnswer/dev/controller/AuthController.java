@@ -3,6 +3,7 @@ package com.example.findAnswer.dev.controller;
 import com.example.findAnswer.dev.dto.user.*;
 import com.example.findAnswer.dev.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
