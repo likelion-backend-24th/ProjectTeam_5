@@ -41,4 +41,24 @@ public class AuthController {
 
         return ResponseEntity.ok(new AccessTokenResponse(tokens.getAccessToken()));
     }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AccessTokenResponse> refresh(
+            @CookieValue(value = "refreshToken", required = false) String refreshToken,
+            HttpServletResponse response) {
+
+        TokenResponse tokens = userService.reissue(refreshToken);
+
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", tokens.getRefreshToken())
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Lax")
+                .path("/api/auth")
+                .maxAge(Duration.ofDays(14))
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        return ResponseEntity.ok(new AccessTokenResponse(tokens.getAccessToken()));
+    }
 }

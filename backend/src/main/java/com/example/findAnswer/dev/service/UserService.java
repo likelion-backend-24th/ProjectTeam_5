@@ -62,4 +62,33 @@ public class UserService {
 
         return new TokenResponse(accessToken, refreshToken);
     }
+
+    public TokenResponse reissue(String refreshToken) {
+        if (refreshToken == null) {
+            throw new CustomException(ErrorCode.AUTH_REFRESH_INVALID);
+        }
+
+        Long userId;
+        try {
+            userId = Long.valueOf(jwtTokenProvider.parseClaims(refreshToken).getSubject());
+        } catch (Exception e) {
+            throw new CustomException(ErrorCode.AUTH_REFRESH_INVALID);
+        }
+
+        RefreshToken saved = refreshTokenRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.AUTH_REFRESH_INVALID));
+
+        if (!saved.getToken().equals(refreshToken)) {
+            throw new CustomException(ErrorCode.AUTH_REFRESH_INVALID);
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.AUTH_REFRESH_INVALID));
+
+        String newAccessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(), user.getRole());
+        String newRefreshToken = jwtTokenProvider.createRefreshToken(user.getId());
+        saved.updateToken(newRefreshToken, LocalDateTime.now().plusDays(14));
+
+        return new TokenResponse(newAccessToken, newRefreshToken);
+    }
 }
