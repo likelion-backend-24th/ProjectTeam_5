@@ -1,14 +1,16 @@
 package com.example.findAnswer.dev.controller;
 
-import com.example.findAnswer.dev.dto.user.LoginRequest;
-import com.example.findAnswer.dev.dto.user.SignupRequest;
-import com.example.findAnswer.dev.dto.user.TokenResponse;
-import com.example.findAnswer.dev.dto.user.UserResponse;
+import com.example.findAnswer.dev.dto.user.*;
 import com.example.findAnswer.dev.service.UserService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.Duration;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -18,14 +20,45 @@ public class AuthController {
     private final UserService userService;
 
     @PostMapping("/signup")
-    public ResponseEntity<UserResponse> signup(@RequestBody SignupRequest request) {
+    public ResponseEntity<UserResponse> signup(@Valid @RequestBody SignupRequest request) {
         UserResponse response = userService.signup(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<TokenResponse> login(@RequestBody LoginRequest request) {
-        TokenResponse response = userService.login(request);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<AccessTokenResponse> login(@RequestBody LoginRequest request, HttpServletResponse response) {
+        TokenResponse tokens = userService.login(request);
+
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", tokens.getRefreshToken())
+                .httpOnly(true)
+                .secure(false)       //로컬(HTTP) 테스트용, 추후에 DB 연결하고 배포 시 true로 바꿔야함
+                .sameSite("Lax")
+                .path("/api/auth")
+                .maxAge(Duration.ofDays(14))
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        return ResponseEntity.ok(new AccessTokenResponse(tokens.getAccessToken()));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AccessTokenResponse> refresh(
+            @CookieValue(value = "refreshToken", required = false) String refreshToken,
+            HttpServletResponse response) {
+
+        TokenResponse tokens = userService.reissue(refreshToken);
+
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", tokens.getRefreshToken())
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Lax")
+                .path("/api/auth")
+                .maxAge(Duration.ofDays(14))
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        return ResponseEntity.ok(new AccessTokenResponse(tokens.getAccessToken()));
     }
 }
