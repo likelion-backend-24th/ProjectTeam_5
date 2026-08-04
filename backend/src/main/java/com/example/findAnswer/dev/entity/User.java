@@ -16,9 +16,6 @@ public class User extends BaseTimeEntity{
 
     private Long id;
 
-    @Column(name = "refresh_token")
-    private String refreshToken;
-
     @Column(name = "mentor_approved")
     private boolean mentorApproved;
 
@@ -38,10 +35,6 @@ public class User extends BaseTimeEntity{
     public void updateProfile(String name) {this.name = name;}
 
     public void updatePassword(String encodedPassword) {this.password = encodedPassword;}
-
-    public void updateEmail(String email) {this.email = email;}
-
-    public void updateRefreshToken(String refreshToken) {this.refreshToken = refreshToken;}
 
     public void approveMentor() {this.mentorApproved = true;}
 
