@@ -55,4 +55,31 @@ public class JwtTokenProvider {
                 .parseSignedClaims(token)
                 .getPayload();
     }
+
+    //토큰 유효성 검증
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token);
+            return true;
+        } catch (Exception e) {
+
+            return false;
+        }
+    }
+
+    //토큰에서 User ID(PK) 추출 -> @AuthenticationPrincipal에 들어갈 값
+    public Long getUserId(String token) {
+        Claims claims = parseClaims(token);
+        return Long.parseLong(claims.getSubject());
+    }
+
+    //토큰에서 권한(Role) 추출
+    public String getRole(String token) {
+        Claims claims = parseClaims(token);
+        return claims.get("role", String.class);
+    }
+
 }

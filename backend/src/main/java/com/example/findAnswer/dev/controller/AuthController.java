@@ -20,7 +20,7 @@ public class AuthController {
     private final UserService userService;
 
     @PostMapping("/signup")
-    public ResponseEntity<UserResponse> signup(@RequestBody SignupRequest request) {
+    public ResponseEntity<UserResponse> signup(@Valid @RequestBody SignupRequest request) {
         UserResponse response = userService.signup(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
