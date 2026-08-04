@@ -5,14 +5,18 @@ import com.example.findAnswer.dev.dto.user.LoginRequest;
 import com.example.findAnswer.dev.dto.user.SignupRequest;
 import com.example.findAnswer.dev.dto.user.TokenResponse;
 import com.example.findAnswer.dev.dto.user.UserResponse;
+import com.example.findAnswer.dev.entity.RefreshToken;
 import com.example.findAnswer.dev.entity.User;
 import com.example.findAnswer.dev.jwt.JwtTokenProvider;
+import com.example.findAnswer.dev.repository.RefreshTokenRepository;
 import com.example.findAnswer.dev.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.example.findAnswer.dev.exception.CustomException;
 import com.example.findAnswer.dev.exception.ErrorCode;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +25,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     public UserResponse signup(SignupRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -47,9 +52,13 @@ public class UserService {
 
         String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(), user.getRole());
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
+        LocalDateTime expiresAt = LocalDateTime.now().plusDays(14);
 
-        user.updateRefreshToken(refreshToken);
-        userRepository.save(user);
+        refreshTokenRepository.findById(user.getId())
+                .ifPresentOrElse(
+                        existing -> existing.updateToken(refreshToken, expiresAt),
+                        () -> refreshTokenRepository.save(new RefreshToken(user.getId(), refreshToken, expiresAt))
+                );
 
         return new TokenResponse(accessToken, refreshToken);
     }
