@@ -91,4 +91,17 @@ public class UserService {
 
         return new TokenResponse(newAccessToken, newRefreshToken);
     }
+
+    public void logout(String refreshToken) {
+        if (refreshToken == null) {
+            return;
+        }
+        Long userId;
+        try {
+            userId = Long.valueOf(jwtTokenProvider.parseClaims(refreshToken).getSubject());
+        } catch (Exception e) {
+            return;
+        }
+        refreshTokenRepository.deleteById(userId);
+    }
 }
