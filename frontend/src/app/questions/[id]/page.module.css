@@ -1,5 +1,5 @@
 .page {
-  max-width: 720px;
+  max-width: 900px;
   margin: 0 auto;
   padding: 40px 24px 80px;
 }
@@ -13,36 +13,70 @@
 }
 
 .statusText {
+  padding: 40px 0;
+  text-align: center;
   color: #526176;
 }
 
 .errorMessage {
+  padding: 40px 0;
+  text-align: center;
   color: #dc2626;
-  margin-bottom: 16px;
 }
 
-.question {
-  border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 24px;
+.panel {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background-color: #ffffff;
+  padding: 24px;
   margin-bottom: 24px;
 }
 
-.question h1 {
-  margin: 0 0 8px;
-  color: #111827;
-  font-size: 22px;
-}
-
-.author {
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
   color: #526176;
   font-size: 13px;
 }
 
-.content {
-  margin-top: 16px;
+.ownerActions {
+  display: flex;
+  gap: 12px;
+}
+
+.ownerActions button {
+  border: none;
+  background: none;
+  color: #2867e8;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.panel h1 {
+  margin: 0 0 16px;
   color: #111827;
-  line-height: 1.6;
+  font-size: 22px;
+}
+
+.content {
+  margin: 0;
+  color: #111827;
+  line-height: 1.7;
   white-space: pre-wrap;
+}
+
+.attachment {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background-color: #f9fafb;
+  color: #526176;
+  font-size: 13px;
 }
 
 .answers h2 {
@@ -66,9 +100,27 @@
   padding: 16px;
 }
 
+.answerHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.mentorName {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.answerDate {
+  flex: 1;
+  color: #526176;
+}
+
 .answerItem p {
-  margin: 8px 0 0;
+  margin: 0;
   color: #111827;
-  line-height: 1.5;
+  line-height: 1.6;
   white-space: pre-wrap;
 }
