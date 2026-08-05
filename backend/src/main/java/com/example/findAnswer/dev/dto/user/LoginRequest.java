@@ -1,6 +1,5 @@
 package com.example.findAnswer.dev.dto.user;
 
-import com.example.findAnswer.dev.domain.Role;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -11,5 +10,4 @@ public class LoginRequest {
 
     private String email;
     private String password;
-    private Role role;
 }
