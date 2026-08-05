@@ -68,7 +68,7 @@ public class SecurityConfig {
 
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:3000",
-                "https://like-lion-team5-find-answer.vercel.app/"
+                "https://like-lion-team5-find-answer.vercel.app"
         ));
 
         configuration.setAllowedMethods(List.of(
