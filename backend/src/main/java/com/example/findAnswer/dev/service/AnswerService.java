@@ -6,6 +6,8 @@ import com.example.findAnswer.dev.dto.Answer.AnswerUpdateRequest;
 import com.example.findAnswer.dev.entity.Answer;
 import com.example.findAnswer.dev.entity.Question;
 import com.example.findAnswer.dev.entity.User;
+import com.example.findAnswer.dev.exception.CustomException;
+import com.example.findAnswer.dev.exception.ErrorCode;
 import com.example.findAnswer.dev.repository.AnswerRepository;
 import com.example.findAnswer.dev.repository.QuestionRepository;
 import com.example.findAnswer.dev.repository.UserRepository;
@@ -29,10 +31,10 @@ public class AnswerService {
     @Transactional
     public AnswerResponse createAnswer(Long questionId, Long userId, AnswerCreateRequest request) {
         Question question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 질문입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.QUESTION_NOT_FOUND));
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         Answer answer = Answer.builder()
                 .question(question)
@@ -55,7 +57,7 @@ public class AnswerService {
     @Transactional
     public AnswerResponse updateAnswer(Long answerId, Long userId, AnswerUpdateRequest request) {
         Answer answer = answerRepository.findById(answerId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 답변입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.ANSWER_NOT_FOUND));
 
         validateAuthor(answer.getUser().getId(), userId);
         answer.update(request.getContent());
@@ -66,7 +68,7 @@ public class AnswerService {
     @Transactional
     public void deleteAnswer(Long answerId, Long userId) {
         Answer answer = answerRepository.findById(answerId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 답변입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.ANSWER_NOT_FOUND));
 
         validateAuthor(answer.getUser().getId(), userId);
         answerRepository.delete(answer);
@@ -75,7 +77,7 @@ public class AnswerService {
     //답변 권한 예외처리
     private void validateAuthor(Long authorId, Long currentUserId) {
         if (!authorId.equals(currentUserId)) {
-            throw new IllegalStateException("해당 답변에 대한 권한이 없습니다.");
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
     }
 }

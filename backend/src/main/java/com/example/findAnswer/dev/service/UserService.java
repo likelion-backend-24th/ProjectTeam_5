@@ -36,12 +36,9 @@ public class UserService {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new CustomException(ErrorCode.EMAIL_DUPLICATE);
         }
-        if (request.getRole() == Role.ADMIN) {
-            throw new CustomException(ErrorCode.VALIDATION_ERROR);
-        }
 
         String encodedPassword = passwordEncoder.encode(request.getPassword());
-        User user = new User(request.getEmail(), encodedPassword, request.getName(), request.getRole());
+        User user = new User(request.getEmail(), encodedPassword, request.getName(), Role.USER);
         userRepository.save(user);
 
         return UserResponse.from(user);

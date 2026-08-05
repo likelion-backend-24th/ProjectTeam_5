@@ -4,6 +4,8 @@ import com.example.findAnswer.dev.dto.user.UserEmailUpdateRequest;
 import com.example.findAnswer.dev.dto.user.UserPasswordUpdateRequest;
 import com.example.findAnswer.dev.dto.user.UserProfileUpdateRequest;
 import com.example.findAnswer.dev.dto.user.UserResponse;
+import com.example.findAnswer.dev.exception.CustomException;
+import com.example.findAnswer.dev.exception.ErrorCode;
 import com.example.findAnswer.dev.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -67,7 +69,7 @@ public class UserController {
     //타인의 회원 정보를 수정하거나 삭제하지 못하도록 차단
     private void validateOwner(Long targetUserId, Long currentUserId) {
         if (!targetUserId.equals(currentUserId)) {
-            throw new IllegalStateException("본인의 계정만 수정 또는 삭제할 수 있습니다.");
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
     } //
 }

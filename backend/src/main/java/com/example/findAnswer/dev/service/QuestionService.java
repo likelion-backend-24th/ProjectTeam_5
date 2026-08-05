@@ -6,6 +6,8 @@ import com.example.findAnswer.dev.dto.Question.QuestionResponse;
 import com.example.findAnswer.dev.dto.Question.QuestionUpdateRequest;
 import com.example.findAnswer.dev.entity.Question;
 import com.example.findAnswer.dev.entity.User;
+import com.example.findAnswer.dev.exception.CustomException;
+import com.example.findAnswer.dev.exception.ErrorCode;
 import com.example.findAnswer.dev.repository.QuestionRepository;
 import com.example.findAnswer.dev.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +28,7 @@ public class QuestionService {
     @Transactional
     public QuestionResponse createQuestion(Long userId, QuestionCreateRequest request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         Question question = Question.builder()
                 .user(user)
@@ -41,7 +43,7 @@ public class QuestionService {
     // 질문 상세 조회 (답변 목록 포함)
     public QuestionResponse getQuestion(Long questionId) {
         Question question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 질문입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.QUESTION_NOT_FOUND));
         return QuestionResponse.from(question);
     }
 
@@ -61,7 +63,7 @@ public class QuestionService {
     @Transactional
     public QuestionResponse updateQuestion(Long questionId, Long userId, QuestionUpdateRequest request) {
         Question question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 질문입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.QUESTION_NOT_FOUND));
 
         validateAuthor(question.getUser().getId(), userId);
         question.update(request.getTitle(), request.getContent());
@@ -72,7 +74,7 @@ public class QuestionService {
     @Transactional
     public void deleteQuestion(Long questionId, Long userId) {
         Question question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 질문입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.QUESTION_NOT_FOUND));
 
         validateAuthor(question.getUser().getId(), userId);
         questionRepository.delete(question);
@@ -81,7 +83,7 @@ public class QuestionService {
     //권한 예외처리
     private void validateAuthor(Long authorId, Long currentUserId) {
         if (!authorId.equals(currentUserId)) {
-            throw new IllegalStateException("해당 게시글에 대한 권한이 없습니다.");
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
     }
 }
