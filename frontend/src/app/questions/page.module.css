@@ -1,0 +1,104 @@
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.header {
+  margin-bottom: 32px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: #111827;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background-color: #2867e8;
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.header h1 {
+  margin: 0;
+  color: #111827;
+  font-size: 24px;
+}
+
+.statusText {
+  color: #526176;
+}
+
+.errorMessage {
+  color: #dc2626;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.listItem {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.listItem a {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-decoration: none;
+}
+
+.listItem h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 16px;
+}
+
+.author {
+  color: #526176;
+  font-size: 13px;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.pagination button {
+  padding: 8px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background-color: #ffffff;
+  cursor: pointer;
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination span {
+  color: #526176;
+  font-size: 14px;
+}
