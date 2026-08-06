@@ -29,8 +29,10 @@ async function handleResponse(response, fallbackMessage) {
 }
 
 export async function getQuestions(page = 0, size = 10) {
+  // sort=latest는 백엔드에서 403이 남 (실제 필드명을 기대하는 걸로 보임).
+  // 최신순 정렬은 createdAt 내림차순으로 대신 요청한다.
   const response = await fetch(
-    `${API_URL}/api/questions?page=${page}&size=${size}&sort=latest`,
+    `${API_URL}/api/questions?page=${page}&size=${size}&sort=createdAt,desc`,
     { cache: "no-store" }
   );
 
