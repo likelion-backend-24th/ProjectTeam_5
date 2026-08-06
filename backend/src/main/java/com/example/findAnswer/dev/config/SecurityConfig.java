@@ -51,9 +51,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/questions/{id}/answers").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/h2-console/**").permitAll()
                         .requestMatchers("/health").permitAll()
-                        .requestMatchers("/error").permitAll()
-                        .requestMatchers("/api/users/mentor-applications").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/users/*/mentor-approval").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
 
