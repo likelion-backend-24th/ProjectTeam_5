@@ -54,6 +54,7 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/users/mentor-applications").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/users/*/mentor-approval").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/users/*/mentor-rejection").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
 

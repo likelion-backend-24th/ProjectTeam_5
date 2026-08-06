@@ -96,4 +96,11 @@ public class UserController {
         userService.approveMentor(userId);
         return ResponseEntity.ok().build();
     }
+
+    //멘토 거절 (PUT /api/users/{userId}/mentor-rejection) - 200 OK
+    @PutMapping("/{userId}/mentor-rejection")
+    public ResponseEntity<Void> rejectMentor(@PathVariable Long userId) {
+        userService.rejectMentor(userId);
+        return ResponseEntity.ok().build();
+    }
 }
