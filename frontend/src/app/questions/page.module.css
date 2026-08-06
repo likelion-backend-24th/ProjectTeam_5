@@ -1,0 +1,133 @@
+.page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.heading h1 {
+  margin: 0 0 8px;
+  color: #111827;
+  font-size: 26px;
+}
+
+.heading p {
+  margin: 0;
+  color: #526176;
+  font-size: 14px;
+}
+
+.askButton {
+  padding: 10px 20px;
+  border-radius: 6px;
+  background-color: #2867e8;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.panel {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background-color: #ffffff;
+  padding: 8px 24px 24px;
+}
+
+.statusText {
+  padding: 40px 0;
+  text-align: center;
+  color: #526176;
+}
+
+.errorMessage {
+  padding: 40px 0;
+  text-align: center;
+  color: #dc2626;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  padding: 16px 8px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+  color: #526176;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.table td {
+  padding: 16px 8px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #111827;
+  font-size: 14px;
+}
+
+.table td:nth-child(2),
+.table th:nth-child(2),
+.table td:nth-child(3),
+.table th:nth-child(3),
+.table td:nth-child(4),
+.table th:nth-child(4) {
+  color: #526176;
+}
+
+.table a {
+  color: #111827;
+  text-decoration: none;
+}
+
+.table a:hover {
+  color: #2867e8;
+}
+
+.answerCount {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background-color: #eef2ff;
+  color: #2867e8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.pagination button {
+  min-width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: #526176;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pageActive {
+  background-color: #2867e8 !important;
+  color: #ffffff !important;
+  font-weight: 700;
+}

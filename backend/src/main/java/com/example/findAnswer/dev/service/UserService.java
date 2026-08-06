@@ -22,7 +22,6 @@ import com.example.findAnswer.dev.exception.CustomException;
 import com.example.findAnswer.dev.exception.ErrorCode;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -120,7 +119,7 @@ public class UserService {
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 
-    //토큰재발급
+
     @Transactional
     public TokenResponse reissue(String refreshToken) {
         if (refreshToken == null) {
@@ -151,7 +150,6 @@ public class UserService {
         return new TokenResponse(newAccessToken, newRefreshToken);
     }
 
-    //로그아웃
     public void logout(String refreshToken) {
         if (refreshToken == null) {
             return;
