@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 
-import Header from "@/components/Header";
+import Header from "@/components/Header/Header";
 import { getQuestion, getAnswers } from "@/lib/questions";
 
 import styles from "./page.module.css";
