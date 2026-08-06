@@ -19,6 +19,7 @@ import com.example.findAnswer.dev.exception.CustomException;
 import com.example.findAnswer.dev.exception.ErrorCode;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -115,7 +116,7 @@ public class UserService {
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 
-
+    //토큰재발급
     @Transactional
     public TokenResponse reissue(String refreshToken) {
         if (refreshToken == null) {
@@ -146,6 +147,7 @@ public class UserService {
         return new TokenResponse(newAccessToken, newRefreshToken);
     }
 
+    //로그아웃
     public void logout(String refreshToken) {
         if (refreshToken == null) {
             return;
@@ -157,5 +159,29 @@ public class UserService {
             return;
         }
         refreshTokenRepository.deleteById(userId);
+    }
+
+    //멘토 신청
+    @Transactional
+    public void applyForMentor(Long userId) {
+        User user = getUserById(userId);
+        if (user.getRole() != Role.USER) {
+            throw new CustomException(ErrorCode.VALIDATION_ERROR);
+        }
+        user.applyForMentor();
+    }
+
+    //멘토 신청 목록 조회 (관리자용)
+    public List<UserResponse> getMentorApplications() {
+        return userRepository.findByMentorAppliedTrue().stream()
+                .map(UserResponse::from)
+                .toList();
+    }
+
+    //멘토 승인
+    @Transactional
+    public void approveMentor(Long userId) {
+        User user = getUserById(userId);
+        user.approveMentor();
     }
 }
