@@ -63,7 +63,7 @@ export default function LoginPage() {
         localStorage.setItem("refreshToken", response.refreshToken);
       }
 
-      router.push("/health");
+      router.push("/");
       router.refresh();
     } catch (error) {
       console.error("로그인 실패:", error);
