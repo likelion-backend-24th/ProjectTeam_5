@@ -19,9 +19,6 @@ public class User extends BaseTimeEntity{
     @Column(name = "mentor_approved")
     private boolean mentorApproved;
 
-    @Column(name = "mentor_applied")
-    private boolean mentorApplied;
-
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
@@ -41,13 +38,7 @@ public class User extends BaseTimeEntity{
 
     public void updateEmail(String email) {this.email = email;}
 
-    public void approveMentor() {
-        this.role = Role.MENTOR;
-        this.mentorApproved = true;
-        this.mentorApplied = false;
-    }
-
-    public void applyForMentor() {this.mentorApplied = true;}
+    public void approveMentor() {this.mentorApproved = true;}
 
     public User(String email, String password, String name, Role role) {
         this.email = email;
