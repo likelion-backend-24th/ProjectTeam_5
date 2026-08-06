@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -71,5 +72,34 @@ public class UserController {
         if (!targetUserId.equals(currentUserId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
-    } //
+    }
+
+    //멘토 신청 (PUT /api/users/{userId}/mentor-application) - 200 OK
+    @PutMapping("/{userId}/mentor-application")
+    public ResponseEntity<Void> applyForMentor(@PathVariable Long userId,
+                                               @AuthenticationPrincipal Long currentUserId) {
+        validateOwner(userId, currentUserId);
+        userService.applyForMentor(userId);
+        return ResponseEntity.ok().build();
+    }
+
+    //멘토 신청 목록 조회 (GET /api/users/mentor-applications) - 200 OK
+    @GetMapping("/mentor-applications")
+    public ResponseEntity<List<UserResponse>> getMentorApplications() {
+        return ResponseEntity.ok(userService.getMentorApplications());
+    }
+
+    //멘토 승인 (PUT /api/users/{userId}/mentor-approval) - 200 OK
+    @PutMapping("/{userId}/mentor-approval")
+    public ResponseEntity<Void> approveMentor(@PathVariable Long userId) {
+        userService.approveMentor(userId);
+        return ResponseEntity.ok().build();
+    }
+
+    //멘토 거절 (PUT /api/users/{userId}/mentor-rejection) - 200 OK
+    @PutMapping("/{userId}/mentor-rejection")
+    public ResponseEntity<Void> rejectMentor(@PathVariable Long userId) {
+        userService.rejectMentor(userId);
+        return ResponseEntity.ok().build();
+    }
 }

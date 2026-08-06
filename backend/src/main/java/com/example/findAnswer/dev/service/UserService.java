@@ -1,14 +1,17 @@
 package com.example.findAnswer.dev.service;
 
+import com.example.findAnswer.dev.domain.MentorApplicationStatus;
 import com.example.findAnswer.dev.domain.Role;
 import com.example.findAnswer.dev.dto.user.*;
 import com.example.findAnswer.dev.dto.user.LoginRequest;
 import com.example.findAnswer.dev.dto.user.SignupRequest;
 import com.example.findAnswer.dev.dto.user.TokenResponse;
 import com.example.findAnswer.dev.dto.user.UserResponse;
+import com.example.findAnswer.dev.entity.MentorApplication;
 import com.example.findAnswer.dev.entity.RefreshToken;
 import com.example.findAnswer.dev.entity.User;
 import com.example.findAnswer.dev.jwt.JwtTokenProvider;
+import com.example.findAnswer.dev.repository.MentorApplicationRepository;
 import com.example.findAnswer.dev.repository.RefreshTokenRepository;
 import com.example.findAnswer.dev.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +22,7 @@ import com.example.findAnswer.dev.exception.CustomException;
 import com.example.findAnswer.dev.exception.ErrorCode;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +33,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final MentorApplicationRepository mentorApplicationRepository;
 
     //회원가입
     @Transactional
@@ -157,5 +162,42 @@ public class UserService {
             return;
         }
         refreshTokenRepository.deleteById(userId);
+    }
+
+    //멘토 신청
+    @Transactional
+    public void applyForMentor(Long userId) {
+        User user = getUserById(userId);
+        if (user.getRole() != Role.USER) {
+            throw new CustomException(ErrorCode.VALIDATION_ERROR);
+        }
+        if (mentorApplicationRepository.existsByUser_IdAndStatus(userId, MentorApplicationStatus.PENDING)) {
+            throw new CustomException(ErrorCode.VALIDATION_ERROR);
+        }
+        mentorApplicationRepository.save(new MentorApplication(user));
+    }
+
+    //멘토 신청 목록 조회 (관리자용)
+    public List<UserResponse> getMentorApplications() {
+        return mentorApplicationRepository.findByStatus(MentorApplicationStatus.PENDING).stream()
+                .map(application -> UserResponse.from(application.getUser()))
+                .toList();
+    }
+
+    //멘토 승인
+    @Transactional
+    public void approveMentor(Long userId) {
+        MentorApplication application = mentorApplicationRepository.findByUser_IdAndStatus(userId, MentorApplicationStatus.PENDING)
+                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+        application.approve();
+        application.getUser().promoteToMentor();
+    }
+
+    //멘토 거절
+    @Transactional
+    public void rejectMentor(Long userId) {
+        MentorApplication application = mentorApplicationRepository.findByUser_IdAndStatus(userId, MentorApplicationStatus.PENDING)
+                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+        application.reject();
     }
 }
