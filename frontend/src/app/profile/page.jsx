@@ -6,24 +6,28 @@ import { FaUserLarge } from "react-icons/fa6";
 import { useAuth } from "@/app/contexts/AuthContext";
 import styles from "./page.module.css";
 import * as usersApi from "@/lib/users";
+import * as authApi from "@/lib/auth";
 
 export default function ProfilePage() {
   const router = useRouter();
   const { user, isLoggedIn, loading, logout } = useAuth();
 
-  // 수정 모드 및 입력 폼 상태
+  // 1. 수정 모드 및 폼 상태 (이름, 이메일, 관심 분야)
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
+  const [newInterests, setNewInterests] = useState("");
+  const [interests, setInterests] = useState(""); // 기본 관심 분야
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 관리자(ADMIN) 전용 멘토 신청 대기 목록
+  // 2. 멘토 신청 상태 (신청 버튼을 직접 눌렀을 때만 true로 변경)
+  const [hasAppliedMentor, setHasAppliedMentor] = useState(false);
+
+  // 3. 관리자(ADMIN) 전용 멘토 신청 대기 목록
   const [mentorApps, setMentorApps] = useState([]);
 
-  // 토큰 가져오기 헬퍼
   const getToken = () => localStorage.getItem("accessToken");
 
-  // 사용자 정보 초기화 및 관리자일 경우 대기 목록 조회
   const fetchAdminData = useCallback(async () => {
     const token = getToken();
     if (user?.role === "ADMIN" && token) {
@@ -40,6 +44,8 @@ export default function ProfilePage() {
     if (user) {
       setNewName(user.name || "");
       setNewEmail(user.email || "");
+      if (user.interests) setInterests(user.interests);
+      setNewInterests(user.interests || "백엔드, 멘토링");
       fetchAdminData();
     }
   }, [user, fetchAdminData]);
@@ -55,20 +61,45 @@ export default function ProfilePage() {
     );
   }
 
-  // 1. 프로필 수정 저장
+  // [기능 1] 정보 조회 기능 (최신 정보 불러오기 & 안내창 표시)
+  const handleViewInfo = async () => {
+    const token = getToken();
+    if (!token) return;
+
+    try {
+      const latestUser = await authApi.getMe(token);
+      alert(
+          `📌 [최신 회원 정보 조회]\n` +
+          `• ID: #${latestUser.id}\n` +
+          `• 이름: ${latestUser.name}\n` +
+          `• 이메일: ${latestUser.email}\n` +
+          `• 권한: ${latestUser.role}\n` +
+          `• 관심 분야: ${interests}`
+      );
+    } catch (err) {
+      alert("회원 정보를 조회하는 중 문제가 발생했습니다.");
+    }
+  };
+
+  // [기능 2] 프로필 및 관심 분야 수정 저장
   const handleSaveProfile = async () => {
     const token = getToken();
     if (!token || isSubmitting) return;
 
     try {
       setIsSubmitting(true);
-      if (newName !== user.name) {
-        await usersApi.updateProfileName(newName, token);
+
+      // 1. 이름이나 관심 분야 중 하나라도 바뀌었으면 PATCH /api/users/me 호출하여 DB 저장
+      if (newName !== user.name || newInterests !== (user.interests || "")) {
+        await usersApi.updateProfileInfo(newName, newInterests, token);
       }
+
+      // 2. 이메일이 바뀌었으면 이메일 수정 API 호출
       if (newEmail !== user.email) {
         await usersApi.updateProfileEmail(newEmail, token);
       }
-      alert("프로필이 성공적으로 수정되었습니다. 다시 로그인해주세요.");
+
+      alert("프로필이 성공적으로 수정되었습니다. 변경 사항 적용을 위해 다시 로그인합니다.");
       setIsEditing(false);
       logout();
       router.push("/login");
@@ -79,7 +110,7 @@ export default function ProfilePage() {
     }
   };
 
-  // 2. 멘토 권한 신청
+  // [기능 3] 멘토 권한 신청 (신청 성공 시에만 배너 표시)
   const handleApplyMentor = async () => {
     const token = getToken();
     if (!token) return;
@@ -87,14 +118,15 @@ export default function ProfilePage() {
     if (confirm("전문가(MENTOR) 권한을 신청하시겠습니까?")) {
       try {
         await usersApi.applyMentor(token);
-        alert("멘토 신청이 완료되었습니다. 관리자의 승인을 기다려주세요.");
+        alert("멘토 신청이 완료되었습니다. 관리자 승인을 기다려주세요.");
+        setHasAppliedMentor(true);
       } catch (err) {
         alert(err.message || "이미 신청되었거나 처리할 수 없는 상태입니다.");
       }
     }
   };
 
-  // 3. 회원 탈퇴
+  // 회원 탈퇴
   const handleDeleteAccount = async () => {
     const token = getToken();
     if (!token) return;
@@ -111,7 +143,7 @@ export default function ProfilePage() {
     }
   };
 
-  // 4. [관리자] 멘토 승인 / 거절
+  // 관리자 기능 (멘토 승인)
   const handleApprove = async (targetId) => {
     const token = getToken();
     try {
@@ -123,6 +155,7 @@ export default function ProfilePage() {
     }
   };
 
+  // 관리자 기능 (멘토 거절)
   const handleReject = async (targetId) => {
     const token = getToken();
     try {
@@ -188,16 +221,34 @@ export default function ProfilePage() {
               </div>
               <div>
                 <dt>가입 일시</dt>
-                <dd>2026.01.10 14:32</dd>
+                <dd>
+                  {new Date(user.createdAt || Date.now()).toLocaleDateString("ko-KR", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </dd>
               </div>
               <div>
                 <dt>관심 분야</dt>
-                <dd>백엔드, 멘토링</dd>
+                <dd>
+                  {isEditing ? (
+                      <input
+                          type="text"
+                          className={styles.inlineInput}
+                          value={newInterests}
+                          onChange={(e) => setNewInterests(e.target.value)}
+                          placeholder="예: 백엔드, 프론트엔드"
+                      />
+                  ) : (
+                      interests
+                  )}
+                </dd>
               </div>
             </dl>
 
-            {/* 일반 유저(USER)일 때 멘토 신청 상태 안내 배너 */}
-            {user.role === "USER" && (
+            {/* 일반 유저(USER)이면서 멘토 신청을 진행한 경우에만 배너 노출 */}
+            {user.role === "USER" && hasAppliedMentor && (
                 <div className={styles.mentorBanner}>
                   <div className={styles.mentorBannerIcon}>📋</div>
                   <div className={styles.mentorBannerContent}>
@@ -238,14 +289,18 @@ export default function ProfilePage() {
             <h2>프로필 관리</h2>
 
             <div className={styles.managementList}>
-              {/* 1. 조회 정보 */}
+              {/* 1. 조회 정보 버튼 */}
               <div className={styles.managementItem}>
                 <div className={styles.itemIcon}>🔍</div>
                 <div className={styles.itemContent}>
                   <strong>조회</strong>
                   <p>현재 등록된 정보를 확인합니다.</p>
                 </div>
-                <button type="button" className={styles.outlineButton}>
+                <button
+                    type="button"
+                    className={styles.outlineButton}
+                    onClick={handleViewInfo}
+                >
                   정보 조회
                 </button>
               </div>
@@ -255,7 +310,7 @@ export default function ProfilePage() {
                 <div className={styles.itemIcon}>✏️</div>
                 <div className={styles.itemContent}>
                   <strong>수정</strong>
-                  <p>이름, 연락처, 소개를 변경할 수 있습니다.</p>
+                  <p>이름, 연락처, 관심 분야를 변경할 수 있습니다.</p>
                 </div>
                 <button
                     type="button"
@@ -282,8 +337,8 @@ export default function ProfilePage() {
                 </button>
               </div>
 
-              {/* 4. 멘토 신청 버튼 (USER 권한일 때만 표시) */}
-              {user.role === "USER" && (
+              {/* 4. 멘토 신청 버튼 */}
+              {user.role === "USER" && !hasAppliedMentor && (
                   <div className={styles.managementItem}>
                     <div className={`${styles.itemIcon} ${styles.mentorIcon}`}>🏅</div>
                     <div className={styles.itemContent}>
