@@ -6,7 +6,6 @@ import com.example.findAnswer.dev.dto.Question.QuestionResponse;
 import com.example.findAnswer.dev.dto.Question.QuestionUpdateRequest;
 import com.example.findAnswer.dev.entity.Question;
 import com.example.findAnswer.dev.entity.User;
-import com.example.findAnswer.dev.domain.Role;
 import com.example.findAnswer.dev.exception.CustomException;
 import com.example.findAnswer.dev.exception.ErrorCode;
 import com.example.findAnswer.dev.repository.QuestionRepository;
@@ -25,7 +24,7 @@ public class QuestionService {
     private final QuestionRepository questionRepository;
     private final UserRepository userRepository;
 
-    // 질문 등록
+    //질문 등록
     @Transactional
     public QuestionResponse createQuestion(Long userId, QuestionCreateRequest request) {
         User user = userRepository.findById(userId)
@@ -60,7 +59,7 @@ public class QuestionService {
                 .map(QuestionListResponse::from);
     }
 
-    // 질문 수정 (작성자 본인만 가능)
+    // 질문 수정 (작성자 본인 검증)
     @Transactional
     public QuestionResponse updateQuestion(Long questionId, Long userId, QuestionUpdateRequest request) {
         Question question = questionRepository.findById(questionId)
@@ -71,32 +70,19 @@ public class QuestionService {
         return QuestionResponse.from(question);
     }
 
-    // 질문 삭제 (작성자 본인 또는 관리자 가능)
+    // 질문 삭제 (작성자 본인 검증)
     @Transactional
     public void deleteQuestion(Long questionId, Long userId) {
         Question question = questionRepository.findById(questionId)
                 .orElseThrow(() -> new CustomException(ErrorCode.QUESTION_NOT_FOUND));
 
-        validateAuthorOrAdmin(question.getUser().getId(), userId);
+        validateAuthor(question.getUser().getId(), userId);
         questionRepository.delete(question);
     }
 
-    // 작성자 본인 검증
+    //권한 예외처리
     private void validateAuthor(Long authorId, Long currentUserId) {
         if (!authorId.equals(currentUserId)) {
-            throw new CustomException(ErrorCode.ACCESS_DENIED);
-        }
-    }
-
-    // 작성자 본인 또는 관리자 검증
-    private void validateAuthorOrAdmin(Long authorId, Long currentUserId) {
-        User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
-        boolean isAuthor = authorId.equals(currentUserId);
-        boolean isAdmin = currentUser.getRole() == Role.ADMIN;
-
-        if (!isAuthor && !isAdmin) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
     }
