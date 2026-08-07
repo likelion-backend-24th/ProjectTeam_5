@@ -48,9 +48,8 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/auth/signup", "/api/auth/login", "/api/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/questions/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/questions/{id}/answers").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/h2-console/**").permitAll()
-                        .requestMatchers("/health").permitAll()
+                        .requestMatchers("/", "/health").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
