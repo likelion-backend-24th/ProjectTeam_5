@@ -10,10 +10,17 @@ export default function Header() {
   const router = useRouter();
   const { isLoggedIn, user, loading, logout } = useAuth();
 
-
   const handleLogout = () => {
     logout();
     router.push("/login");
+  };
+
+  const handleProtectedNavigation = (e, targetPath, menuName) => {
+    if (!isLoggedIn) {
+      e.preventDefault();
+      alert(`${menuName}은(는) 로그인 후 이용 가능합니다.`);
+      router.push("/login");
+    }
   };
 
   return (
@@ -35,7 +42,24 @@ export default function Header() {
           </Link>
 
           <Link
+            href="/mentor-articles"
+            onClick={(e) =>
+              handleProtectedNavigation(e, "/mentor-articles", "멘토피드")
+            }
+            className={
+              pathname?.startsWith("/mentor-articles")
+                ? styles.navActive
+                : undefined
+            }
+          >
+            멘토피드
+          </Link>
+
+          <Link
             href="/profile"
+            onClick={(e) =>
+              handleProtectedNavigation(e, "/profile", "내 프로필")
+            }
             className={
               pathname?.startsWith("/profile") ? styles.navActive : undefined
             }
@@ -47,7 +71,7 @@ export default function Header() {
         <div className={styles.authArea}>
           {isLoggedIn ? (
             <>
-              <span>{user.name}</span>
+              <span>{user?.name}</span>
               <button onClick={handleLogout}>로그아웃</button>
             </>
           ) : (

@@ -83,3 +83,21 @@ export function rejectMentor(userId, token) {
         fallbackMessage: "멘토 거절에 실패했습니다.",
     });
 }
+
+// 8. 멘토 신청 취소
+export function cancelMentorApplication(token) {
+    return request("/api/users/me/mentor/application", {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+        fallbackMessage: "멘토 신청 취소에 실패했습니다.",
+    });
+}
+
+// 9. 내 프로필 / 신청 상태 조회
+export function getMyProfile(token) {
+    return request("/api/users/me", {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+        fallbackMessage: "프로필 정보를 불러오지 못했습니다.",
+    });
+}

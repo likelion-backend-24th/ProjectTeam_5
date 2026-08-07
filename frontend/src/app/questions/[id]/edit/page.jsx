@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import { getQuestion, updateQuestion } from "@/lib/questions";
 
-import styles from "../../form.module.css";
+import styles from "../../new/form.module.css";
 
 export default function EditQuestionPage() {
   const { id } = useParams();
