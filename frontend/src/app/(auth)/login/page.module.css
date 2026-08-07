@@ -16,39 +16,36 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 11px;
+  gap: 8px;
 }
 
 .logo {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 41px;
-  height: 41px;
+  width: 28px; 
+  height: 28px;
   border-radius: 8px;
   background-color: #2867e8;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
 }
 
 .logo span {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 17px;
-  height: 19px;
-  border: 2px solid #ffffff;
-  border-radius: 3px;
   color: #ffffff;
-  font-size: 10px;
-  font-weight: 800;
   line-height: 1;
 }
 
 .brand h1 {
   margin: 0;
   color: #111827;
-  font-size: 30px;
+  font-size: 18px;
   font-weight: 800;
-  letter-spacing: -1px;
+  letter-spacing: -0.5px;
   line-height: 1;
 }
 

@@ -4,11 +4,20 @@ if (!API_URL) {
   throw new Error("NEXT_PUBLIC_API_URL이 설정되지 않았습니다.");
 }
 
-export async function request(path, { body, fallbackMessage = "요청에 실패했습니다.", ...options } = {}) {
+export async function request(
+  path,
+  { body, fallbackMessage = "요청에 실패했습니다.", ...options } = {}
+) {
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("token") || localStorage.getItem("accessToken")
+      : null;
+
   const response = await fetch(`${API_URL}${path}`, {
     credentials: "include",
     ...options,
     headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(body ? { "Content-Type": "application/json" } : {}),
       ...options.headers,
     },
@@ -19,8 +28,13 @@ export async function request(path, { body, fallbackMessage = "요청에 실패�
   const data = isJson ? await response.json() : await response.text();
 
   if (!response.ok) {
-    const message =
+    let message =
       (typeof data === "object" ? data?.message || data?.error : data) || fallbackMessage;
+
+    if (response.status === 401 || response.status === 403) {
+      message = "로그인이 필요한 서비스입니다.";
+    }
+
     const error = new Error(message);
     error.status = response.status;
     error.data = data;
