@@ -1,0 +1,212 @@
+.page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: 24px;
+  color: #2867e8;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.statusText {
+  padding: 40px 0;
+  text-align: center;
+  color: #526176;
+}
+
+.errorMessage {
+  padding: 40px 0;
+  text-align: center;
+  color: #dc2626;
+}
+
+/* 질문 본문 영역 */
+.panel {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background-color: #ffffff;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  color: #526176;
+  font-size: 13px;
+}
+
+.ownerActions {
+  display: flex;
+  gap: 12px;
+}
+
+.ownerActions button {
+  border: none;
+  background: none;
+  color: #2867e8;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.panel h1 {
+  margin: 0 0 16px;
+  color: #111827;
+  font-size: 22px;
+}
+
+.content {
+  margin: 0;
+  color: #111827;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.attachment {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background-color: #f9fafb;
+  color: #526176;
+  font-size: 13px;
+}
+
+/* -------------------------------------------------- */
+/* 답변 영역 전체 */
+/* -------------------------------------------------- */
+
+.answers h2 {
+  margin: 0 0 16px;
+  color: #111827;
+  font-size: 18px;
+}
+
+/* 답변 신규 작성 폼 */
+.answerForm {
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.answerInput {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.answerInput:focus {
+  outline: none;
+  border-color: #2867e8;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.submitBtn {
+  padding: 8px 16px;
+  background-color: #2867e8;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.submitBtn:disabled {
+  background-color: #93c5fd;
+  cursor: not-allowed;
+}
+
+/* 답변 목록 */
+.answerList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.answerItem {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  background-color: #ffffff;
+}
+
+.answerHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.mentorName {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.answerDate {
+  flex: 1;
+  color: #526176;
+}
+
+.answerContent {
+  margin: 0;
+  color: #111827;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* 답변 수정 폼 */
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.editActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.editActions button {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.editActions button:first-child {
+  background-color: #2867e8;
+  color: #ffffff;
+  border: none;
+}
+
+.editActions button:last-child {
+  background-color: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}

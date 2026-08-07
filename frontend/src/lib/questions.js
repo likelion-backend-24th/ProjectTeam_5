@@ -14,10 +14,35 @@ export async function getAnswers(id) {
   });
 }
 
-
 export function getQuestions({ page = 0, size = 10 }) {
-  return request(`/api/questions?page=${page}&size=${size}&sort=createdAt,desc`, {
-    method: "GET",
-    fallbackMessage: "질문 목록을 불러오지 못했습니다.",
+  return request(
+    `/api/questions?page=${page}&size=${size}&sort=createdAt,desc`,
+    {
+      method: "GET",
+      fallbackMessage: "질문 목록을 불러오지 못했습니다.",
+    }
+  );
+}
+
+export async function createAnswer(questionId, data) {
+  return request(`/api/questions/${questionId}/answers`, {
+    method: "POST",
+    body: data,
+    fallbackMessage: "답변 등록에 실패했습니다.",
+  });
+}
+
+export async function updateAnswer(answerId, data) {
+  return request(`/api/answers/${answerId}`, {
+    method: "PATCH", 
+    body: data,
+    fallbackMessage: "답변 수정에 실패했습니다.",
+  });
+}
+
+export async function deleteAnswer(answerId) {
+  return request(`/api/answers/${answerId}`, {
+    method: "DELETE",
+    fallbackMessage: "답변 삭제에 실패했습니다.",
   });
 }
