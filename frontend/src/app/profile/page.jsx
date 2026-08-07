@@ -20,7 +20,9 @@ export default function ProfilePage() {
 
   // 2. 멘토 신청 상태 (백엔드 상태와 연동하여 새로고침해도 유지됨)
   const [hasAppliedMentor, setHasAppliedMentor] = useState(false);
-  const [mentorStatus, setMentorStatus] = useState(user?.mentorStatus || "NONE");
+  const [mentorStatus, setMentorStatus] = useState(
+    user?.mentorStatus || "NONE",
+  );
 
   const [mentorApps, setMentorApps] = useState([]);
 
@@ -101,12 +103,12 @@ export default function ProfilePage() {
     try {
       const latestUser = await authApi.getMe(token);
       alert(
-          `📌 [최신 회원 정보 조회]\n` +
+        `📌 [최신 회원 정보 조회]\n` +
           `• ID: #${latestUser.id}\n` +
           `• 이름: ${latestUser.name}\n` +
           `• 이메일: ${latestUser.email}\n` +
           `• 권한: ${latestUser.role}\n` +
-          `• 관심 분야: ${latestUser.interests || interests}`
+          `• 관심 분야: ${latestUser.interests || interests}`,
       );
     } catch (err) {
       alert("회원 정보를 조회하는 중 문제가 발생했습니다.");
@@ -178,7 +180,11 @@ export default function ProfilePage() {
     const token = getToken();
     if (!token) return;
 
-    if (confirm("정말 탈퇴하시겠습니까? 계정 정보와 활동 내역은 복구되지 않습니다.")) {
+    if (
+      confirm(
+        "정말 탈퇴하시겠습니까? 계정 정보와 활동 내역은 복구되지 않습니다.",
+      )
+    ) {
       try {
         await usersApi.deleteAccount(token);
         alert("회원 탈퇴가 완료되었습니다.");
@@ -230,7 +236,9 @@ export default function ProfilePage() {
         <section className={styles.profileCard}>
           <div className={styles.cardHeading}>
             <h1>내 프로필 (마이페이지)</h1>
-            <span className={styles.privateText}>🔒 개인 정보는 본인만 확인할 수 있습니다</span>
+            <span className={styles.privateText}>
+              🔒 개인 정보는 본인만 확인할 수 있습니다
+            </span>
           </div>
 
           <div className={styles.profileSummary}>
@@ -333,21 +341,32 @@ export default function ProfilePage() {
                 <strong>조회</strong>
                 <p>현재 등록된 정보를 확인합니다.</p>
               </div>
-              <div>
-                <dt>관심 분야</dt>
-                <dd>
-                  {isEditing ? (
+              <button type="button" className={styles.outlineButton}>
+                정보 조회
+              </button>
+            </div>
+
+            <div className={styles.managementItem}>
+              <div className={styles.itemIcon}>✏️</div>
+              <div className={styles.itemContent}>
+                <strong>수정</strong>
+                <p>이름, 연락처, 소개를 변경할 수 있습니다.</p>
+                <div>
+                  <dt>관심 분야</dt>
+                  <dd>
+                    {isEditing ? (
                       <input
-                          type="text"
-                          className={styles.inlineInput}
-                          value={newInterests}
-                          onChange={(e) => setNewInterests(e.target.value)}
-                          placeholder="예: 백엔드, 프론트엔드"
+                        type="text"
+                        className={styles.inlineInput}
+                        value={newInterests}
+                        onChange={(e) => setNewInterests(e.target.value)}
+                        placeholder="예: 백엔드, 프론트엔드"
                       />
-                  ) : (
+                    ) : (
                       user.interests || interests
-                  )}
-                </dd>
+                    )}
+                  </dd>
+                </div>
               </div>
               <button
                 type="button"
@@ -360,7 +379,9 @@ export default function ProfilePage() {
 
             {user.role === "USER" && (
               <div className={styles.managementItem}>
-                <div className={`${styles.itemIcon} ${styles.mentorIcon}`}>🏅</div>
+                <div className={`${styles.itemIcon} ${styles.mentorIcon}`}>
+                  🏅
+                </div>
                 <div className={styles.itemContent}>
                   <strong>멘토 신청</strong>
                   <p>
@@ -390,7 +411,9 @@ export default function ProfilePage() {
             )}
 
             <div className={`${styles.managementItem} ${styles.dangerItem}`}>
-              <div className={`${styles.itemIcon} ${styles.dangerIcon}`}>👤❌</div>
+              <div className={`${styles.itemIcon} ${styles.dangerIcon}`}>
+                👤❌
+              </div>
               <div className={styles.itemContent}>
                 <strong className={styles.dangerText}>탈퇴</strong>
                 <p>탈퇴 시 계정 정보와 활동 내역은 복구되지 않습니다.</p>
@@ -413,7 +436,9 @@ export default function ProfilePage() {
           style={{ marginTop: "36px", borderColor: "#10b981" }}
         >
           <div className={styles.cardHeading}>
-            <h1 style={{ color: "#059669" }}>🛡️ 멘토 신청 대기 목록 (관리자 전용)</h1>
+            <h1 style={{ color: "#059669" }}>
+              🛡️ 멘토 신청 대기 목록 (관리자 전용)
+            </h1>
           </div>
 
           {mentorApps.length === 0 ? (
@@ -421,7 +446,10 @@ export default function ProfilePage() {
               현재 승인 대기 중인 멘토 신청자가 없습니다.
             </p>
           ) : (
-            <div className={styles.managementList} style={{ marginTop: "20px" }}>
+            <div
+              className={styles.managementList}
+              style={{ marginTop: "20px" }}
+            >
               {mentorApps.map((app) => (
                 <div key={app.id} className={styles.managementItem}>
                   <div className={styles.itemIcon}>👤</div>
