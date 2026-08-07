@@ -7,6 +7,7 @@ import Link from "next/link";
 import {
   getQuestion,
   getAnswers,
+  deleteQuestion,
   createAnswer,
   updateAnswer,
   deleteAnswer,
@@ -87,6 +88,17 @@ export default function QuestionDetailPage() {
     };
   }, [id]);
 
+  const handleDeleteQuestion = async () => {
+    if (!confirm("질문을 삭제할까요?")) return;
+
+    try {
+      await deleteQuestion(id);
+      router.push("/questions");
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
   const handleCreateAnswer = async (content, resetForm) => {
     try {
       setIsSubmitting(true);
@@ -161,8 +173,10 @@ export default function QuestionDetailPage() {
 
               {isQuestionOwner && (
                 <span className={styles.ownerActions}>
-                  <button type="button">수정</button>
-                  <button type="button">삭제</button>
+                  <Link href={`/questions/${id}/edit`}>수정</Link>
+                  <button type="button" onClick={handleDeleteQuestion}>
+                    삭제
+                  </button>
                 </span>
               )}
             </div>

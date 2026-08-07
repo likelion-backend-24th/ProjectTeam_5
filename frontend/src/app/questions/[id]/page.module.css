@@ -46,13 +46,15 @@
   gap: 12px;
 }
 
-.ownerActions button {
+.ownerActions button,
+.ownerActions a {
   border: none;
   background: none;
   color: #2867e8;
   font-size: 13px;
   cursor: pointer;
   padding: 0;
+  text-decoration: none;
 }
 
 .panel h1 {
