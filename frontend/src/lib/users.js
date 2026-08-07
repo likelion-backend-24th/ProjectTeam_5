@@ -1,6 +1,6 @@
 import { request } from "./client";
 
-// 1. 이름 + 관심 분야 수정 (추가된 부분!)
+// 1. 이름 + 관심 분야 수정 (추가된 부분!)/
 export function updateProfileInfo(name, interests, token) {
     return request("/api/users/me", {
         method: "PATCH",
