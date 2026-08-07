@@ -3,7 +3,9 @@ export const ROUTES = {
   LOGIN: "/login",
   SIGNUP: "/signup",
   MENTORS: "/mentors",
-  MY_PAGE: "/mypage",
+  MY_PAGE: "/profile",
   HEALTH: "/health",
   QUESTIONS: "/questions",
+  QUESTIONS_NEW: "/questions/new",
+
 };

@@ -1,26 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-
 import styles from "./Header.module.css";
+import { useAuth } from "@/app/contexts/AuthContext";
 
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
+  const { isLoggedIn, user, loading, logout } = useAuth();
 
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    setIsLoggedIn(Boolean(localStorage.getItem("accessToken")));
-  }, [pathname]);
 
   const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-
-    setIsLoggedIn(false);
+    logout();
     router.push("/login");
   };
 
@@ -36,30 +28,30 @@ export default function Header() {
           <Link
             href="/questions"
             className={
-              pathname?.startsWith("/questions")
-                ? styles.navActive
-                : undefined
+              pathname?.startsWith("/questions") ? styles.navActive : undefined
             }
           >
             질문피드
           </Link>
 
-          <Link href="/profile">내 프로필</Link>
+          <Link
+            href="/profile"
+            className={
+              pathname?.startsWith("/profile") ? styles.navActive : undefined
+            }
+          >
+            내 프로필
+          </Link>
         </nav>
 
         <div className={styles.authArea}>
           {isLoggedIn ? (
             <>
-              <span className={styles.badge}>USER</span>
-              <button type="button" onClick={handleLogout}>
-                로그아웃
-              </button>
+              <span>{user.name}</span>
+              <button onClick={handleLogout}>로그아웃</button>
             </>
           ) : (
-            <>
-              <Link href="/login">로그인</Link>
-              <Link href="/signup">회원가입</Link>
-            </>
+            <Link href="/login">로그인</Link>
           )}
         </div>
       </div>

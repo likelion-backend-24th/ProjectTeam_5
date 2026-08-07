@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 
-import Header from "@/components/Header/Header";
 import { getQuestion, getAnswers } from "@/lib/questions";
 
 import styles from "./page.module.css";
@@ -65,8 +64,6 @@ export default function QuestionDetailPage() {
 
   return (
     <>
-      <Header />
-
       <main className={styles.page}>
         <Link href="/questions" className={styles.backLink}>
           ← 목록으로
