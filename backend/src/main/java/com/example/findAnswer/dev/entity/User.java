@@ -22,7 +22,7 @@ public class User extends BaseTimeEntity{
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = true, length = 255)
     private String password;
 
     @Column(nullable = false, length = 50)
@@ -52,6 +52,10 @@ public class User extends BaseTimeEntity{
         this.password = password;
         this.name = name;
         this.role = role;
+    }
+
+    public static User ofOAuth(String email, String name, Role role){
+        return new User(email, null, name, role);
     }
 
 }
