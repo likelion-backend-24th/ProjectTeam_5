@@ -270,7 +270,7 @@ export default function ProfilePage() {
               <button type="button" className={styles.outlineButton}>
                 정보 조회
               </button>
-            </div>
+            </dl>
 
             <div className={styles.managementItem}>
               <div className={styles.itemIcon}>✏️</div>
@@ -294,7 +294,7 @@ export default function ProfilePage() {
                   </dd>
                 </div>
               </div>
-            </dl>
+            </div>
 
             {/* 일반 유저(USER)이면서 멘토 신청을 진행한 경우에만 배너 노출 */}
             {user.role === "USER" && hasAppliedMentor && (
