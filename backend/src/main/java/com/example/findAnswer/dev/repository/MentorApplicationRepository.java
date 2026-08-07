@@ -12,5 +12,6 @@ public interface MentorApplicationRepository extends JpaRepository<MentorApplica
     List<MentorApplication> findByStatus(MentorApplicationStatus status);
     Optional<MentorApplication> findByUser_IdAndStatus(Long userId, MentorApplicationStatus status);
     boolean existsByUser_IdAndStatus(Long userId, MentorApplicationStatus status);
+    void deleteByUserId(Long userId);
     Optional<MentorApplication> findFirstByUser_IdOrderByCreatedAtDesc(Long userId);
 }
