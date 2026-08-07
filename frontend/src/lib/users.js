@@ -1,6 +1,6 @@
 import { request } from "./client";
 
-// 1. 이름 + 관심 분야 수정 (추가된 부분!)
+// 1. 이름 + 관심 분야 수정 (추가된 부분!)/
 export function updateProfileInfo(name, interests, token) {
     return request("/api/users/me", {
         method: "PATCH",
@@ -45,6 +45,15 @@ export function applyMentor(token) {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         fallbackMessage: "멘토 신청에 실패했습니다.",
+    });
+}
+
+// 내 멘토 신청 상태 조회
+export function getMyMentorApplication(token) {
+    return request("/api/users/me/mentor/application", {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+        fallbackMessage: "멘토 신청 상태를 불러오지 못했습니다.",
     });
 }
 
