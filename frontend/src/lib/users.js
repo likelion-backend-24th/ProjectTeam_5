@@ -1,6 +1,16 @@
 import { request } from "./client";
 
-// 1. 프로필 이름 수정
+// 1. 이름 + 관심 분야 수정 (추가된 부분!)
+export function updateProfileInfo(name, interests, token) {
+    return request("/api/users/me", {
+        method: "PATCH",
+        body: { name, interests },
+        headers: { Authorization: `Bearer ${token}` },
+        fallbackMessage: "프로필 수정에 실패했습니다.",
+    });
+}
+
+// (참고: 기존 이름만 수정하는 함수 - 둬도 되고 지워도 됨)
 export function updateProfileName(name, token) {
     return request("/api/users/me", {
         method: "PATCH",

@@ -9,6 +9,7 @@ import com.example.findAnswer.dev.dto.user.UserResponse;
 import com.example.findAnswer.dev.entity.RefreshToken;
 import com.example.findAnswer.dev.entity.User;
 import com.example.findAnswer.dev.jwt.JwtTokenProvider;
+import com.example.findAnswer.dev.repository.MentorApplicationRepository;
 import com.example.findAnswer.dev.repository.RefreshTokenRepository;
 import com.example.findAnswer.dev.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final MentorApplicationRepository mentorApplicationRepository;
 
     //회원가입
     @Transactional
@@ -98,7 +100,7 @@ public class UserService {
     @Transactional
     public UserResponse updateProfile(Long userId, UserProfileUpdateRequest request) {
         User user = getUserById(userId);
-        user.updateProfile(request.getName());
+        user.updateProfile(request.getName(), request.getInterests());
         return UserResponse.from(user);
     }
 
@@ -106,6 +108,7 @@ public class UserService {
     @Transactional
     public void deleteUser(Long userId) {
         User user = getUserById(userId);
+        mentorApplicationRepository.deleteByUserId(userId);
         userRepository.delete(user);
     }
 

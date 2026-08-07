@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.context.annotation.Profile;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "users")
 @Getter
@@ -25,11 +28,18 @@ public class User extends BaseTimeEntity{
     @Column(nullable = false, length = 50)
     private String name;
 
+    @Column(length = 100)
+    private String interests;
+
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private Role role;
 
-    public void updateProfile(String name) {this.name = name;}
+    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<MentorApplication> mentorApplications = new ArrayList<>();
+
+    public void updateProfile(String name, String interests) {this.name = name; this.interests = interests;}
 
     public void updatePassword(String encodedPassword) {this.password = encodedPassword;}
 
