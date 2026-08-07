@@ -7,6 +7,7 @@ import com.example.findAnswer.dev.dto.Question.QuestionUpdateRequest;
 import com.example.findAnswer.dev.service.QuestionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -38,6 +39,7 @@ public class QuestionController {
     @GetMapping
     public ResponseEntity<Page<QuestionListResponse>> getQuestions(
             @RequestParam(required = false) String keyword,
+            @ParameterObject
             @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
 
         Page<QuestionListResponse> response;
