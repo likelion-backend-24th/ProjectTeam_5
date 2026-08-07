@@ -17,10 +17,10 @@ export default function ProfilePage() {
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newInterests, setNewInterests] = useState("");
-  const [interests, setInterests] = useState(""); // 기본 관심 분야
+  const [interests, setInterests] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 2. 멘토 신청 상태 (신청 버튼을 직접 눌렀을 때만 true로 변경)
+  // 2. 멘토 신청 상태 (백엔드 상태와 연동하여 새로고침해도 유지됨)
   const [hasAppliedMentor, setHasAppliedMentor] = useState(false);
 
   // 3. 관리자(ADMIN) 전용 멘토 신청 대기 목록
@@ -40,14 +40,48 @@ export default function ProfilePage() {
     }
   }, [user]);
 
+  // 유저 정보 로딩 및 멘토 신청 상태 복원
   useEffect(() => {
-    if (user) {
-      setNewName(user.name || "");
-      setNewEmail(user.email || "");
-      if (user.interests) setInterests(user.interests);
-      setNewInterests(user.interests || "백엔드, 멘토링");
-      fetchAdminData();
+    let ignore = false;
+
+    async function loadProfileData() {
+      if (user) {
+        setNewName(user.name || "");
+        setNewEmail(user.email || "");
+        if (user.interests) {
+          setInterests(user.interests);
+          setNewInterests(user.interests);
+        } else {
+          setInterests(" ");
+          setNewInterests(" ");
+        }
+
+        const token = getToken();
+        if (token) {
+          try {
+            // 새로고침 시에도 멘토 신청 대기 상태를 유지하기 위해 백엔드에서 상태 조회
+            const app = await usersApi.getMyMentorApplication(token);
+            if (!ignore && app && app.status === "PENDING") {
+              setHasAppliedMentor(true);
+            }
+          } catch (err) {
+            if (!ignore) {
+              setHasAppliedMentor(false);
+            }
+          }
+        }
+
+        if (!ignore) {
+          fetchAdminData();
+        }
+      }
     }
+
+    loadProfileData();
+
+    return () => {
+      ignore = true;
+    };
   }, [user, fetchAdminData]);
 
   if (loading) return <main className={styles.page} />;
@@ -74,7 +108,7 @@ export default function ProfilePage() {
           `• 이름: ${latestUser.name}\n` +
           `• 이메일: ${latestUser.email}\n` +
           `• 권한: ${latestUser.role}\n` +
-          `• 관심 분야: ${interests}`
+          `• 관심 분야: ${latestUser.interests || interests}`
       );
     } catch (err) {
       alert("회원 정보를 조회하는 중 문제가 발생했습니다.");
@@ -89,12 +123,12 @@ export default function ProfilePage() {
     try {
       setIsSubmitting(true);
 
-      // 1. 이름이나 관심 분야 중 하나라도 바뀌었으면 PATCH /api/users/me 호출하여 DB 저장
+      // 이름이나 관심 분야 중 하나라도 바뀌었으면 PATCH /api/users/me 호출하여 DB 저장
       if (newName !== user.name || newInterests !== (user.interests || "")) {
         await usersApi.updateProfileInfo(newName, newInterests, token);
       }
 
-      // 2. 이메일이 바뀌었으면 이메일 수정 API 호출
+      // 이메일이 바뀌었으면 이메일 수정 API 호출
       if (newEmail !== user.email) {
         await usersApi.updateProfileEmail(newEmail, token);
       }
@@ -110,7 +144,7 @@ export default function ProfilePage() {
     }
   };
 
-  // [기능 3] 멘토 권한 신청 (신청 성공 시에만 배너 표시)
+  // [기능 3] 멘토 권한 신청
   const handleApplyMentor = async () => {
     const token = getToken();
     if (!token) return;
@@ -241,7 +275,7 @@ export default function ProfilePage() {
                           placeholder="예: 백엔드, 프론트엔드"
                       />
                   ) : (
-                      interests
+                      user.interests || interests
                   )}
                 </dd>
               </div>

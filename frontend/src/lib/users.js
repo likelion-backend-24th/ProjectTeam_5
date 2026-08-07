@@ -48,6 +48,15 @@ export function applyMentor(token) {
     });
 }
 
+// 내 멘토 신청 상태 조회
+export function getMyMentorApplication(token) {
+    return request("/api/users/me/mentor/application", {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+        fallbackMessage: "멘토 신청 상태를 불러오지 못했습니다.",
+    });
+}
+
 // 5. [관리자용] 멘토 신청 목록 조회
 export function getMentorApplications(token) {
     return request("/api/admin/mentors/applications", {
