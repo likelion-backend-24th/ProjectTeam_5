@@ -1,51 +1,75 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
-import { getQuestion, getAnswers } from "@/lib/questions";
+import {
+  getQuestion,
+  getAnswers,
+  deleteQuestion,
+  createAnswer,
+  updateAnswer,
+  deleteAnswer,
+} from "@/lib/questions";
+import { getMe } from "@/lib/auth";
 
+import AnswerForm from "../answers/AnswerForm";
+import AnswerList from "../answers/AnserList";
 import styles from "./page.module.css";
 
 export default function QuestionDetailPage() {
   const { id } = useParams();
+  const router = useRouter();
 
   const [question, setQuestion] = useState(null);
   const [answers, setAnswers] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const fetchAnswers = useCallback(async () => {
+    try {
+      const answersResult = await getAnswers(id);
+      setAnswers(answersResult.content ?? answersResult ?? []);
+    } catch (error) {
+      console.error("답변 목록 조회 실패:", error);
+    }
+  }, [id]);
 
   useEffect(() => {
     let ignore = false;
 
-    async function loadQuestion() {
+    async function loadData() {
       setLoading(true);
       setErrorMessage("");
 
+      const token =
+        typeof window !== "undefined"
+          ? localStorage.getItem("token") || localStorage.getItem("accessToken")
+          : null;
+
       try {
-        // 질문 본문이랑 답변은 API가 따로 나뉘어 있어서 두 번 호출한다.
-        const [questionResult, answersResult] = await Promise.all([
+        const [questionResult, answersResult, userResult] = await Promise.all([
           getQuestion(id),
           getAnswers(id),
+          token ? getMe(token).catch(() => null) : Promise.resolve(null),
         ]);
 
         if (!ignore) {
           setQuestion(questionResult);
           setAnswers(answersResult.content ?? answersResult ?? []);
+          setCurrentUser(userResult);
         }
       } catch (error) {
-        console.error("질문 상세 조회 실패:", error);
+        console.error("데이터 조회 실패:", error);
 
         if (!ignore) {
           if (error.status === 404) {
             setErrorMessage("삭제되었거나 존재하지 않는 질문입니다.");
           } else {
-            setErrorMessage(
-              error.message === "Failed to fetch"
-                ? "질문을 불러오지 못했습니다."
-                : error.message
-            );
+            setErrorMessage(error.message || "질문을 불러오지 못했습니다.");
           }
         }
       } finally {
@@ -55,27 +79,91 @@ export default function QuestionDetailPage() {
       }
     }
 
-    loadQuestion();
+    if (id) {
+      loadData();
+    }
 
     return () => {
       ignore = true;
     };
   }, [id]);
 
+  const handleDeleteQuestion = async () => {
+    if (!confirm("질문을 삭제할까요?")) return;
+
+    try {
+      await deleteQuestion(id);
+      router.push("/questions");
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
+  const handleCreateAnswer = async (content, resetForm) => {
+    try {
+      setIsSubmitting(true);
+      await createAnswer(id, { content });
+      resetForm();
+      await fetchAnswers();
+    } catch (error) {
+      alert(error.message || "답변 등록에 실패했습니다.");
+      if (error.status === 401 || error.status === 403) {
+        router.push("/login");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateAnswer = async (answerId, content) => {
+    try {
+      await updateAnswer(answerId, { content });
+      await fetchAnswers();
+    } catch (error) {
+      alert(error.message || "답변 수정에 실패했습니다.");
+      if (error.status === 401 || error.status === 403) {
+        router.push("/login");
+      }
+      throw error;
+    }
+  };
+
+  const handleDeleteAnswer = async (answerId) => {
+    if (!confirm("정말 이 답변을 삭제하시겠습니까?")) return;
+
+    try {
+      await deleteAnswer(answerId);
+      await fetchAnswers();
+    } catch (error) {
+      alert(error.message || "답변 삭제에 실패했습니다.");
+      if (error.status === 401 || error.status === 403) {
+        router.push("/login");
+      }
+    }
+  };
+
+  const isQuestionOwner =
+    currentUser &&
+    question &&
+    (currentUser.id === question.authorId ||
+      currentUser.id === question.userId ||
+      currentUser.id === question.author?.id ||
+      currentUser.name === question.authorName);
+
   return (
-    <>
-      <main className={styles.page}>
-        <Link href="/questions" className={styles.backLink}>
-          ← 목록으로
-        </Link>
+    <main className={styles.page}>
+      <Link href="/questions" className={styles.backLink}>
+        ← 목록으로
+      </Link>
 
-        {loading && <p className={styles.statusText}>불러오는 중...</p>}
+      {loading && <p className={styles.statusText}>불러오는 중...</p>}
 
-        {!loading && errorMessage && (
-          <p className={styles.errorMessage}>{errorMessage}</p>
-        )}
+      {!loading && errorMessage && (
+        <p className={styles.errorMessage}>{errorMessage}</p>
+      )}
 
-        {!loading && !errorMessage && question && (
+      {!loading && !errorMessage && question && (
+        <>
           <section className={styles.panel}>
             <div className={styles.meta}>
               <span>
@@ -83,11 +171,14 @@ export default function QuestionDetailPage() {
                 {formatDate(question.createdAt)}
               </span>
 
-              {/* TODO: 로그인한 사용자 = 작성자일 때만 보이게 처리 (내 정보 조회 API 필요) */}
-              <span className={styles.ownerActions}>
-                <button type="button">수정</button>
-                <button type="button">삭제</button>
-              </span>
+              {isQuestionOwner && (
+                <span className={styles.ownerActions}>
+                  <Link href={`/questions/${id}/edit`}>수정</Link>
+                  <button type="button" onClick={handleDeleteQuestion}>
+                    삭제
+                  </button>
+                </span>
+              )}
             </div>
 
             <h1>{question.title}</h1>
@@ -99,57 +190,33 @@ export default function QuestionDetailPage() {
               </div>
             )}
           </section>
-        )}
 
-        {!loading && !errorMessage && question && (
           <section className={styles.answers}>
             <h2>답변 목록 ({answers.length})</h2>
 
-            {answers.length === 0 && (
-              <p className={styles.statusText}>아직 등록된 답변이 없습니다.</p>
-            )}
+            <AnswerForm
+              onSubmit={handleCreateAnswer}
+              isSubmitting={isSubmitting}
+              currentUser={currentUser}
+            />
 
-            <ul className={styles.answerList}>
-              {answers.map((answer) => (
-                <li key={answer.id} className={styles.answerItem}>
-                  <div className={styles.answerHeader}>
-                    <span className={styles.mentorName}>
-                      {answer.authorName || answer.name || "익명"}
-                      {answer.mentorTitle && ` (${answer.mentorTitle})`}
-                    </span>
-
-                    <span className={styles.answerDate}>
-                      {formatDate(answer.createdAt)}
-                    </span>
-
-                    {/* TODO: 로그인한 사용자 = 답변 작성자일 때만 보이게 처리 */}
-                    <span className={styles.ownerActions}>
-                      <button type="button">수정</button>
-                      <button type="button">삭제</button>
-                    </span>
-                  </div>
-
-                  <p>{answer.content}</p>
-                </li>
-              ))}
-            </ul>
+            <AnswerList
+              answers={answers}
+              currentUser={currentUser}
+              onUpdate={handleUpdateAnswer}
+              onDelete={handleDeleteAnswer}
+              formatDate={formatDate}
+            />
           </section>
-        )}
-      </main>
-    </>
+        </>
+      )}
+    </main>
   );
 }
 
 function formatDate(value) {
   if (!value) return "-";
-
   const date = new Date(value);
-
   if (Number.isNaN(date.getTime())) return "-";
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}.${month}.${day}`;
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
 }

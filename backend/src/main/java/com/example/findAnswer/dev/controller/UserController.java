@@ -1,5 +1,6 @@
 package com.example.findAnswer.dev.controller;
 
+import com.example.findAnswer.dev.dto.mentor.MentorApplicationResponse;
 import com.example.findAnswer.dev.dto.user.UserEmailUpdateRequest;
 import com.example.findAnswer.dev.dto.user.UserPasswordUpdateRequest;
 import com.example.findAnswer.dev.dto.user.UserProfileUpdateRequest;
@@ -11,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -59,18 +59,16 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    //멘토 신청 목록 조회 (GET /api/auth/mentor-applications) - 200 OK
-    @GetMapping("/mentor/applications")
-    public ResponseEntity<List<UserResponse>> getMentorApplications(@AuthenticationPrincipal Long userId) {
-        return ResponseEntity.ok(mentorService.getMentorApplications(userId));
-    }
-
-    //멘토 신청 (POST /api/users/me/mentor-application) - 200 OK
+    //멘토 신청
     @PostMapping("/me/mentor/application")
     public ResponseEntity<Void> applyForMentor(@AuthenticationPrincipal Long userId) {
         mentorService.applyForMentor(userId);
         return ResponseEntity.ok().build();
     }
 
-
+    //내 멘토 신청 상태 조회
+    @GetMapping("/me/mentor/application")
+    public ResponseEntity<MentorApplicationResponse> getMyMentorApplication(@AuthenticationPrincipal Long userId) {
+        return ResponseEntity.ok(mentorService.getMyMentorApplication(userId));
+    }
 }
