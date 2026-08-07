@@ -103,12 +103,12 @@ export default function ProfilePage() {
     try {
       const latestUser = await authApi.getMe(token);
       alert(
-          `📌 [최신 회원 정보 조회]\n` +
+        `📌 [최신 회원 정보 조회]\n` +
           `• ID: #${latestUser.id}\n` +
           `• 이름: ${latestUser.name}\n` +
           `• 이메일: ${latestUser.email}\n` +
           `• 권한: ${latestUser.role}\n` +
-          `• 관심 분야: ${latestUser.interests || interests}`
+          `• 관심 분야: ${latestUser.interests || interests}`,
       );
     } catch (err) {
       alert("회원 정보를 조회하는 중 문제가 발생했습니다.");
@@ -165,7 +165,11 @@ export default function ProfilePage() {
     const token = getToken();
     if (!token) return;
 
-    if (confirm("정말 탈퇴하시겠습니까? 계정 정보와 활동 내역은 복구되지 않습니다.")) {
+    if (
+      confirm(
+        "정말 탈퇴하시겠습니까? 계정 정보와 활동 내역은 복구되지 않습니다.",
+      )
+    ) {
       try {
         await usersApi.deleteAccount(token);
         alert("회원 탈퇴가 완료되었습니다.");
@@ -263,21 +267,32 @@ export default function ProfilePage() {
                   })}
                 </dd>
               </div>
-              <div>
-                <dt>관심 분야</dt>
-                <dd>
-                  {isEditing ? (
+              <button type="button" className={styles.outlineButton}>
+                정보 조회
+              </button>
+            </div>
+
+            <div className={styles.managementItem}>
+              <div className={styles.itemIcon}>✏️</div>
+              <div className={styles.itemContent}>
+                <strong>수정</strong>
+                <p>이름, 연락처, 소개를 변경할 수 있습니다.</p>
+                <div>
+                  <dt>관심 분야</dt>
+                  <dd>
+                    {isEditing ? (
                       <input
-                          type="text"
-                          className={styles.inlineInput}
-                          value={newInterests}
-                          onChange={(e) => setNewInterests(e.target.value)}
-                          placeholder="예: 백엔드, 프론트엔드"
+                        type="text"
+                        className={styles.inlineInput}
+                        value={newInterests}
+                        onChange={(e) => setNewInterests(e.target.value)}
+                        placeholder="예: 백엔드, 프론트엔드"
                       />
-                  ) : (
+                    ) : (
                       user.interests || interests
-                  )}
-                </dd>
+                    )}
+                  </dd>
+                </div>
               </div>
             </dl>
 
