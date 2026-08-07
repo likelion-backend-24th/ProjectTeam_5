@@ -34,7 +34,7 @@ export async function createAnswer(questionId, data) {
 
 export async function updateAnswer(answerId, data) {
   return request(`/api/answers/${answerId}`, {
-    method: "PATCH", 
+    method: "PATCH",
     body: data,
     fallbackMessage: "답변 수정에 실패했습니다.",
   });
@@ -44,5 +44,28 @@ export async function deleteAnswer(answerId) {
   return request(`/api/answers/${answerId}`, {
     method: "DELETE",
     fallbackMessage: "답변 삭제에 실패했습니다.",
+  });
+}
+
+export async function createQuestion(title, content) {
+  return request("/api/questions", {
+    method: "POST",
+    body: { title, content },
+    fallbackMessage: "질문 등록에 실패했습니다.",
+  });
+}
+
+export async function updateQuestion(id, title, content) {
+  return request(`/api/questions/${id}`, {
+    method: "PUT",
+    body: { title, content },
+    fallbackMessage: "질문 수정에 실패했습니다.",
+  });
+}
+
+export async function deleteQuestion(id) {
+  return request(`/api/questions/${id}`, {
+    method: "DELETE",
+    fallbackMessage: "질문 삭제에 실패했습니다.",
   });
 }
