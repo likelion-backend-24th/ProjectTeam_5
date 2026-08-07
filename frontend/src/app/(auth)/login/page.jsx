@@ -6,10 +6,11 @@ import { useRouter } from "next/navigation";
 
 import styles from "./page.module.css";
 
-import { login } from "@/lib/auth";
+import { useAuth } from "@/app/contexts/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
 
   const [form, setForm] = useState({
     email: "",
@@ -42,26 +43,7 @@ export default function LoginPage() {
       setIsSubmitting(true);
       setErrorMessage("");
 
-      const response = await login({
-        email: form.email,
-        password: form.password,
-      });
-
-      console.log("로그인 응답:", response);
-
-      /*
-       * 백엔드가 토큰을 JSON으로 내려주는 경우에만 사용
-       *
-       * 응답 필드명이 accessToken인지 token인지
-       * 실제 LoginResponse DTO를 보고 맞춰야 한다.
-       */
-      if (response.accessToken) {
-        localStorage.setItem("accessToken", response.accessToken);
-      }
-
-      if (response.refreshToken) {
-        localStorage.setItem("refreshToken", response.refreshToken);
-      }
+      await login(form.email, form.password);
 
       router.push("/");
       router.refresh();

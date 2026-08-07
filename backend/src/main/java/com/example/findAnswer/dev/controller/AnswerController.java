@@ -38,8 +38,8 @@ public class AnswerController {
         return ResponseEntity.ok(responses);
     }
 
-    //답변 수정 (PUT /api/answers/{answerId}) - 200 OK
-    @PutMapping("/api/answers/{answerId}")
+    //답변 수정 (PATCH /api/answers/{answerId}) - 200 OK
+    @PatchMapping("/api/answers/{answerId}")
     public ResponseEntity<AnswerResponse> updateAnswer(
             @PathVariable Long answerId,
             @AuthenticationPrincipal Long currentUserId,

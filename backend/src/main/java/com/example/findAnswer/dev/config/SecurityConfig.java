@@ -52,9 +52,7 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/h2-console/**").permitAll()
                         .requestMatchers("/health").permitAll()
                         .requestMatchers("/error").permitAll()
-                        .requestMatchers("/api/users/mentor-applications").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/users/*/mentor-approval").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/users/*/mentor-rejection").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
 

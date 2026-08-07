@@ -57,8 +57,8 @@ public class QuestionController {
         return ResponseEntity.ok(response);
     }
 
-    //질문 수정 (PUT /api/questions/{questionId}) - 200 OK
-    @PutMapping("/{questionId}")
+    //질문 수정 (PATCH /api/questions/{questionId}) - 200 OK
+    @PatchMapping("/{questionId}")
     public ResponseEntity<QuestionResponse> updateQuestion(
             @PathVariable Long questionId,
             @Valid @RequestBody QuestionUpdateRequest request,

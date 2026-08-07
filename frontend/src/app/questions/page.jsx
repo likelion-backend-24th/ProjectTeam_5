@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-import Header from "@/components/Header/Header";
 import { getQuestions } from "@/lib/questions";
 
 import styles from "./page.module.css";
@@ -57,8 +56,6 @@ export default function QuestionsPage() {
 
   return (
     <>
-      <Header />
-
       <main className={styles.page}>
         <div className={styles.heading}>
           <div>

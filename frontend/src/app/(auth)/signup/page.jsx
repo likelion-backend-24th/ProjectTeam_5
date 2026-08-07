@@ -8,7 +8,6 @@ import styles from "./page.module.css";
 
 export default function SignupPage() {
   const [form, setForm] = useState({
-    username: "",
     name: "",
     email: "",
     password: "",
@@ -82,23 +81,6 @@ export default function SignupPage() {
         <h1 className={styles.title}>MentorBridge 가입하기</h1>
 
         <form className={styles.form} onSubmit={handleSubmit}>
-          <div className={styles.formGroup}>
-            <label htmlFor="username">아이디</label>
-
-            <input
-              id="username"
-              name="username"
-              type="text"
-              value={form.username}
-              onChange={handleChange}
-              placeholder="아이디를 입력해주세요"
-              autoComplete="username"
-              minLength={4}
-              maxLength={20}
-              required
-            />
-          </div>
-
           <div className={styles.formGroup}>
             <label htmlFor="name">이름</label>
 
