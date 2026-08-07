@@ -20,6 +20,11 @@ export default function AnswerItem({
       currentUser.id === answer.userId ||
       currentUser.name === answer.authorName);
 
+  const isAdmin =
+    currentUser?.role === "ADMIN" || currentUser?.role === "ROLE_ADMIN";
+
+  const canManageAnswer = isAnswerOwner || isAdmin;
+
   const handleSave = async () => {
     if (!editContent.trim()) {
       alert("답변 내용을 입력해 주세요.");
@@ -54,14 +59,18 @@ export default function AnswerItem({
           {formatDate(answer.createdAt)}
         </span>
 
-        {isAnswerOwner && !isEditing && (
+        {!isEditing && (
           <span className={styles.ownerActions}>
-            <button type="button" onClick={() => setIsEditing(true)}>
-              수정
-            </button>
-            <button type="button" onClick={() => onDelete(answer.id)}>
-              삭제
-            </button>
+            {isAnswerOwner && (
+              <button type="button" onClick={() => setIsEditing(true)}>
+                수정
+              </button>
+            )}
+            {canManageAnswer && (
+              <button type="button" onClick={() => onDelete(answer.id)}>
+                삭제
+              </button>
+            )}
           </span>
         )}
       </div>
