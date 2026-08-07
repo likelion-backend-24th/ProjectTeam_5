@@ -20,6 +20,7 @@ export default function ProfilePage() {
 
   // 2. 멘토 신청 상태 (백엔드 상태와 연동하여 새로고침해도 유지됨)
   const [hasAppliedMentor, setHasAppliedMentor] = useState(false);
+  const [mentorStatus, setMentorStatus] = useState(user?.mentorStatus || "NONE");
 
   const [mentorApps, setMentorApps] = useState([]);
 
