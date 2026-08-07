@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { getQuestions } from "@/lib/questions";
 
 import styles from "./page.module.css";
 
 export default function QuestionsPage() {
+  const router = useRouter();
+
   const [page, setPage] = useState(0);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -54,6 +57,21 @@ export default function QuestionsPage() {
   const totalElements = data?.totalElements ?? 0;
   const totalPages = Math.max(Math.ceil(totalElements / 10), 1);
 
+  // 질문하기 버튼 클릭 핸들러
+  const handleAskClick = () => {
+    // TODO: 프로젝트의 실제 로그인 검증 로직으로 대체하세요.
+    // 예: localStorage.getItem("accessToken"), AuthContext의 user 객체 등
+    const isLoggedIn = Boolean(localStorage.getItem("accessToken"));
+
+    if (!isLoggedIn) {
+      alert("질문 등록은 로그인 후 이용 가능합니다.");
+      router.push("/login");
+      return;
+    }
+
+    router.push("/questions/new");
+  };
+
   return (
     <>
       <main className={styles.page}>
@@ -63,9 +81,13 @@ export default function QuestionsPage() {
             <p>취업 준비생들이 올린 현실적인 질문들을 확인해보세요 (비로그인 조회 가능)</p>
           </div>
 
-          <Link href="/questions/new" className={styles.askButton}>
+          <button
+            type="button"
+            onClick={handleAskClick}
+            className={styles.askButton}
+          >
             질문하기
-          </Link>
+          </button>
         </div>
 
         <section className={styles.panel}>

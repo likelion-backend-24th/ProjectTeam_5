@@ -57,7 +57,7 @@ export async function createQuestion(title, content) {
 
 export async function updateQuestion(id, title, content) {
   return request(`/api/questions/${id}`, {
-    method: "PUT",
+    method: "PATCH",
     body: { title, content },
     fallbackMessage: "질문 수정에 실패했습니다.",
   });
