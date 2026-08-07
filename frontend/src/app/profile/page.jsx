@@ -290,21 +290,6 @@ export default function ProfilePage() {
               </button>
             </div>
 
-            <div className={`${styles.managementItem} ${styles.dangerItem}`}>
-              <div className={`${styles.itemIcon} ${styles.dangerIcon}`}>👤❌</div>
-              <div className={styles.itemContent}>
-                <strong className={styles.dangerText}>탈퇴</strong>
-                <p>탈퇴 시 계정 정보와 활동 내역은 복구되지 않습니다.</p>
-              </div>
-              <button
-                type="button"
-                className={styles.dangerButton}
-                onClick={handleDeleteAccount}
-              >
-                회원 탈퇴
-              </button>
-            </div>
-
             {user.role === "USER" && (
               <div className={styles.managementItem}>
                 <div className={`${styles.itemIcon} ${styles.mentorIcon}`}>🏅</div>
@@ -335,6 +320,21 @@ export default function ProfilePage() {
                 )}
               </div>
             )}
+
+            <div className={`${styles.managementItem} ${styles.dangerItem}`}>
+              <div className={`${styles.itemIcon} ${styles.dangerIcon}`}>👤❌</div>
+              <div className={styles.itemContent}>
+                <strong className={styles.dangerText}>탈퇴</strong>
+                <p>탈퇴 시 계정 정보와 활동 내역은 복구되지 않습니다.</p>
+              </div>
+              <button
+                type="button"
+                className={styles.dangerButton}
+                onClick={handleDeleteAccount}
+              >
+                회원 탈퇴
+              </button>
+            </div>
           </div>
         </section>
       </div>
