@@ -150,6 +150,11 @@ export default function QuestionDetailPage() {
       currentUser.id === question.author?.id ||
       currentUser.name === question.authorName);
 
+  const isAdmin =
+    currentUser?.role === "ADMIN" || currentUser?.role === "ROLE_ADMIN";
+
+  const canManageQuestion = isQuestionOwner || isAdmin;
+
   return (
     <main className={styles.page}>
       <Link href="/questions" className={styles.backLink}>
@@ -171,14 +176,16 @@ export default function QuestionDetailPage() {
                 {formatDate(question.createdAt)}
               </span>
 
-              {isQuestionOwner && (
-                <span className={styles.ownerActions}>
+              <span className={styles.ownerActions}>
+                {isQuestionOwner && (
                   <Link href={`/questions/${id}/edit`}>수정</Link>
+                )}
+                {canManageQuestion && (
                   <button type="button" onClick={handleDeleteQuestion}>
                     삭제
                   </button>
-                </span>
-              )}
+                )}
+              </span>
             </div>
 
             <h1>{question.title}</h1>

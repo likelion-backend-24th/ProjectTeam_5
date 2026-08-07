@@ -5,6 +5,7 @@ import com.example.findAnswer.dev.dto.Answer.AnswerResponse;
 import com.example.findAnswer.dev.dto.Answer.AnswerUpdateRequest;
 import com.example.findAnswer.dev.entity.Answer;
 import com.example.findAnswer.dev.entity.Question;
+import com.example.findAnswer.dev.domain.Role;
 import com.example.findAnswer.dev.entity.User;
 import com.example.findAnswer.dev.exception.CustomException;
 import com.example.findAnswer.dev.exception.ErrorCode;
@@ -53,7 +54,7 @@ public class AnswerService {
                 .collect(Collectors.toList());
     }
 
-    // 답변 수정 (작성자 본인 검증)
+    // 답변 수정 (작성자 본인만 가능)
     @Transactional
     public AnswerResponse updateAnswer(Long answerId, Long userId, AnswerUpdateRequest request) {
         Answer answer = answerRepository.findById(answerId)
@@ -64,19 +65,32 @@ public class AnswerService {
         return AnswerResponse.from(answer);
     }
 
-    // 답변 삭제 (작성자 본인 검증)
+    // 답변 삭제 (작성자 본인 또는 관리자 가능)
     @Transactional
     public void deleteAnswer(Long answerId, Long userId) {
         Answer answer = answerRepository.findById(answerId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ANSWER_NOT_FOUND));
 
-        validateAuthor(answer.getUser().getId(), userId);
+        validateAuthorOrAdmin(answer.getUser().getId(), userId);
         answerRepository.delete(answer);
     }
 
-    //답변 권한 예외처리
+    // 작성자 본인 검증
     private void validateAuthor(Long authorId, Long currentUserId) {
         if (!authorId.equals(currentUserId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+    }
+
+    // 작성자 본인 또는 관리자 검증
+    private void validateAuthorOrAdmin(Long authorId, Long currentUserId) {
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        boolean isAuthor = authorId.equals(currentUserId);
+        boolean isAdmin = currentUser.getRole() == Role.ADMIN;
+
+        if (!isAuthor && !isAdmin) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
     }

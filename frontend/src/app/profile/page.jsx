@@ -87,11 +87,11 @@ export default function ProfilePage() {
   if (loading) return <main className={styles.page} />;
   if (!isLoggedIn || !user) {
     return (
-      <main className={styles.page}>
-        <p style={{ textAlign: "center", padding: "40px" }}>
-          로그인이 필요합니다.
-        </p>
-      </main>
+        <main className={styles.page}>
+          <p style={{ textAlign: "center", padding: "40px" }}>
+            로그인이 필요합니다.
+          </p>
+        </main>
     );
   }
 
@@ -235,21 +235,28 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className={styles.divider} />
+          {/* ================= 좌측: 내 프로필 카드 ================= */}
+          <section className={styles.profileCard}>
+            <div className={styles.cardHeading}>
+              <h1>내 프로필 (마이페이지)</h1>
+              <span className={styles.privateText}>🔒 개인 정보는 본인만 확인할 수 있습니다</span>
+            </div>
 
-          <dl className={styles.profileDetails}>
-            <div>
-              <dt>이메일 주소</dt>
-              <dd>
+            <div className={styles.profileSummary}>
+              <div className={styles.avatar} aria-hidden="true">
+                <FaUserLarge />
+              </div>
+              <div className={styles.profileIdentity}>
                 {isEditing ? (
-                  <input
-                    type="email"
-                    className={styles.inlineInput}
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
-                  />
+                    <input
+                        type="text"
+                        className={styles.nameInput}
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        placeholder="이름"
+                    />
                 ) : (
-                  user.email
+                    <h2>{user.name}</h2>
                 )}
               </dd>
             </div>
@@ -290,7 +297,6 @@ export default function ProfilePage() {
                   <strong>멘토 신청</strong>
                   <span>멘토 승인 대기 중</span>
                 </div>
-                <p>관리자 승인 후 멘토로 활동할 수 있습니다.</p>
               </div>
             </div>
           )}
@@ -337,7 +343,7 @@ export default function ProfilePage() {
               >
                 정보 조회
               </button>
-            </div>
+            </dl>
 
             {/* 2. 수정 버튼 */}
             <div className={styles.managementItem}>
@@ -346,13 +352,6 @@ export default function ProfilePage() {
                 <strong>수정</strong>
                 <p>이름, 연락처, 관심 분야를 변경할 수 있습니다.</p>
               </div>
-              <button
-                type="button"
-                className={styles.primaryButton}
-                onClick={() => setIsEditing(true)}
-              >
-                프로필 수정
-              </button>
             </div>
 
             {/* 3. 회원 탈퇴 버튼 */}
@@ -424,19 +423,63 @@ export default function ProfilePage() {
                       승인
                     </button>
                     <button
-                      type="button"
-                      className={styles.dangerButton}
-                      onClick={() => handleReject(app.id)}
+                        type="button"
+                        className={styles.mentorButton}
+                        onClick={handleApplyMentor}
                     >
-                      거절
+                      신청하기
                     </button>
                   </div>
-                </div>
-              ))}
+              )}
             </div>
-          )}
-        </section>
-      )}
-    </main>
+          </section>
+        </div>
+
+        {/* ================= 하단: 관리자(ADMIN) 전용 승인/거절 영역 ================= */}
+        {user.role === "ADMIN" && (
+            <section
+                className={styles.profileCard}
+                style={{ marginTop: "36px", borderColor: "#10b981" }}
+            >
+              <div className={styles.cardHeading}>
+                <h1 style={{ color: "#059669" }}>🛡️ 멘토 신청 대기 목록 (관리자 전용)</h1>
+              </div>
+
+              {mentorApps.length === 0 ? (
+                  <p style={{ marginTop: "20px", color: "#64748b" }}>
+                    현재 승인 대기 중인 멘토 신청자가 없습니다.
+                  </p>
+              ) : (
+                  <div className={styles.managementList} style={{ marginTop: "20px" }}>
+                    {mentorApps.map((app) => (
+                        <div key={app.id} className={styles.managementItem}>
+                          <div className={styles.itemIcon}>👤</div>
+                          <div className={styles.itemContent}>
+                            <strong>{app.name}</strong>
+                            <p>이메일: {app.email}</p>
+                          </div>
+                          <div style={{ display: "flex", gap: "8px" }}>
+                            <button
+                                type="button"
+                                className={styles.primaryButton}
+                                onClick={() => handleApprove(app.id)}
+                            >
+                              승인
+                            </button>
+                            <button
+                                type="button"
+                                className={styles.dangerButton}
+                                onClick={() => handleReject(app.id)}
+                            >
+                              거절
+                            </button>
+                          </div>
+                        </div>
+                    ))}
+                  </div>
+              )}
+            </section>
+        )}
+      </main>
   );
 }
