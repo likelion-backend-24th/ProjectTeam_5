@@ -1,4 +1,7 @@
 import { request } from "./client";
+import * as authApi from "./auth";
+
+export const getToken = () => localStorage.getItem("accessToken");
 
 // 1. 이름 + 관심 분야 수정 (추가된 부분!)/
 export function updateProfileInfo(name, interests, token) {
@@ -101,3 +104,112 @@ export function getMyProfile(token) {
         fallbackMessage: "프로필 정보를 불러오지 못했습니다.",
     });
 }
+
+
+// [기능 1] 정보 조회 기능 (최신 정보 불러오기 & 안내창 표시)
+export const handleViewInfo = async () => {
+    const token = getToken();
+    if (!token) return;
+
+
+    try {
+        const latestUser = await authApi.getMe(token);
+        alert(
+            `📌 [최신 회원 정보 조회]\n` +
+            // `• ID: #${latestUser.id}\n` +
+            `• 이름: ${latestUser.name}\n` +
+            `• 이메일: ${latestUser.email}\n` +
+            `• 권한: ${latestUser.role}\n` +
+            `• 관심 분야: ${latestUser.interests || interests}`
+        );
+    } catch (err) {
+        console.log(err)
+        alert("회원 정보를 조회하는 중 문제가 발생했습니다.");
+    }
+};
+
+// [기능 2] 프로필 및 관심 분야 수정 저장
+export const handleSaveProfile = async () => {
+    const token = getToken();
+    if (!token || isSubmitting) return;
+
+    try {
+        setIsSubmitting(true);
+
+        // 이름이나 관심 분야 중 하나라도 바뀌었으면 PATCH /api/users/me 호출하여 DB 저장
+        if (newName !== user.name || newInterests !== (user.interests || "")) {
+            await usersApi.updateProfileInfo(newName, newInterests, token);
+        }
+
+        // 이메일이 바뀌었으면 이메일 수정 API 호출
+        if (newEmail !== user.email) {
+            await usersApi.updateProfileEmail(newEmail, token);
+        }
+
+        alert("프로필이 성공적으로 수정되었습니다. 변경 사항 적용을 위해 다시 로그인합니다.");
+        setIsEditing(false);
+        logout();
+        router.push("/login");
+    } catch (err) {
+        alert(err.message || "프로필 수정에 실패했습니다.");
+    } finally {
+        setIsSubmitting(false);
+    }
+};
+
+// [기능 3] 멘토 권한 신청
+export const handleApplyMentor = async () => {
+    const token = getToken();
+    if (!token) return;
+
+    if (confirm("전문가(MENTOR) 권한을 신청하시겠습니까?")) {
+        try {
+            await usersApi.applyMentor(token);
+            alert("멘토 신청이 완료되었습니다. 관리자 승인을 기다려주세요.");
+            setHasAppliedMentor(true);
+        } catch (err) {
+            alert(err.message || "이미 신청되었거나 처리할 수 없는 상태입니다.");
+        }
+    }
+};
+
+// 회원 탈퇴
+export const handleDeleteAccount = async () => {
+    const token = getToken();
+    if (!token) return;
+
+    if (confirm("정말 탈퇴하시겠습니까? 계정 정보와 활동 내역은 복구되지 않습니다.")) {
+        try {
+            await usersApi.deleteAccount(token);
+            alert("회원 탈퇴가 완료되었습니다.");
+            logout();
+            router.replace("/");
+        } catch (err) {
+            alert(err.message || "회원 탈퇴 처리에 실패했습니다.");
+        }
+    }
+};
+
+// 관리자 기능 (멘토 승인)
+export const handleApprove = async (targetId) => {
+    const token = getToken();
+    try {
+        await usersApi.approveMentor(targetId, token);
+        alert("승인 처리되었습니다.");
+        fetchAdminData();
+    } catch (err) {
+        alert(err.message);
+    }
+};
+
+// 관리자 기능 (멘토 거절)
+export const handleReject = async (targetId) => {
+    const token = getToken();
+    try {
+        await usersApi.rejectMentor(targetId, token);
+        alert("거절 처리되었습니다.");
+        fetchAdminData();
+    } catch (err) {
+        alert(err.message);
+    }
+};

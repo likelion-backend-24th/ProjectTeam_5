@@ -1,0 +1,58 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  width: 100%;
+  height: 48px;
+
+  border-radius: 6px;
+
+  font-size: 15px;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    filter 120ms ease,
+    background-color 120ms ease;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.google {
+  background-color: #ffffff;
+  color: #1f1f1f;
+  border: 1px solid #dadce0;
+}
+
+.google:hover:not(:disabled) {
+  background-color: #f8f9fa;
+}
+
+.kakao {
+  background-color: #fee500;
+  color: rgba(0, 0, 0, 0.85);
+  border: none;
+}
+
+.kakao:hover:not(:disabled) {
+  filter: brightness(0.97);
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -4,6 +4,11 @@ if (!API_URL) {
   throw new Error("NEXT_PUBLIC_API_URL이 설정되지 않았습니다.");
 }
 
+
+export function startOAuth(provider) {
+  window.location.href = `${API_URL}/oauth2/authorization/${provider}`;
+}
+
 export async function request(
   path,
   { body, fallbackMessage = "요청에 실패했습니다.", ...options } = {}
