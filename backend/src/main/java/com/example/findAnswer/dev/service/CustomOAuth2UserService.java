@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
@@ -29,7 +30,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         OAuthUserInfo info = OAuthUserInfo.of(provider, oAuthUser.getAttributes());
 
         if(!info.emailVerified()){
-            throw new OAuth2AuthException("이메일 인증이 필요합니다.");
+            throw new OAuth2AuthException(OAuth2ErrorCodes.ACCESS_DENIED);
         }
 
         AuthUser authUser = oAuthAccountService.loginOrCreate(provider, info);
