@@ -22,7 +22,7 @@ public class User extends BaseTimeEntity{
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
-    @Column(nullable = true, length = 255)
+    @Column(length = 255) // oauth 로그인 시 비밀번호 없음
     private String password;
 
     @Column(nullable = false, length = 50)
