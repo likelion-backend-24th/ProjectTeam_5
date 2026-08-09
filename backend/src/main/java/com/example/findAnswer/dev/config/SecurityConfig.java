@@ -1,8 +1,11 @@
 package com.example.findAnswer.dev.config;
 
 
+import com.example.findAnswer.dev.handler.OAuth2FailureHandler;
+import com.example.findAnswer.dev.handler.OAuth2SuccessHandler;
 import com.example.findAnswer.dev.jwt.JwtAuthenticationFilter;
 import com.example.findAnswer.dev.jwt.JwtTokenProvider;
+import com.example.findAnswer.dev.service.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,20 +30,25 @@ import java.util.List;
 public class SecurityConfig {
     private final JwtTokenProvider jwtTokenProvider;
 
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(
+            HttpSecurity http,
+            CustomOAuth2UserService customOAuth2UserService,
+            OAuth2FailureHandler oAuth2FailureHandler,
+            OAuth2SuccessHandler oAuth2SuccessHandler) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                        session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // oAuth 로그인 state 파라미터 검증에 세션이 필요
                 )
 
                 //API 명세서 기준 접근 권한 설정
@@ -48,16 +56,22 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/auth/signup", "/api/auth/login", "/api/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/questions/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/h2-console/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // "/h2-console/**" 제거
                         .requestMatchers("/", "/health").permitAll()
                         .requestMatchers("/error").permitAll()
+                        .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
+                //OAuth 로그인 설정
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(endpoint -> endpoint.userService(customOAuth2UserService))
+                        .failureHandler(oAuth2FailureHandler)
+                        .successHandler(oAuth2SuccessHandler)
+                )
 
                 //커스텀 JWT 필터를 UsernamePasswordAuthenticationFilter 전에 실행되도록 등록
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
-                        UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
