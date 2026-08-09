@@ -9,6 +9,8 @@ public record OAuthUserInfo(String providerUserId, String email, String name, bo
     public static OAuthUserInfo of(Provider provider, Map<String, Object> attributes) {
         return switch (provider) {
             case GOOGLE -> ofGoogle(attributes);
+            case KAKAO -> ofKakao(attributes);
+            case NAVER -> ofNaver(attributes);
         };
     }
 
