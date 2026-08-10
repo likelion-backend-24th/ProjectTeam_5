@@ -11,6 +11,7 @@ import com.example.findAnswer.dev.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 
 @Service
@@ -33,9 +34,7 @@ public class OAuthAccountService {
     }
 
     private OAuthAccount createAccount(Provider provider, OAuthUserInfo info) {
-        User user = userRepository.findByEmail(info.email())
-                .orElseGet(() -> userRepository.save(
-                        User.ofOAuth(info.email(), info.name(), Role.USER)));
+        User user = findOrCreateUser(info);
 
         return oAuthAccountRepository.save(
                 OAuthAccount.builder()
@@ -45,4 +44,16 @@ public class OAuthAccountService {
                         .build()
         );
     }
+
+    private User findOrCreateUser(OAuthUserInfo info) {
+        // 이메일이 있을 때만 기존 계정과 연결 시도
+        if (StringUtils.hasText(info.email())) {
+            return userRepository.findByEmail(info.email())
+                    .orElseGet(() -> userRepository.save(
+                            User.ofOAuth(info.email(), info.name(), Role.USER)));
+        }
+        // 이메일이 없으면 무조건 신규 생성
+        return userRepository.save(User.ofOAuth(null, info.name(), Role.USER));
+    }
+
 }

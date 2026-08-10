@@ -49,7 +49,7 @@ export default function SocialLoginButtons({ disabled }) {
   return (
     <div className={styles.container}>
       <GoogleLoginButton disabled={disabled} />
-      {/* <KakaoLoginButton disabled={disabled} /> */}
+      <KakaoLoginButton disabled={disabled} />
     </div>
   );
 }
