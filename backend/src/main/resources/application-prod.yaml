@@ -55,4 +55,4 @@ server:
   forward-headers-strategy: framework
 
 kakao:
-  admin-key: ${KAKAO_ADMIN_KEY}
+  admin-key: ${KAKAO_ADMIN_KEY:kakao_admin_key}
