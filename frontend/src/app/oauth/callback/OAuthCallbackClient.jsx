@@ -2,10 +2,14 @@
 
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/app/contexts/AuthContext";
+
 
 export default function OAuthCallbackClient() {
   const params = useSearchParams();
   const router = useRouter();
+  const { loginWithToken } = useAuth();
+
 
   useEffect(() => {
     const token = params.get("token");
@@ -18,9 +22,10 @@ export default function OAuthCallbackClient() {
       return;
     }
 
-    localStorage.setItem("accessToken", token);
-    router.replace("/");
-  }, [params, router]);
+    loginWithToken(token)
+      .then(() => router.replace("/"))
+      .catch(() => router.replace("/login?error=login_failed"));
+  }, [params, router, loginWithToken]);
 
   return <p>로그인 처리 중...</p>;
 }
