@@ -21,3 +21,10 @@ export function getMe(token) {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+export function logout() {
+  return request("/api/auth/logout", {
+    method: "POST",
+    fallbackMessage: "로그아웃에 실패했습니다.",
+  });
+}

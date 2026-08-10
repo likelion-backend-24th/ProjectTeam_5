@@ -23,6 +23,7 @@ export function AuthProvider({ children }) {
             })
             .catch((err) => {
                 localStorage.removeItem("accessToken");
+                setUser(null);
             })
             .finally(() => setLoading(false));
     }, []);
@@ -43,18 +44,33 @@ export function AuthProvider({ children }) {
         return me;
     }, []);
 
-    const logout = useCallback(() => {
-        localStorage.removeItem("accessToken");
-        setUser(null);
+    const logout = useCallback(async () => {
+        try {
+            await authApi.logout();   // POST /api/auth/logout
+        } finally {
+            localStorage.removeItem("accessToken");
+            setUser(null);
+        }
+    }, []);
+
+
+    const refreshUser = useCallback(async () => {
+        const token = localStorage.getItem("accessToken");
+        if (!token) return null;
+        const me = await authApi.getMe(token);
+        setUser(me);
+        return me;
     }, []);
 
     const value = useMemo(
-        () => ({ user, userId: user?.id, isLoggedIn: !!user, loading, login, loginWithToken, logout }),
-        [user, loading, login, loginWithToken, logout]
+        () => ({ user, userId: user?.id, isLoggedIn: !!user, loading, login, loginWithToken, logout, refreshUser }),
+        [user, loading, login, loginWithToken, logout, refreshUser]
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
+
+
 
 export function useAuth() {
     const ctx = useContext(AuthContext);
