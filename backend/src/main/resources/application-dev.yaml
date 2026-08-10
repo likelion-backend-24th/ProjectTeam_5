@@ -38,8 +38,8 @@ spring:
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
             scope:
               - profile_nickname
-              - account_email
-
+#              - account_email
+        # kakao - CommonOAuth2Provider 내장되어 있지 않음
         provider:
           kakao:
             authorization-uri: https://kauth.kakao.com/oauth/authorize
