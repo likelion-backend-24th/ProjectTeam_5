@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState } from "react"; 
 import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
 
-export default function AnswerForm({ onSubmit, isSubmitting, currentUser }) {
+export default function AnswerForm({ 
+  onSubmit, 
+  isSubmitting, 
+  currentUser,
+  placeholder 
+}) {
   const [content, setContent] = useState("");
   const router = useRouter();
 
@@ -34,7 +39,7 @@ export default function AnswerForm({ onSubmit, isSubmitting, currentUser }) {
         onChange={(e) => setContent(e.target.value)}
         placeholder={
           currentUser
-            ? "답변을 작성해 주세요."
+            ? placeholder || "답변을 작성해 주세요."
             : "로그인 후 답변을 작성할 수 있습니다."
         }
         rows={4}

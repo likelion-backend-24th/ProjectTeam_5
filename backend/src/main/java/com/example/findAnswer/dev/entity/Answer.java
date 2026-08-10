@@ -3,37 +3,47 @@ package com.example.findAnswer.dev.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "answers")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Answer extends BaseTimeEntity{
+public class Answer extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "answer_id")
+    private Long id;
 
-    private Long id; //답변 PK
-
-    @ManyToOne(fetch = FetchType.LAZY) // 여러개 답변이 하나의 질문에 등록 가능
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "question_id", nullable = false)
-    private Question question; // 질문 정보
+    private Question question;
 
-    @ManyToOne(fetch = FetchType.LAZY) // 여러개 답변을 한명의 유저가 작성 가능
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user; // 답변 작성자 정보
+    private User user;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    // 답변 수정
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private Answer parent;
+
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Answer> children = new ArrayList<>();
+
     public void update(String content) {
         this.content = content;
     }
 
     @Builder
-    public Answer(Question question, User user, String content) {
+    public Answer(Question question, User user, String content, Answer parent) {
         this.question = question;
         this.user = user;
         this.content = content;
+        this.parent = parent;
     }
 }
