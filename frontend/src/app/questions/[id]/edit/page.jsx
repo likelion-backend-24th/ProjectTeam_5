@@ -12,6 +12,7 @@ export default function EditQuestionPage() {
   const router = useRouter();
 
   const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("개발");
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
@@ -23,8 +24,9 @@ export default function EditQuestionPage() {
     getQuestion(id)
       .then((question) => {
         if (!ignore) {
-          setTitle(question.title);
-          setContent(question.content);
+          setTitle(question.title || "");
+          setCategory(question.category || "개발");
+          setContent(question.content || "");
         }
       })
       .catch((error) => {
@@ -42,14 +44,32 @@ export default function EditQuestionPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setErrorMessage("");
+
+    // 1. 등록/수정 버튼을 누르는 순간 로컬토큰(로그인 상태) 체크
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      alert("로그인 후 이용 가능합니다.");
+      router.push("/login");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      await updateQuestion(id, title, content);
+      await updateQuestion(id, title, content, category);
       router.push(`/questions/${id}`);
     } catch (error) {
-      setErrorMessage(error.message);
       setSubmitting(false);
+
+      // 2. 백엔드에서 인증 관련 에러(401 또는 403)를 보낸 경우
+      if (error.status === 401 || error.status === 403) {
+        alert("로그인 세션이 만료되었거나 권한이 없습니다. 다시 로그인해주세요.");
+        router.push("/login");
+        return;
+      }
+
+      // 3. 기타 에러
+      setErrorMessage(error.message || "질문 수정 중 오류가 발생했습니다.");
     }
   };
 
@@ -64,7 +84,7 @@ export default function EditQuestionPage() {
   return (
     <>
       <main className={styles.page}>
-        <h1>새 질문 작성 / 수정하기</h1>
+        <h1>질문 수정하기</h1>
 
         <form onSubmit={handleSubmit} className={styles.panel}>
           <div className={styles.field}>
@@ -83,6 +103,31 @@ export default function EditQuestionPage() {
 
           <div className={styles.field}>
             <div className={styles.fieldHeader}>
+              <label htmlFor="category">카테고리</label>
+            </div>
+            <select
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              required
+              style={{
+                width: "100%",
+                padding: "10px",
+                borderRadius: "6px",
+                border: "1px solid #d1d5db",
+                fontSize: "14px",
+                fontFamily: "inherit",
+              }}
+            >
+              <option value="개발">개발</option>
+              <option value="멘토링">멘토링</option>
+              <option value="취업">취업</option>
+              <option value="기타">기타</option>
+            </select>
+          </div>
+
+          <div className={styles.field}>
+            <div className={styles.fieldHeader}>
               <label htmlFor="content">질문 내용</label>
               <span>{content.length}/5000</span>
             </div>
@@ -96,6 +141,12 @@ export default function EditQuestionPage() {
             />
           </div>
 
+          {/* 파일 업로드는 백엔드 미지원, UI만 유지 */}
+          <div className={styles.field}>
+            <label>파일 첨부</label>
+            <input type="file" disabled />
+          </div>
+
           {errorMessage && <p className={styles.errorMessage}>{errorMessage}</p>}
 
           <div className={styles.actions}>
@@ -107,7 +158,7 @@ export default function EditQuestionPage() {
               취소
             </button>
             <button type="submit" className={styles.submitButton} disabled={submitting}>
-              {submitting ? "저장 중..." : "질문 등록 / 수정 완료"}
+              {submitting ? "저장 중..." : "질문 수정 완료"}
             </button>
           </div>
         </form>
