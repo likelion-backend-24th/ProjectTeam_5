@@ -28,7 +28,7 @@ public class AnswerService {
     private final QuestionRepository questionRepository;
     private final UserRepository userRepository;
 
-    // 답변 등록
+    // 답변/대댓글 등록
     @Transactional
     public AnswerResponse createAnswer(Long questionId, Long userId, AnswerCreateRequest request) {
         Question question = questionRepository.findById(questionId)
@@ -37,17 +37,29 @@ public class AnswerService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
+        Answer parent = null;
+        if (request.getParentId() != null) {
+            parent = answerRepository.findById(request.getParentId())
+                    .orElseThrow(() -> new CustomException(ErrorCode.ANSWER_NOT_FOUND));
+
+            // 검증 1: 부모 답변이 해당 질문에 속해 있는지 확인
+            if (!parent.getQuestion().getId().equals(questionId)) {
+                throw new CustomException(ErrorCode.INVALID_REQUEST);
+            }
+        }
+
         Answer answer = Answer.builder()
                 .question(question)
                 .user(user)
                 .content(request.getContent())
+                .parent(parent)
                 .build();
 
         Answer savedAnswer = answerRepository.save(answer);
         return AnswerResponse.from(savedAnswer);
     }
 
-    // 특정 질문의 답변 목록 조회 (등록순)
+    // 특정 질문의 답변 및 대댓글 목록 조회 (등록순)
     public List<AnswerResponse> getAnswersByQuestionId(Long questionId) {
         return answerRepository.findByQuestionIdOrderByCreatedAtAsc(questionId).stream()
                 .map(AnswerResponse::from)

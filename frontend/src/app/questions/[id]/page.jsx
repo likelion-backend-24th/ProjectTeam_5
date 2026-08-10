@@ -99,11 +99,18 @@ export default function QuestionDetailPage() {
     }
   };
 
-  const handleCreateAnswer = async (content, resetForm) => {
+  const handleCreateAnswer = async (content, parentId = null, resetForm) => {
+    let parent = parentId;
+    let reset = resetForm;
+    if (typeof parentId === "function") {
+      reset = parentId;
+      parent = null;
+    }
+
     try {
       setIsSubmitting(true);
-      await createAnswer(id, { content });
-      resetForm();
+      await createAnswer(id, { content, parentId: parent });
+      if (reset) reset();
       await fetchAnswers();
     } catch (error) {
       alert(error.message || "답변 등록에 실패했습니다.");
@@ -213,6 +220,7 @@ export default function QuestionDetailPage() {
               onUpdate={handleUpdateAnswer}
               onDelete={handleDeleteAnswer}
               formatDate={formatDate}
+              onCreateAnswer={handleCreateAnswer}
             />
           </section>
         </>

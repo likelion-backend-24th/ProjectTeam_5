@@ -1,29 +1,52 @@
 "use client";
 
 import { useState } from "react";
+import AnswerForm from "./AnswerForm";
 import styles from "./page.module.css";
+
+const getAnswerId = (obj) => obj?.answer_id ?? obj?.answerId ?? obj?.id;
+const getParentId = (obj) => obj?.parent_id ?? obj?.parentId ?? obj?.parentAnswerId;
 
 export default function AnswerItem({
   answer,
+  allAnswers = [],
   currentUser,
+  onCreateAnswer,
   onUpdate,
   onDelete,
   formatDate,
+  topParentId,
+  depth = 0,
+  parentAuthorName = null,
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(answer.content);
   const [isSaving, setIsSaving] = useState(false);
 
+  const [showReplyForm, setShowReplyForm] = useState(false);
+  const [isReplySubmitting, setIsReplySubmitting] = useState(false);
+
+  const currentAnswerId = getAnswerId(answer);
+  const currentParentId = getParentId(answer);
+
+  const authorName = answer.authorName || answer.name || "익명";
+
   const isAnswerOwner =
     currentUser &&
     (currentUser.id === answer.authorId ||
       currentUser.id === answer.userId ||
-      currentUser.name === answer.authorName);
+      currentUser.name === authorName);
 
   const isAdmin =
     currentUser?.role === "ADMIN" || currentUser?.role === "ROLE_ADMIN";
 
   const canManageAnswer = isAnswerOwner || isAdmin;
+
+  const childReplies = allAnswers.filter(
+    (item) => getParentId(item) === currentAnswerId
+  );
+
+  const currentTopParentId = topParentId || currentAnswerId;
 
   const handleSave = async () => {
     if (!editContent.trim()) {
@@ -33,7 +56,7 @@ export default function AnswerItem({
 
     try {
       setIsSaving(true);
-      await onUpdate(answer.id, editContent);
+      await onUpdate(currentAnswerId, editContent);
       setIsEditing(false);
     } catch (error) {
       alert(error.message || "답변 수정 실패");
@@ -47,11 +70,21 @@ export default function AnswerItem({
     setIsEditing(false);
   };
 
+  const handleReplySubmit = async (content, resetForm) => {
+    try {
+      setIsReplySubmitting(true);
+      await onCreateAnswer(content, currentAnswerId, resetForm);
+      setShowReplyForm(false);
+    } finally {
+      setIsReplySubmitting(false);
+    }
+  };
+
   return (
-    <li className={styles.answerItem}>
+    <li className={depth > 0 ? styles.replyItem : styles.answerItem}>
       <div className={styles.answerHeader}>
         <span className={styles.mentorName}>
-          {answer.authorName || answer.name || "익명"}
+          {authorName}
           {answer.mentorTitle && ` (${answer.mentorTitle})`}
         </span>
 
@@ -61,13 +94,19 @@ export default function AnswerItem({
 
         {!isEditing && (
           <span className={styles.ownerActions}>
+            <button
+              type="button"
+              onClick={() => setShowReplyForm((prev) => !prev)}
+            >
+              {showReplyForm ? "답글 취소" : "답글 달기"}
+            </button>
             {isAnswerOwner && (
               <button type="button" onClick={() => setIsEditing(true)}>
                 수정
               </button>
             )}
             {canManageAnswer && (
-              <button type="button" onClick={() => onDelete(answer.id)}>
+              <button type="button" onClick={() => onDelete(currentAnswerId)}>
                 삭제
               </button>
             )}
@@ -94,7 +133,43 @@ export default function AnswerItem({
           </div>
         </div>
       ) : (
-        <p className={styles.answerContent}>{answer.content}</p>
+        <p className={styles.answerContent}>
+          {depth >= 1 && parentAuthorName && (
+            <span className={styles.mentionTag}>@{parentAuthorName} </span>
+          )}
+          {answer.content}
+        </p>
+      )}
+
+      {showReplyForm && (
+        <div className={styles.replyFormContainer}>
+          <AnswerForm
+            onSubmit={handleReplySubmit}
+            isSubmitting={isReplySubmitting}
+            currentUser={currentUser}
+            placeholder={`@${authorName} 님에게 답글 작성...`}
+          />
+        </div>
+      )}
+
+      {childReplies.length > 0 && (
+        <ul className={styles.replyList}>
+          {childReplies.map((reply) => (
+            <AnswerItem
+              key={getAnswerId(reply)}
+              answer={reply}
+              allAnswers={allAnswers}
+              currentUser={currentUser}
+              onCreateAnswer={onCreateAnswer}
+              onUpdate={onUpdate}
+              onDelete={onDelete}
+              formatDate={formatDate}
+              topParentId={currentTopParentId}
+              depth={depth + 1}
+              parentAuthorName={authorName}
+            />
+          ))}
+        </ul>
       )}
     </li>
   );

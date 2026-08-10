@@ -24,7 +24,6 @@
   color: #dc2626;
 }
 
-/* 질문 본문 영역 */
 .panel {
   border: 1px solid #e5e7eb;
   border-radius: 12px;
@@ -47,13 +46,20 @@
   gap: 12px;
 }
 
-.ownerActions button {
+.ownerActions button,
+.ownerActions a {
   border: none;
   background: none;
   color: #2867e8;
   font-size: 13px;
   cursor: pointer;
   padding: 0;
+  text-decoration: none;
+}
+
+.ownerActions button:hover,
+.ownerActions a:hover {
+  text-decoration: underline;
 }
 
 .panel h1 {
@@ -80,9 +86,6 @@
   font-size: 13px;
 }
 
-/* -------------------------------------------------- */
-/* 답변 영역 전체 */
-/* -------------------------------------------------- */
 
 .answers h2 {
   margin: 0 0 16px;
@@ -90,7 +93,6 @@
   font-size: 18px;
 }
 
-/* 답변 신규 작성 폼 */
 .answerForm {
   margin-bottom: 24px;
   display: flex;
@@ -136,7 +138,6 @@
   cursor: not-allowed;
 }
 
-/* 답변 목록 */
 .answerList {
   list-style: none;
   margin: 0;
@@ -156,8 +157,8 @@
 .answerHeader {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 2px;
   font-size: 13px;
 }
 
@@ -174,11 +175,39 @@
 .answerContent {
   margin: 0;
   color: #111827;
-  line-height: 1.6;
+  line-height: 1.4;
   white-space: pre-wrap;
 }
 
-/* 답변 수정 폼 */
+.replyList {
+  list-style: none;
+  padding-left: 10px;
+  margin: 4px 0 0 4px;
+  border-left: 2px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 4px; 
+}
+
+.replyItem {
+  background-color: transparent;
+  border: none;
+  padding: 2px 0;
+  margin: 0;
+}
+
+.mentionTag {
+  color: #2867e8;
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.replyFormContainer {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px dashed #e5e7eb;
+}
+
 .editForm {
   display: flex;
   flex-direction: column;
