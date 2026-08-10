@@ -5,6 +5,7 @@ import com.example.findAnswer.dev.dto.oauth.AuthUser;
 import com.example.findAnswer.dev.dto.oauth.CustomOAuth2User;
 import com.example.findAnswer.dev.dto.oauth.OAuthUserInfo;
 import com.example.findAnswer.dev.exception.OAuth2AuthException;
+import com.example.findAnswer.dev.exception.OAuth2ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
@@ -29,8 +30,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         OAuthUserInfo info = OAuthUserInfo.of(provider, oAuthUser.getAttributes());
 
-        if(!info.emailVerified()){
-            throw new OAuth2AuthException(OAuth2ErrorCodes.ACCESS_DENIED);
+        if (info.email() != null && !info.emailVerified()) {
+            throw new OAuth2AuthException(OAuth2ErrorCode.EMAIL_NOT_VERIFIED);
         }
 
         AuthUser authUser = oAuthAccountService.loginOrCreate(provider, info);
