@@ -11,6 +11,8 @@ export default function OAuthCallbackClient() {
     const token = params.get("accessToken");
     const error = params.get("error");
 
+    if (!token && !error) return;
+
     if (error || !token) {
       router.replace(`/login?error=${error ?? "no_token"}`);
       return;
@@ -22,3 +24,5 @@ export default function OAuthCallbackClient() {
 
   return <p>로그인 처리 중...</p>;
 }
+
+export const dynamic = "force-dynamic";
