@@ -138,12 +138,12 @@ export const handleSaveProfile = async () => {
 
         // 이름이나 관심 분야 중 하나라도 바뀌었으면 PATCH /api/users/me 호출하여 DB 저장
         if (newName !== user.name || newInterests !== (user.interests || "")) {
-            await usersApi.updateProfileInfo(newName, newInterests, token);
+            await updateProfileInfo(newName, newInterests, token);
         }
 
         // 이메일이 바뀌었으면 이메일 수정 API 호출
         if (newEmail !== user.email) {
-            await usersApi.updateProfileEmail(newEmail, token);
+            await updateProfileEmail(newEmail, token);
         }
 
         alert("프로필이 성공적으로 수정되었습니다. 변경 사항 적용을 위해 다시 로그인합니다.");
@@ -164,7 +164,7 @@ export const handleApplyMentor = async () => {
 
     if (confirm("전문가(MENTOR) 권한을 신청하시겠습니까?")) {
         try {
-            await usersApi.applyMentor(token);
+            await applyMentor(token);
             alert("멘토 신청이 완료되었습니다. 관리자 승인을 기다려주세요.");
             setHasAppliedMentor(true);
         } catch (err) {
@@ -180,7 +180,7 @@ export const handleDeleteAccount = async () => {
 
     if (confirm("정말 탈퇴하시겠습니까? 계정 정보와 활동 내역은 복구되지 않습니다.")) {
         try {
-            await usersApi.deleteAccount(token);
+            await deleteAccount(token);
             alert("회원 탈퇴가 완료되었습니다.");
             logout();
             router.replace("/");
@@ -194,7 +194,7 @@ export const handleDeleteAccount = async () => {
 export const handleApprove = async (targetId) => {
     const token = getToken();
     try {
-        await usersApi.approveMentor(targetId, token);
+        await approveMentor(targetId, token);
         alert("승인 처리되었습니다.");
         fetchAdminData();
     } catch (err) {
@@ -206,7 +206,7 @@ export const handleApprove = async (targetId) => {
 export const handleReject = async (targetId) => {
     const token = getToken();
     try {
-        await usersApi.rejectMentor(targetId, token);
+        await rejectMentor(targetId, token);
         alert("거절 처리되었습니다.");
         fetchAdminData();
     } catch (err) {
