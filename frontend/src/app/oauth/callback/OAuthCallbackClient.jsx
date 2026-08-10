@@ -8,7 +8,7 @@ export default function OAuthCallbackClient() {
   const router = useRouter();
 
   useEffect(() => {
-    const token = params.get("accessToken");
+    const token = params.get("token");
     const error = params.get("error");
 
     if (!token && !error) return;
