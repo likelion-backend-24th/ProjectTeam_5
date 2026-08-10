@@ -13,7 +13,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.Base64;
 
 @Service
 @RequiredArgsConstructor
@@ -30,10 +34,12 @@ public class RefreshTokenService {
         String refreshToken = jwtTokenProvider.createRefreshToken(userId);
         LocalDateTime expiresAt = LocalDateTime.now().plusDays(14);
 
+        String hashedToken = hashToken(refreshToken);
+
         refreshTokenRepository.findByUserId(userId)
                 .ifPresentOrElse(
-                        existing -> existing.updateToken(refreshToken, expiresAt),
-                        () -> refreshTokenRepository.save(new RefreshToken(userId, refreshToken, expiresAt))
+                        existing -> existing.updateToken(hashedToken, expiresAt),
+                        () -> refreshTokenRepository.save(new RefreshToken(userId, hashedToken, expiresAt))
                 );
 
         return new TokenResponse(accessToken, refreshToken);
@@ -55,7 +61,7 @@ public class RefreshTokenService {
         RefreshToken saved = refreshTokenRepository.findByUserId(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.AUTH_REFRESH_INVALID));
 
-        if (!saved.getToken().equals(refreshToken)) {
+        if (!saved.getToken().equals(hashToken(refreshToken))) {
             throw new CustomException(ErrorCode.AUTH_REFRESH_INVALID);
         }
 
@@ -64,9 +70,21 @@ public class RefreshTokenService {
 
         String newAccessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(), user.getRole());
         String newRefreshToken = jwtTokenProvider.createRefreshToken(user.getId());
-        saved.updateToken(newRefreshToken, LocalDateTime.now().plusDays(14));
+        String newHashedToken = hashToken(newRefreshToken);
+        saved.updateToken(newHashedToken, LocalDateTime.now().plusDays(14));
 
         return new TokenResponse(newAccessToken, newRefreshToken);
+    }
+
+
+    private String hashToken(String token) {
+        try{
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest(token.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (NoSuchAlgorithmException e){
+            throw new IllegalStateException("SHA-256 not available", e);
+        }
     }
 
 }

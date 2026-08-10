@@ -14,19 +14,6 @@ import java.util.Optional;
 public interface OAuthAccountRepository extends JpaRepository<OAuthAccount, Long> {
 
     Optional<OAuthAccount> findByProviderAndProviderUserId(Provider provider,String providerUserId);
-
-    @Query("""
-        select oa
-        from OAuthAccount oa
-        join fetch oa.user u
-        where oa.provider = :provider
-          and oa.providerUserId = :providerUserId
-    """)
-    Optional<OAuthAccount> findWithUserByProviderAndProviderUserId(
-            @Param("provider") Provider provider,
-            @Param("providerUserId") String providerUserId
-    );
-
     List<OAuthAccount> findAllByUserId(Long userId);
 
     @Modifying(clearAutomatically = true) // delete update 쿼리는 Modifying 추가
