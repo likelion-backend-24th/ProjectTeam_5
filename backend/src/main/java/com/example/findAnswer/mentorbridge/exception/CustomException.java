@@ -1,5 +1,6 @@
 package com.example.findAnswer.mentorbridge.exception;
 
+import com.example.findAnswer.mentorbridge.constants.ErrorCode;
 import lombok.Getter;
 
 @Getter

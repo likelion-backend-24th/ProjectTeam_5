@@ -1,7 +1,7 @@
 package com.example.findAnswer.mentorbridge.service;
 
-import com.example.findAnswer.mentorbridge.domain.Provider;
-import com.example.findAnswer.mentorbridge.domain.Role;
+import com.example.findAnswer.mentorbridge.constants.Provider;
+import com.example.findAnswer.mentorbridge.constants.Role;
 import com.example.findAnswer.mentorbridge.dto.oauth.AuthUser;
 import com.example.findAnswer.mentorbridge.dto.oauth.OAuthUserInfo;
 import com.example.findAnswer.mentorbridge.entity.OAuthAccount;

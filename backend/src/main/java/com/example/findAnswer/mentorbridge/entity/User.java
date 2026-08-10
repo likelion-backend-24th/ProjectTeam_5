@@ -1,6 +1,6 @@
 package com.example.findAnswer.mentorbridge.entity;
 
-import com.example.findAnswer.mentorbridge.domain.Role;
+import com.example.findAnswer.mentorbridge.constants.Role;
 import jakarta.persistence.*;
 import lombok.*;
 

@@ -1,4 +1,4 @@
-package com.example.findAnswer.mentorbridge.domain;
+package com.example.findAnswer.mentorbridge.constants;
 
 /*멘토 신청 상태 정의
 PENDING = 승인 대기중

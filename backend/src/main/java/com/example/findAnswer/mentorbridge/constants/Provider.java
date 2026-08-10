@@ -1,4 +1,4 @@
-package com.example.findAnswer.mentorbridge.domain;
+package com.example.findAnswer.mentorbridge.constants;
 
 public enum Provider {
     GOOGLE,

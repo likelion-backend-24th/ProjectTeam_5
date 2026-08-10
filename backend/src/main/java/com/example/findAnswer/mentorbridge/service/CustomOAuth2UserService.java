@@ -1,11 +1,11 @@
 package com.example.findAnswer.mentorbridge.service;
 
-import com.example.findAnswer.mentorbridge.domain.Provider;
+import com.example.findAnswer.mentorbridge.constants.Provider;
 import com.example.findAnswer.mentorbridge.dto.oauth.AuthUser;
 import com.example.findAnswer.mentorbridge.dto.oauth.CustomOAuth2User;
 import com.example.findAnswer.mentorbridge.dto.oauth.OAuthUserInfo;
 import com.example.findAnswer.mentorbridge.exception.OAuth2AuthException;
-import com.example.findAnswer.mentorbridge.exception.OAuth2ErrorCode;
+import com.example.findAnswer.mentorbridge.constants.OAuth2ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;

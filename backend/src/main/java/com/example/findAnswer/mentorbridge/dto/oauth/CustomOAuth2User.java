@@ -1,6 +1,6 @@
 package com.example.findAnswer.mentorbridge.dto.oauth;
 
-import com.example.findAnswer.mentorbridge.domain.Role;
+import com.example.findAnswer.mentorbridge.constants.Role;
 import com.example.findAnswer.mentorbridge.entity.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

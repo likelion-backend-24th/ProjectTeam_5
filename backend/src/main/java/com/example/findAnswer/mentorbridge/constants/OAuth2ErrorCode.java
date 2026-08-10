@@ -1,4 +1,4 @@
-package com.example.findAnswer.mentorbridge.exception;
+package com.example.findAnswer.mentorbridge.constants;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

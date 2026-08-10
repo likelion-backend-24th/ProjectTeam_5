@@ -1,4 +1,4 @@
-package com.example.findAnswer.mentorbridge.dto.Answer;
+package com.example.findAnswer.mentorbridge.dto.answer;
 
 import com.example.findAnswer.mentorbridge.entity.Answer;
 import lombok.Getter;

@@ -1,6 +1,6 @@
 package com.example.findAnswer.mentorbridge.service;
 
-import com.example.findAnswer.mentorbridge.domain.Role;
+import com.example.findAnswer.mentorbridge.constants.Role;
 import com.example.findAnswer.mentorbridge.dto.oauth.OAuthAccountSnapshot;
 import com.example.findAnswer.mentorbridge.dto.oauth.UserDisconnectEvent;
 import com.example.findAnswer.mentorbridge.dto.user.*;
@@ -20,7 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
-import com.example.findAnswer.mentorbridge.exception.ErrorCode;
+import com.example.findAnswer.mentorbridge.constants.ErrorCode;
 
 import java.util.List;
 

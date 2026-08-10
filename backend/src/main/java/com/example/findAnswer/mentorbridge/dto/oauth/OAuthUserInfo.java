@@ -1,6 +1,6 @@
 package com.example.findAnswer.mentorbridge.dto.oauth;
 
-import com.example.findAnswer.mentorbridge.domain.Provider;
+import com.example.findAnswer.mentorbridge.constants.Provider;
 
 import java.util.Map;
 

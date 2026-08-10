@@ -1,6 +1,6 @@
 package com.example.findAnswer.mentorbridge.entity;
 
-import com.example.findAnswer.mentorbridge.domain.MentorApplicationStatus;
+import com.example.findAnswer.mentorbridge.constants.MentorApplicationStatus;
 import jakarta.persistence.*;
 import lombok.*;
 

@@ -1,6 +1,6 @@
 package com.example.findAnswer.mentorbridge.repository;
 
-import com.example.findAnswer.mentorbridge.domain.MentorApplicationStatus;
+import com.example.findAnswer.mentorbridge.constants.MentorApplicationStatus;
 import com.example.findAnswer.mentorbridge.entity.MentorApplication;
 import org.springframework.data.jpa.repository.JpaRepository;
 

@@ -1,6 +1,6 @@
 package com.example.findAnswer.mentorbridge.dto.user;
 
-import com.example.findAnswer.mentorbridge.domain.Role;
+import com.example.findAnswer.mentorbridge.constants.Role;
 import com.example.findAnswer.mentorbridge.entity.User;
 import lombok.Getter;
 

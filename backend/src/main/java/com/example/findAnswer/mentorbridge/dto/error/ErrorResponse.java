@@ -1,4 +1,4 @@
-package com.example.findAnswer.mentorbridge.exception;
+package com.example.findAnswer.mentorbridge.dto.error;
 
 import lombok.Getter;
 
