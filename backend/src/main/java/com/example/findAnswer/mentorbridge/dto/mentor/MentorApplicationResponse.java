@@ -1,6 +1,6 @@
 package com.example.findAnswer.mentorbridge.dto.mentor;
 
-import com.example.findAnswer.mentorbridge.domain.MentorApplicationStatus;
+import com.example.findAnswer.mentorbridge.constants.MentorApplicationStatus;
 import lombok.Getter;
 
 import java.time.LocalDateTime;

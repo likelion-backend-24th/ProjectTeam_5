@@ -1,13 +1,13 @@
 package com.example.findAnswer.mentorbridge.service;
 
-import com.example.findAnswer.mentorbridge.domain.MentorApplicationStatus;
-import com.example.findAnswer.mentorbridge.domain.Role;
+import com.example.findAnswer.mentorbridge.constants.MentorApplicationStatus;
+import com.example.findAnswer.mentorbridge.constants.Role;
 import com.example.findAnswer.mentorbridge.dto.mentor.MentorApplicationResponse;
 import com.example.findAnswer.mentorbridge.dto.user.UserResponse;
 import com.example.findAnswer.mentorbridge.entity.MentorApplication;
 import com.example.findAnswer.mentorbridge.entity.User;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
-import com.example.findAnswer.mentorbridge.exception.ErrorCode;
+import com.example.findAnswer.mentorbridge.constants.ErrorCode;
 import com.example.findAnswer.mentorbridge.repository.MentorApplicationRepository;
 import com.example.findAnswer.mentorbridge.repository.UserRepository;
 import lombok.RequiredArgsConstructor;

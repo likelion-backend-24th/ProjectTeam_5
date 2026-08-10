@@ -1,4 +1,4 @@
-package com.example.findAnswer.mentorbridge.exception;
+package com.example.findAnswer.mentorbridge.constants;
 
 import org.springframework.http.HttpStatus;
 

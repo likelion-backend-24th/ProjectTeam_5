@@ -1,14 +1,14 @@
 package com.example.findAnswer.mentorbridge.service;
 
-import com.example.findAnswer.mentorbridge.dto.Answer.AnswerCreateRequest;
-import com.example.findAnswer.mentorbridge.dto.Answer.AnswerResponse;
-import com.example.findAnswer.mentorbridge.dto.Answer.AnswerUpdateRequest;
+import com.example.findAnswer.mentorbridge.dto.answer.AnswerCreateRequest;
+import com.example.findAnswer.mentorbridge.dto.answer.AnswerResponse;
+import com.example.findAnswer.mentorbridge.dto.answer.AnswerUpdateRequest;
 import com.example.findAnswer.mentorbridge.entity.Answer;
 import com.example.findAnswer.mentorbridge.entity.Question;
-import com.example.findAnswer.mentorbridge.domain.Role;
+import com.example.findAnswer.mentorbridge.constants.Role;
 import com.example.findAnswer.mentorbridge.entity.User;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
-import com.example.findAnswer.mentorbridge.exception.ErrorCode;
+import com.example.findAnswer.mentorbridge.constants.ErrorCode;
 import com.example.findAnswer.mentorbridge.repository.AnswerRepository;
 import com.example.findAnswer.mentorbridge.repository.QuestionRepository;
 import com.example.findAnswer.mentorbridge.repository.UserRepository;

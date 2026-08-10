@@ -1,9 +1,9 @@
 package com.example.findAnswer.mentorbridge.controller;
 
-import com.example.findAnswer.mentorbridge.dto.Question.QuestionCreateRequest;
-import com.example.findAnswer.mentorbridge.dto.Question.QuestionListResponse;
-import com.example.findAnswer.mentorbridge.dto.Question.QuestionResponse;
-import com.example.findAnswer.mentorbridge.dto.Question.QuestionUpdateRequest;
+import com.example.findAnswer.mentorbridge.dto.question.QuestionCreateRequest;
+import com.example.findAnswer.mentorbridge.dto.question.QuestionListResponse;
+import com.example.findAnswer.mentorbridge.dto.question.QuestionResponse;
+import com.example.findAnswer.mentorbridge.dto.question.QuestionUpdateRequest;
 import com.example.findAnswer.mentorbridge.service.QuestionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

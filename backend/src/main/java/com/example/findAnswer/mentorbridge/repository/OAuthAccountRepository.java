@@ -1,7 +1,7 @@
 package com.example.findAnswer.mentorbridge.repository;
 
 
-import com.example.findAnswer.mentorbridge.domain.Provider;
+import com.example.findAnswer.mentorbridge.constants.Provider;
 import com.example.findAnswer.mentorbridge.entity.OAuthAccount;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;

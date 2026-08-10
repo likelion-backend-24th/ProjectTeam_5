@@ -1,4 +1,4 @@
-package com.example.findAnswer.mentorbridge.domain;
+package com.example.findAnswer.mentorbridge.constants;
 
 /*사용자 권한 정의
 USER = 일반 유저 및 구독 유저

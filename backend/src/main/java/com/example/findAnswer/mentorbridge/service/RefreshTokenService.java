@@ -1,11 +1,11 @@
 package com.example.findAnswer.mentorbridge.service;
 
-import com.example.findAnswer.mentorbridge.domain.Role;
+import com.example.findAnswer.mentorbridge.constants.Role;
 import com.example.findAnswer.mentorbridge.dto.user.TokenResponse;
 import com.example.findAnswer.mentorbridge.entity.RefreshToken;
 import com.example.findAnswer.mentorbridge.entity.User;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
-import com.example.findAnswer.mentorbridge.exception.ErrorCode;
+import com.example.findAnswer.mentorbridge.constants.ErrorCode;
 import com.example.findAnswer.mentorbridge.jwt.JwtTokenProvider;
 import com.example.findAnswer.mentorbridge.repository.RefreshTokenRepository;
 import com.example.findAnswer.mentorbridge.repository.UserRepository;
