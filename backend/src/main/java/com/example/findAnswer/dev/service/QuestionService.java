@@ -35,6 +35,7 @@ public class QuestionService {
                 .user(user)
                 .title(request.getTitle())
                 .content(request.getContent())
+                .category(request.getCategory())
                 .build();
 
         Question savedQuestion = questionRepository.save(question);
@@ -60,6 +61,15 @@ public class QuestionService {
                 .map(QuestionListResponse::from);
     }
 
+    //카테고리별 조회
+    @Transactional(readOnly = true)
+    public Page<QuestionListResponse> getQuestionsByCategory(String category, Pageable pageable) {
+        if (category == null || category.equals("전체")) {
+            return questionRepository.findAll(pageable).map(QuestionListResponse::from);
+        }
+        return questionRepository.findByCategory(category, pageable).map(QuestionListResponse::from);
+    }
+
     // 질문 수정 (작성자 본인만 가능)
     @Transactional
     public QuestionResponse updateQuestion(Long questionId, Long userId, QuestionUpdateRequest request) {
@@ -67,7 +77,7 @@ public class QuestionService {
                 .orElseThrow(() -> new CustomException(ErrorCode.QUESTION_NOT_FOUND));
 
         validateAuthor(question.getUser().getId(), userId);
-        question.update(request.getTitle(), request.getContent());
+        question.update(request.getTitle(), request.getContent(), request.getCategory());
         return QuestionResponse.from(question);
     }
 

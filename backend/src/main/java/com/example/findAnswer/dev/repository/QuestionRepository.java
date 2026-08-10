@@ -15,4 +15,6 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     //제목, 본문으로 질문 검색
     Page<Question> findByTitleContainingOrContentContaining(String title, String content , Pageable pageable);
+
+    Page<Question> findByCategory(String category, Pageable pageable);
 }

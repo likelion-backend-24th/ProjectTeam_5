@@ -18,6 +18,7 @@ public class QuestionResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<AnswerResponse> answers;
+    private String category;
 
     public static QuestionResponse from(Question question) {
         QuestionResponse response = new QuestionResponse();
@@ -27,6 +28,7 @@ public class QuestionResponse {
         response.authorName = question.getUser().getName();
         response.createdAt = question.getCreatedAt();
         response.updatedAt = question.getUpdatedAt();
+        response.category = question.getCategory();
         response.answers = question.getAnswers().stream()
                 .map(AnswerResponse::from)
                 .collect(Collectors.toList());
