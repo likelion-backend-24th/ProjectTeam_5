@@ -1,89 +1,32 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { FaUserLarge } from "react-icons/fa6";
-import { useAuth } from "@/app/contexts/AuthContext";
+import { useProfileActions } from "./useProfileActions";
 import styles from "./page.module.css";
-import * as usersApi from "@/lib/users";
-import { getToken, handleReject, handleViewInfo, handleSaveProfile, handleApplyMentor, handleDeleteAccount, handleApprove } from "@/lib/users";
 
 export default function ProfilePage() {
-  const router = useRouter();
-  const { user, isLoggedIn, loading, logout } = useAuth();
-
-  // 1. 수정 모드 및 폼 상태 (이름, 이메일, 관심 분야)
-  const [isEditing, setIsEditing] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newEmail, setNewEmail] = useState("");
-  const [newInterests, setNewInterests] = useState("");
-  const [interests, setInterests] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // 2. 멘토 신청 상태 (백엔드 상태와 연동하여 새로고침해도 유지됨)
-  const [hasAppliedMentor, setHasAppliedMentor] = useState(false);
-
-  // 3. 관리자(ADMIN) 전용 멘토 신청 대기 목록
-  const [mentorApps, setMentorApps] = useState([]);
-
-
-  const fetchAdminData = useCallback(async () => {
-    const token = getToken();
-    if (user?.role === "ADMIN" && token) {
-      try {
-        const apps = await usersApi.getMentorApplications(token);
-        setMentorApps(apps || []);
-      } catch (err) {
-        console.error("멘토 신청 목록 조회 실패:", err);
-      }
-    }
-  }, [user]);
-
-  // 유저 정보 로딩 및 멘토 신청 상태 복원
-  useEffect(() => {
-    let ignore = false;
-
-    async function loadProfileData() {
-      if (user) {
-        setNewName(user.name || "");
-        setNewEmail(user.email || "");
-        if (user.interests) {
-          setInterests(user.interests);
-          setNewInterests(user.interests);
-        } else {
-          setInterests("백엔드, 멘토링");
-          setNewInterests("백엔드, 멘토링");
-        }
-
-        const token = getToken();
-        if (token) {
-          try {
-            // 새로고침 시에도 멘토 신청 대기 상태를 유지하기 위해 백엔드에서 상태 조회
-            const app = await usersApi.getMyMentorApplication(token);
-            if (!ignore && app && app.status === "PENDING") {
-              setHasAppliedMentor(true);
-            }
-          } catch (err) {
-            if (!ignore) {
-              setHasAppliedMentor(false);
-            }
-          }
-        }
-
-        if (!ignore) {
-          fetchAdminData();
-        }
-      }
-    }
-
-    loadProfileData();
-
-    return () => {
-      ignore = true;
-    };
-  }, [user, fetchAdminData]);
+  const {
+    user,
+    isLoggedIn,
+    loading,
+    isEditing,
+    setIsEditing,
+    cancelEdit,
+    isSubmitting,
+    form,
+    onChange,
+    hasAppliedMentor,
+    mentorApps,
+    handleViewInfo,
+    handleSaveProfile,
+    handleApplyMentor,
+    handleDeleteAccount,
+    handleApprove,
+    handleReject,
+  } = useProfileActions();
 
   if (loading) return <main className={styles.page} />;
+
   if (!isLoggedIn || !user) {
     return (
       <main className={styles.page}>
@@ -94,16 +37,32 @@ export default function ProfilePage() {
     );
   }
 
+  const roleLabel =
+    user.role === "ADMIN"
+      ? "관리자"
+      : user.role === "MENTOR"
+      ? "현직 전문가"
+      : "일반 회원";
+
+  const joinedAt = user.createdAt
+    ? new Date(user.createdAt).toLocaleDateString("ko-KR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : "-";
 
   return (
     <main className={styles.page}>
       <div className={styles.contentGrid}>
-        
+
         {/* ================= 좌측: 내 프로필 카드 ================= */}
         <section className={styles.profileCard}>
           <div className={styles.cardHeading}>
             <h1>내 프로필 (마이페이지)</h1>
-            <span className={styles.privateText}>🔒 개인 정보는 본인만 확인할 수 있습니다</span>
+            <span className={styles.privateText}>
+              🔒 개인 정보는 본인만 확인할 수 있습니다
+            </span>
           </div>
 
           <div className={styles.profileSummary}>
@@ -115,15 +74,15 @@ export default function ProfilePage() {
                 <input
                   type="text"
                   className={styles.nameInput}
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
+                  value={form.name}
+                  onChange={onChange("name")}
                   placeholder="이름"
                 />
               ) : (
                 <h2>{user.name}</h2>
               )}
               <div className={styles.roleLine}>
-                <span>현직 전문가 • MENTOR</span>
+                <span>{roleLabel}</span>
                 <span className={styles.roleBadge}>{user.role}</span>
               </div>
             </div>
@@ -139,23 +98,18 @@ export default function ProfilePage() {
                   <input
                     type="email"
                     className={styles.inlineInput}
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
+                    value={form.email}
+                    onChange={onChange("email")}
+                    placeholder="이메일을 입력하세요"
                   />
                 ) : (
-                  user.email
+                  user.email || "미등록"
                 )}
               </dd>
             </div>
             <div>
               <dt>가입 일시</dt>
-              <dd>
-                {new Date(user.createdAt || Date.now()).toLocaleDateString("ko-KR", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </dd>
+              <dd>{joinedAt}</dd>
             </div>
             <div>
               <dt>관심 분야</dt>
@@ -164,18 +118,40 @@ export default function ProfilePage() {
                   <input
                     type="text"
                     className={styles.inlineInput}
-                    value={newInterests}
-                    onChange={(e) => setNewInterests(e.target.value)}
+                    value={form.interests}
+                    onChange={onChange("interests")}
                     placeholder="예: 백엔드, 프론트엔드"
                   />
                 ) : (
-                  user.interests || interests
+                  user.interests || "-"
                 )}
               </dd>
             </div>
           </dl>
 
-          {/* 일반 유저(USER)이면서 멘토 신청을 진행한 경우에만 배너 노출 */}
+          {/* 이메일 미등록 안내 (카카오 로그인 등) */}
+          {!user.email && !isEditing && (
+            <div className={styles.mentorBanner}>
+              <div className={styles.mentorBannerIcon}>✉️</div>
+              <div className={styles.mentorBannerContent}>
+                <div className={styles.mentorBannerTitle}>
+                  <strong>이메일 미등록</strong>
+                </div>
+                <p>
+                  결제 및 알림 수신을 위해 이메일을 등록해 주세요.{" "}
+                  <button
+                    type="button"
+                    className={styles.linkButton}
+                    onClick={() => setIsEditing(true)}
+                  >
+                    지금 등록하기
+                  </button>
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* 멘토 승인 대기 배너 */}
           {user.role === "USER" && hasAppliedMentor && (
             <div className={styles.mentorBanner}>
               <div className={styles.mentorBannerIcon}>📋</div>
@@ -195,7 +171,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 className={styles.cancelButton}
-                onClick={() => setIsEditing(false)}
+                onClick={cancelEdit}
                 disabled={isSubmitting}
               >
                 취소
@@ -217,7 +193,7 @@ export default function ProfilePage() {
           <h2>프로필 관리</h2>
 
           <div className={styles.managementList}>
-            {/* 1. 조회 정보 버튼 */}
+            {/* 1. 정보 조회 */}
             <div className={styles.managementItem}>
               <div className={styles.itemIcon}>🔍</div>
               <div className={styles.itemContent}>
@@ -233,39 +209,24 @@ export default function ProfilePage() {
               </button>
             </div>
 
-            {/* 2. 수정 버튼 */}
+            {/* 2. 프로필 수정 */}
             <div className={styles.managementItem}>
               <div className={styles.itemIcon}>✏️</div>
               <div className={styles.itemContent}>
                 <strong>수정</strong>
-                <p>이름, 연락처, 관심 분야를 변경할 수 있습니다.</p>
+                <p>이름, 이메일, 관심 분야를 변경할 수 있습니다.</p>
               </div>
               <button
                 type="button"
                 className={styles.primaryButton}
                 onClick={() => setIsEditing(true)}
+                disabled={isEditing}
               >
                 프로필 수정
               </button>
             </div>
 
-            {/* 3. 회원 탈퇴 버튼 */}
-            <div className={`${styles.managementItem} ${styles.dangerItem}`}>
-              <div className={`${styles.itemIcon} ${styles.dangerIcon}`}>👤❌</div>
-              <div className={styles.itemContent}>
-                <strong className={styles.dangerText}>탈퇴</strong>
-                <p>탈퇴 시 계정 정보와 활동 내역은 복구되지 않습니다.</p>
-              </div>
-              <button
-                type="button"
-                className={styles.dangerButton}
-                onClick={handleDeleteAccount}
-              >
-                회원 탈퇴
-              </button>
-            </div>
-
-            {/* 4. 멘토 신청 버튼 */}
+            {/* 3. 멘토 신청 */}
             {user.role === "USER" && !hasAppliedMentor && (
               <div className={styles.managementItem}>
                 <div className={`${styles.itemIcon} ${styles.mentorIcon}`}>🏅</div>
@@ -282,18 +243,36 @@ export default function ProfilePage() {
                 </button>
               </div>
             )}
+
+            {/* 4. 회원 탈퇴 */}
+            <div className={`${styles.managementItem} ${styles.dangerItem}`}>
+              <div className={`${styles.itemIcon} ${styles.dangerIcon}`}>👤❌</div>
+              <div className={styles.itemContent}>
+                <strong className={styles.dangerText}>탈퇴</strong>
+                <p>탈퇴 시 계정 정보와 활동 내역은 복구되지 않습니다.</p>
+              </div>
+              <button
+                type="button"
+                className={styles.dangerButton}
+                onClick={handleDeleteAccount}
+              >
+                회원 탈퇴
+              </button>
+            </div>
           </div>
         </section>
       </div>
 
-      {/* ================= 하단: 관리자(ADMIN) 전용 승인/거절 영역 ================= */}
+      {/* ================= 하단: 관리자 전용 승인/거절 영역 ================= */}
       {user.role === "ADMIN" && (
         <section
           className={styles.profileCard}
           style={{ marginTop: "36px", borderColor: "#10b981" }}
         >
           <div className={styles.cardHeading}>
-            <h1 style={{ color: "#059669" }}>🛡️ 멘토 신청 대기 목록 (관리자 전용)</h1>
+            <h1 style={{ color: "#059669" }}>
+              🛡️ 멘토 신청 대기 목록 (관리자 전용)
+            </h1>
           </div>
 
           {mentorApps.length === 0 ? (
@@ -307,7 +286,7 @@ export default function ProfilePage() {
                   <div className={styles.itemIcon}>👤</div>
                   <div className={styles.itemContent}>
                     <strong>{app.name}</strong>
-                    <p>이메일: {app.email}</p>
+                    <p>이메일: {app.email || "미등록"}</p>
                   </div>
                   <div style={{ display: "flex", gap: "8px" }}>
                     <button
