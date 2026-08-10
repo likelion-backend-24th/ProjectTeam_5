@@ -46,50 +46,50 @@ jobs:
             config --quiet
 
 
+      # postgres로 연결됨
 
+      # - name: Start MySQL
+      #   run: |
+      #     set -euo pipefail
 
-      - name: Start MySQL
-        run: |
-          set -euo pipefail
+      #     docker compose \
+      #       --env-file .env.dev \
+      #       up -d mysql
 
-          docker compose \
-            --env-file .env.dev \
-            up -d mysql
+      # - name: Wait for MySQL
+      #   run: |
+      #     set -euo pipefail
 
-      - name: Wait for MySQL
-        run: |
-          set -euo pipefail
+      #     for i in $(seq 1 30); do
+      #       STATUS=$(docker inspect \
+      #         --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' \
+      #         findanswer-mysql 2>/dev/null || true)
 
-          for i in $(seq 1 30); do
-            STATUS=$(docker inspect \
-              --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' \
-              findanswer-mysql 2>/dev/null || true)
+      #       echo "MySQL status: ${STATUS:-not-created} ($i/30)"
 
-            echo "MySQL status: ${STATUS:-not-created} ($i/30)"
+      #       if [ "$STATUS" = "healthy" ]; then
+      #         echo "MySQL is ready."
+      #         exit 0
+      #       fi
 
-            if [ "$STATUS" = "healthy" ]; then
-              echo "MySQL is ready."
-              exit 0
-            fi
+      #       if [ "$STATUS" = "unhealthy" ]; then
+      #         docker compose \
+      #           --env-file .env.dev \
+      #           logs --tail=100 mysql
 
-            if [ "$STATUS" = "unhealthy" ]; then
-              docker compose \
-                --env-file .env.dev \
-                logs --tail=100 mysql
+      #         exit 1
+      #       fi
 
-              exit 1
-            fi
+      #       sleep 5
+      #     done
 
-            sleep 5
-          done
+      #     echo "MySQL health check timed out."
 
-          echo "MySQL health check timed out."
+      #     docker compose \
+      #       --env-file .env.dev \
+      #       logs --tail=100 mysql
 
-          docker compose \
-            --env-file .env.dev \
-            logs --tail=100 mysql
-
-          exit 1
+      #     exit 1
 
       - name: Build and deploy backend
         run: |
