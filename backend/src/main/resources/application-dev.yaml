@@ -54,8 +54,8 @@ jwt:
 
 app:
   oauth2:
-    failure-redirect-uri: http://localhost:3000/login
-    success-redirect-uri: http://localhost:3000/oauth/callback
+    failure-redirect-uri: ${FAILURE_FRONT_REDIRECT_URI:http://localhost:3000/login}
+    success-redirect-uri: ${SUCCESS_FRONT_REDIRECT_URI:http://localhost:3000/oauth/callback}
 
 
 server:
