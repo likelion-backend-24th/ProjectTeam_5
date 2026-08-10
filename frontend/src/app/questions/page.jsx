@@ -8,10 +8,14 @@ import { getQuestions } from "@/lib/questions";
 
 import styles from "./page.module.css";
 
+const CATEGORIES = ["전체", "개발", "멘토링", "취업", "기타"];
+
 export default function QuestionsPage() {
   const router = useRouter();
 
   const [page, setPage] = useState(0);
+  // 카테고리 상태 추가 (기본값: 전체)
+  const [category, setCategory] = useState("전체");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
@@ -24,7 +28,8 @@ export default function QuestionsPage() {
       setErrorMessage("");
 
       try {
-        const result = await getQuestions(page, 10);
+        // 객체 형태로 page, size, category 전달
+        const result = await getQuestions({ page, size: 10, category });
 
         if (!ignore) {
           setData(result);
@@ -34,9 +39,9 @@ export default function QuestionsPage() {
 
         if (!ignore) {
           setErrorMessage(
-            error.message === "Failed to fetch"
-              ? "질문 목록을 불러오지 못했습니다."
-              : error.message
+              error.message === "Failed to fetch"
+                  ? "질문 목록을 불러오지 못했습니다."
+                  : error.message
           );
         }
       } finally {
@@ -51,7 +56,15 @@ export default function QuestionsPage() {
     return () => {
       ignore = true;
     };
-  }, [page]);
+  }, [page, category]); // category가 변경될 때도 데이터를 다시 불러오도록 의존성 배열에 추가
+
+  // 카테고리 탭 클릭 핸들러
+  const handleCategoryChange = (newCategory) => {
+    if (category !== newCategory) {
+      setCategory(newCategory);
+      setPage(0); // 카테고리가 바뀌면 1페이지(index 0)로 초기화
+    }
+  };
 
   const questions = data?.content ?? [];
   const totalElements = data?.totalElements ?? 0;
@@ -73,100 +86,131 @@ export default function QuestionsPage() {
   };
 
   return (
-    <>
-      <main className={styles.page}>
-        <div className={styles.heading}>
-          <div>
-            <h1>질문 피드</h1>
-            <p>취업 준비생들이 올린 현실적인 질문들을 확인해보세요 (비로그인 조회 가능)</p>
+      <>
+        <main className={styles.page}>
+          <div className={styles.heading}>
+            <div>
+              <h1>질문 피드</h1>
+              <p>취업 준비생들이 올린 현실적인 질문들을 확인해보세요 (비로그인 조회 가능)</p>
+            </div>
+
+            <button
+                type="button"
+                onClick={handleAskClick}
+                className={styles.askButton}
+            >
+              질문하기
+            </button>
           </div>
 
-          <button
-            type="button"
-            onClick={handleAskClick}
-            className={styles.askButton}
-          >
-            질문하기
-          </button>
-        </div>
+          <section className={styles.panel}>
+            {/* 카테고리 탭 버튼 UI */}
+            <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
+              {CATEGORIES.map((cat) => (
+                  <button
+                      key={cat}
+                      type="button"
+                      onClick={() => handleCategoryChange(cat)}
+                      style={{
+                        padding: "6px 16px",
+                        borderRadius: "20px",
+                        border: category === cat ? "none" : "1px solid #e5e7eb",
+                        backgroundColor: category === cat ? "#2867e8" : "#ffffff",
+                        color: category === cat ? "#ffffff" : "#526176",
+                        fontWeight: category === cat ? "700" : "500",
+                        fontSize: "14px",
+                        cursor: "pointer",
+                      }}
+                  >
+                    {cat}
+                  </button>
+              ))}
+            </div>
 
-        <section className={styles.panel}>
-          {loading && <p className={styles.statusText}>불러오는 중...</p>}
+            {loading && <p className={styles.statusText}>불러오는 중...</p>}
 
-          {!loading && errorMessage && (
-            <p className={styles.errorMessage}>{errorMessage}</p>
-          )}
+            {!loading && errorMessage && (
+                <p className={styles.errorMessage}>{errorMessage}</p>
+            )}
 
-          {!loading && !errorMessage && questions.length === 0 && (
-            <p className={styles.statusText}>아직 등록된 질문이 없습니다.</p>
-          )}
+            {!loading && !errorMessage && questions.length === 0 && (
+                <p className={styles.statusText}>아직 등록된 질문이 없습니다.</p>
+            )}
 
-          {!loading && !errorMessage && questions.length > 0 && (
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>질문 제목</th>
-                  <th>작성자</th>
-                  <th>답변수</th>
-                  <th>등록일</th>
-                </tr>
-              </thead>
+            {!loading && !errorMessage && questions.length > 0 && (
+                <table className={styles.table}>
+                  <thead>
+                  <tr>
+                    {/* 분류 열 추가 */}
+                    <th style={{ width: "80px", textAlign: "center" }}>분류</th>
+                    <th>질문 제목</th>
+                    <th>작성자</th>
+                    <th>답변수</th>
+                    <th>등록일</th>
+                  </tr>
+                  </thead>
 
-              <tbody>
-                {questions.map((question) => (
-                  <tr key={question.id}>
-                    <td>
-                      <Link href={`/questions/${question.id}`}>
-                        {question.title}
-                      </Link>
-                    </td>
-                    <td>{question.authorName || question.name || "익명"}</td>
-                    <td>
+                  <tbody>
+                  {questions.map((question) => (
+                      <tr key={question.id}>
+                        {/* 카테고리 데이터 표시 */}
+                        <td style={{ textAlign: "center" }}>
+                      <span style={{ color: "#2867e8", fontSize: "13px", fontWeight: "bold" }}>
+                        [{question.category || "기타"}]
+                      </span>
+                        </td>
+                        <td>
+                          <Link href={`/questions/${question.id}`}>
+                            {question.title}
+                          </Link>
+                        </td>
+                        <td>{question.authorName || question.name || "익명"}</td>
+                        <td>
                       <span className={styles.answerCount}>
                         {question.answerCount ?? 0}개
                       </span>
-                    </td>
-                    <td>{formatDate(question.createdAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+                        </td>
+                        <td>{formatDate(question.createdAt)}</td>
+                      </tr>
+                  ))}
+                  </tbody>
+                </table>
+            )}
 
-          <div className={styles.pagination}>
-            <button
-              type="button"
-              onClick={() => setPage((previous) => Math.max(previous - 1, 0))}
-              disabled={page === 0 || loading}
-            >
-              {"<"}
-            </button>
-
-            {Array.from({ length: totalPages }).map((_, index) => (
+            <div className={styles.pagination}>
               <button
-                key={index}
-                type="button"
-                className={index === page ? styles.pageActive : undefined}
-                onClick={() => setPage(index)}
-                disabled={loading}
+                  type="button"
+                  onClick={() => setPage((previous) => Math.max(previous - 1, 0))}
+                  disabled={page === 0 || loading}
               >
-                {index + 1}
+                {"<"}
               </button>
-            ))}
 
-            <button
-              type="button"
-              onClick={() =>
-                setPage((previous) => Math.min(previous + 1, totalPages - 1))
-              }
-              disabled={page + 1 >= totalPages || loading}
-            >
-              {">"}
-            </button>
-          </div>
-        </section>
-      </main>
-    </>
+              {Array.from({ length: totalPages }).map((_, index) => (
+                  <button
+                      key={index}
+                      type="button"
+                      className={index === page ? styles.pageActive : undefined}
+                      onClick={() => setPage(index)}
+                      disabled={loading}
+                  >
+                    {index + 1}
+                  </button>
+              ))}
+
+              <button
+                  type="button"
+                  onClick={() =>
+                      setPage((previous) => Math.min(previous + 1, totalPages - 1))
+                  }
+                  disabled={page + 1 >= totalPages || loading}
+              >
+                {">"}
+              </button>
+            </div>
+          </section>
+        </main>
+      </>
   );
 }
 

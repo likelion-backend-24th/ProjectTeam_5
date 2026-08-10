@@ -14,13 +14,16 @@ export async function getAnswers(id) {
   });
 }
 
-export function getQuestions({ page = 0, size = 10 }) {
+// 수정된 부분: URL에 category 쿼리 스트링 추가
+export function getQuestions({ page = 0, size = 10, category = "전체" }) {
+  const categoryQuery = category !== "전체" ? `&category=${encodeURIComponent(category)}` : "";
+
   return request(
-    `/api/questions?page=${page}&size=${size}&sort=createdAt,desc`,
-    {
-      method: "GET",
-      fallbackMessage: "질문 목록을 불러오지 못했습니다.",
-    }
+      `/api/questions?page=${page}&size=${size}&sort=createdAt,desc${categoryQuery}`,
+      {
+        method: "GET",
+        fallbackMessage: "질문 목록을 불러오지 못했습니다.",
+      }
   );
 }
 
@@ -47,18 +50,20 @@ export async function deleteAnswer(answerId) {
   });
 }
 
-export async function createQuestion(title, content) {
+// 수정된 부분: category 파라미터 추가 및 body에 포함
+export async function createQuestion(title, content, category) {
   return request("/api/questions", {
     method: "POST",
-    body: { title, content },
+    body: { title, content, category },
     fallbackMessage: "질문 등록에 실패했습니다.",
   });
 }
 
-export async function updateQuestion(id, title, content) {
+// 수정된 부분: category 파라미터 추가 및 body에 포함
+export async function updateQuestion(id, title, content, category) {
   return request(`/api/questions/${id}`, {
     method: "PATCH",
-    body: { title, content },
+    body: { title, content, category },
     fallbackMessage: "질문 수정에 실패했습니다.",
   });
 }

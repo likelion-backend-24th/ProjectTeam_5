@@ -14,6 +14,7 @@ public class QuestionListResponse {
     private String authorName;
     private int answerCount;
     private LocalDateTime createdAt;
+    private String category;
 
     public static QuestionListResponse from(Question question) {
 
@@ -23,6 +24,7 @@ public class QuestionListResponse {
         response.authorName = question.getUser().getName();
         response.answerCount = question.getAnswers().size();
         response.createdAt = question.getCreatedAt();
+        response.category = question.getCategory();
         return response;
     }
 }

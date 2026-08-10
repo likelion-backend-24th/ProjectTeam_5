@@ -115,15 +115,19 @@ export default function ProfilePage() {
               <dt>관심 분야</dt>
               <dd>
                 {isEditing ? (
-                  <input
-                    type="text"
-                    className={styles.inlineInput}
-                    value={form.interests}
-                    onChange={onChange("interests")}
-                    placeholder="예: 백엔드, 프론트엔드"
-                  />
+                    <select
+                        className={styles.inlineInput}
+                        value={form.interests}
+                        onChange={onChange("interests")}
+                    >
+                      <option value="">관심 분야를 선택해주세요</option>
+                      <option value="개발">개발</option>
+                      <option value="멘토링">멘토링</option>
+                      <option value="취업">취업</option>
+                      <option value="기타">기타</option>
+                    </select>
                 ) : (
-                  user.interests || "-"
+                    user.interests || "-"
                 )}
               </dd>
             </div>

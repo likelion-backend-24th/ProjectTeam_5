@@ -39,14 +39,14 @@ public class QuestionController {
     @GetMapping
     public ResponseEntity<Page<QuestionListResponse>> getQuestions(
             @RequestParam(required = false) String keyword,
-            @ParameterObject
-            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
+            @RequestParam(required = false, defaultValue = "전체") String category,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         Page<QuestionListResponse> response;
         if (keyword != null && !keyword.trim().isEmpty()) {
             response = questionService.searchQuestions(keyword, pageable);
         } else {
-            response = questionService.getQuestions(pageable);
+            response = questionService.getQuestionsByCategory(category, pageable);
         }
         return ResponseEntity.ok(response);
     }
