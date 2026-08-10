@@ -1,9 +1,9 @@
 package com.example.findAnswer.dev.service;
 
 import com.example.findAnswer.dev.domain.Provider;
-import com.example.findAnswer.dev.dto.user.AuthUser;
-import com.example.findAnswer.dev.dto.user.CustomOAuth2User;
-import com.example.findAnswer.dev.dto.user.OAuthUserInfo;
+import com.example.findAnswer.dev.dto.oauth.AuthUser;
+import com.example.findAnswer.dev.dto.oauth.CustomOAuth2User;
+import com.example.findAnswer.dev.dto.oauth.OAuthUserInfo;
 import com.example.findAnswer.dev.exception.OAuth2AuthException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;

@@ -22,6 +22,6 @@ public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler 
         String errorCode = request.getParameter("error");
         String errorDescription = request.getParameter("error_description");
 
-        getRedirectStrategy().sendRedirect(request, response, failureRedirectUri + "?errorCode=" + errorCode + "?error=" + errorDescription);
+        getRedirectStrategy().sendRedirect(request, response, failureRedirectUri + "?errorCode=" + errorCode + "&error=" + errorDescription);
     }
 }

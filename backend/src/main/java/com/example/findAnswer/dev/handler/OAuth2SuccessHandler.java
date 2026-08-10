@@ -1,6 +1,6 @@
 package com.example.findAnswer.dev.handler;
 
-import com.example.findAnswer.dev.dto.user.CustomOAuth2User;
+import com.example.findAnswer.dev.dto.oauth.CustomOAuth2User;
 import com.example.findAnswer.dev.dto.user.TokenResponse;
 import com.example.findAnswer.dev.service.RefreshTokenService;
 import jakarta.servlet.ServletException;
