@@ -1,18 +1,23 @@
 package com.example.findAnswer.dev.service;
 
 import com.example.findAnswer.dev.domain.Role;
+import com.example.findAnswer.dev.dto.oauth.OAuthAccountSnapshot;
+import com.example.findAnswer.dev.dto.oauth.UserDisconnectEvent;
 import com.example.findAnswer.dev.dto.user.*;
 import com.example.findAnswer.dev.dto.user.LoginRequest;
 import com.example.findAnswer.dev.dto.user.SignupRequest;
 import com.example.findAnswer.dev.dto.user.TokenResponse;
 import com.example.findAnswer.dev.dto.user.UserResponse;
+import com.example.findAnswer.dev.entity.OAuthAccount;
 import com.example.findAnswer.dev.entity.RefreshToken;
 import com.example.findAnswer.dev.entity.User;
 import com.example.findAnswer.dev.jwt.JwtTokenProvider;
 import com.example.findAnswer.dev.repository.MentorApplicationRepository;
+import com.example.findAnswer.dev.repository.OAuthAccountRepository;
 import com.example.findAnswer.dev.repository.RefreshTokenRepository;
 import com.example.findAnswer.dev.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +25,7 @@ import com.example.findAnswer.dev.exception.CustomException;
 import com.example.findAnswer.dev.exception.ErrorCode;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +38,12 @@ public class UserService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final MentorApplicationRepository mentorApplicationRepository;
     private final RefreshTokenService refreshTokenService;
+
+    private final OAuthAccountRepository oAuthAccountRepository;
+
+    // 탈퇴, 연결 해제 분리하기 위해 사용한다.
+    private final ApplicationEventPublisher applicationEventPublisher;
+
 
     //회원가입
     @Transactional
@@ -100,9 +112,20 @@ public class UserService {
     @Transactional
     public void deleteUser(Long userId) {
         User user = getUserById(userId);
+
+        // provider에 보낼 계정 정보
+        List<OAuthAccountSnapshot> oAuthAccounts = oAuthAccountRepository.findAllByUserId(userId)
+                .stream()
+                .map(account -> new OAuthAccountSnapshot(account.getProvider().toString(), account.getProviderUserId()))
+                .toList();
+
         mentorApplicationRepository.deleteByUserId(userId);
         refreshTokenRepository.deleteByUserId(userId);
+        oAuthAccountRepository.deleteByUserId(userId); // DB에서 삭제
         userRepository.delete(user);
+
+        // provider에 삭제 요청 보내야됨
+        applicationEventPublisher.publishEvent(new UserDisconnectEvent(userId, oAuthAccounts));
     }
 
     //사용자 예외처리
