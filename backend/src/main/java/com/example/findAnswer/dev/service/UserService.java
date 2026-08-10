@@ -31,6 +31,7 @@ public class UserService {
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
     private final MentorApplicationRepository mentorApplicationRepository;
+    private final RefreshTokenService refreshTokenService;
 
     //회원가입
     @Transactional
@@ -47,6 +48,7 @@ public class UserService {
     }
 
     //로그인
+    @Transactional // 리프레시 토큰 저장
     public TokenResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.AUTH_INVALID_CREDENTIALS));
@@ -55,17 +57,7 @@ public class UserService {
             throw new CustomException(ErrorCode.AUTH_INVALID_CREDENTIALS);
         }
 
-        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(), user.getRole());
-        String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
-        LocalDateTime expiresAt = LocalDateTime.now().plusDays(14);
-
-        refreshTokenRepository.findById(user.getId())
-                .ifPresentOrElse(
-                        existing -> existing.updateToken(refreshToken, expiresAt),
-                        () -> refreshTokenRepository.save(new RefreshToken(user.getId(), refreshToken, expiresAt))
-                );
-
-        return new TokenResponse(accessToken, refreshToken);
+        return refreshTokenService.issueTokens(user.getId(), user.getEmail(), user.getRole());
     }
 
     //프로필 조회
@@ -109,6 +101,7 @@ public class UserService {
     public void deleteUser(Long userId) {
         User user = getUserById(userId);
         mentorApplicationRepository.deleteByUserId(userId);
+        refreshTokenRepository.deleteByUserId(userId);
         userRepository.delete(user);
     }
 
@@ -119,36 +112,7 @@ public class UserService {
     }
 
 
-    @Transactional
-    public TokenResponse reissue(String refreshToken) {
-        if (refreshToken == null) {
-            throw new CustomException(ErrorCode.AUTH_REFRESH_INVALID);
-        }
-
-        Long userId;
-        try {
-            userId = Long.valueOf(jwtTokenProvider.parseClaims(refreshToken).getSubject());
-        } catch (Exception e) {
-            throw new CustomException(ErrorCode.AUTH_REFRESH_INVALID);
-        }
-
-        RefreshToken saved = refreshTokenRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.AUTH_REFRESH_INVALID));
-
-        if (!saved.getToken().equals(refreshToken)) {
-            throw new CustomException(ErrorCode.AUTH_REFRESH_INVALID);
-        }
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.AUTH_REFRESH_INVALID));
-
-        String newAccessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(), user.getRole());
-        String newRefreshToken = jwtTokenProvider.createRefreshToken(user.getId());
-        saved.updateToken(newRefreshToken, LocalDateTime.now().plusDays(14));
-
-        return new TokenResponse(newAccessToken, newRefreshToken);
-    }
-
+    @Transactional // refreshTokenRepository.deleteById(userId);
     public void logout(String refreshToken) {
         if (refreshToken == null) {
             return;
@@ -159,7 +123,7 @@ public class UserService {
         } catch (Exception e) {
             return;
         }
-        refreshTokenRepository.deleteById(userId);
+        refreshTokenRepository.deleteByUserId(userId);
     }
 
 

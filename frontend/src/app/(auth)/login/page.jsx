@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
 
 import { useAuth } from "@/app/contexts/AuthContext";
+import SocialLoginButtons from "@/app/oauth/SocialLoginButtons";
+import { EyeIcon, EyeOffIcon } from "@/components/Icons/Icons";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -141,51 +143,13 @@ export default function LoginPage() {
           </button>
         </form>
 
+        <SocialLoginButtons/>
+
         <div className={styles.signup}>
           <span>계정이 없으신가요?</span>
           <Link href="/signup">회원가입 하기</Link>
         </div>
       </section>
     </main>
-  );
-}
-
-function EyeIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="22"
-      height="22"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-function EyeOffIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="22"
-      height="22"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="m3 3 18 18" />
-      <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
-      <path d="M9.9 4.2A10.6 10.6 0 0 1 12 4c6.5 0 10 8 10 8a18.4 18.4 0 0 1-2.1 3.3" />
-      <path d="M6.6 6.6C3.7 8.4 2 12 2 12s3.5 8 10 8a9.8 9.8 0 0 0 4.2-.9" />
-    </svg>
   );
 }

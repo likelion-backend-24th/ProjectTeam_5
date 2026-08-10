@@ -1,4 +1,3 @@
-// src/contexts/AuthContext.jsx
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
@@ -28,6 +27,14 @@ export function AuthProvider({ children }) {
             .finally(() => setLoading(false));
     }, []);
 
+
+    const loginWithToken = useCallback(async (accessToken) => {
+        localStorage.setItem("accessToken", accessToken);
+        const me = await authApi.getMe(accessToken);
+        setUser(me);
+        return me;
+    }, []);
+
     const login = useCallback(async (email, password) => {
         const { accessToken } = await authApi.login({ email, password });
         localStorage.setItem("accessToken", accessToken);
@@ -42,8 +49,8 @@ export function AuthProvider({ children }) {
     }, []);
 
     const value = useMemo(
-        () => ({ user, userId: user?.id, isLoggedIn: !!user, loading, login, logout }),
-        [user, loading, login, logout]
+        () => ({ user, userId: user?.id, isLoggedIn: !!user, loading, login, loginWithToken, logout }),
+        [user, loading, login, loginWithToken, logout]
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

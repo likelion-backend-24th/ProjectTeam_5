@@ -12,9 +12,44 @@ spring:
       hibernate:
         format_sql: false
 
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - profile
+              - email
 
+          kakao:
+            client-id: ${KAKAO_REST_API_KEY}
+            client-secret: ${KAKAO_CLIENT_SECRET}
+            client-name: Kakao
+            authorization-grant-type: authorization_code
+            client-authentication-method: client_secret_post
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope:
+              - profile_nickname
+#              - account_email
+
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
 
 jwt:
   secret: ${JWT_SECRET_KEY}
   access-token-expiration-ms: ${JWT_ACCESS_TOKEN_EXPIRATION_MS:900000}
   refresh-token-expiration-ms: ${JWT_REFRESH_TOKEN_EXPIRATION_MS:1209600000}
+
+app:
+  oauth2:
+    success-redirect-uri: https://like-lion-team5-find-answer.vercel.app/oauth/callback
+    failure-redirect-uri: https://like-lion-team5-find-answer.vercel.app/login
+
+server:
+  forward-headers-strategy: framework

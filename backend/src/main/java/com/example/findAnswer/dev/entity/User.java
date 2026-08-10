@@ -19,10 +19,10 @@ public class User extends BaseTimeEntity{
 
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(nullable = true, unique = true, length = 100) // oauth 카카오 로그인 시 이메일 안 들어옴
     private String email;
 
-    @Column(nullable = true, length = 255)
+    @Column(length = 255) // oauth 로그인 시 비밀번호 없음
     private String password;
 
     @Column(nullable = false, length = 50)
