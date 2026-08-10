@@ -1,4 +1,4 @@
-package com.example.findAnswer.dev.dto.user;
+package com.example.findAnswer.dev.dto.oauth;
 
 import com.example.findAnswer.dev.domain.Role;
 
