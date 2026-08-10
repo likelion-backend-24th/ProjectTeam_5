@@ -40,6 +40,7 @@ public class QuestionController {
     public ResponseEntity<Page<QuestionListResponse>> getQuestions(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false, defaultValue = "전체") String category,
+            @ParameterObject
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         Page<QuestionListResponse> response;
