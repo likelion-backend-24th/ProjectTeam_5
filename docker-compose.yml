@@ -12,10 +12,10 @@ services:
       - "8080"
 
     env_file:
-      - .env.dev
+      - .env.prod
 
     environment:
-      SPRING_PROFILES_ACTIVE: dev
+      SPRING_PROFILES_ACTIVE: prod
 
     depends_on:
       mysql:
