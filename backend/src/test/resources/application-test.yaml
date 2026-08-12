@@ -18,15 +18,15 @@ spring:
       client:
         registration:
           google:
-            client-id: ${GOOGLE_CLIENT_ID}
-            client-secret: ${GOOGLE_CLIENT_SECRET}
+            client-id: ${GOOGLE_CLIENT_ID:google_client_id}
+            client-secret: ${GOOGLE_CLIENT_SECRET:google_client_secret}
             scope:
               - profile
               - email
 
           kakao:
-            client-id: ${KAKAO_REST_API_KEY}
-            client-secret: ${KAKAO_CLIENT_SECRET}
+            client-id: ${KAKAO_REST_API_KEY:kakao_rest_api_key}
+            client-secret: ${KAKAO_CLIENT_SECRET:kakao_client_secret}
             client-name: Kakao
             authorization-grant-type: authorization_code
             client-authentication-method: client_secret_post
@@ -55,3 +55,7 @@ app:
 
 kakao:
   admin-key: kakao-admin-key-secret
+
+cloudinary:
+  url: ${CLOUDINARY_URL:cloudinary://key:secret@cloudname}          # cloudinary://key:secret@cloudname
+  folder: findanswer/posts

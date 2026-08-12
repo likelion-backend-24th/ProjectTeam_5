@@ -50,11 +50,11 @@ export async function deleteAnswer(answerId) {
   });
 }
 
-// 수정된 부분: category 파라미터 추가 및 body에 포함
-export async function createQuestion(title, content, category) {
+// 수정된 부분: category 파라미터 추가 및 body에 포함, attachmentIds 추가
+export async function createQuestion(title, content, category, attachmentIds = []) {
   return request("/api/questions", {
     method: "POST",
-    body: { title, content, category },
+    body: { title, content, category, attachmentIds },
     fallbackMessage: "질문 등록에 실패했습니다.",
   });
 }

@@ -35,6 +35,11 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         AuthUser authUser = oAuthAccountService.loginOrCreate(provider, info);
 
+
+        if (authUser.isBlocked()) {
+            throw new OAuth2AuthException(OAuth2ErrorCode.USER_BLOCKED);
+        }
+
         return new CustomOAuth2User(authUser.id(), authUser.email(), authUser.role(), oAuthUser.getAttributes());
     }
 }

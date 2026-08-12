@@ -18,10 +18,10 @@ public class User extends BaseTimeEntity{
 
     private Long id;
 
-    @Column(nullable = true, unique = true, length = 100) // oauth 카카오 로그인 시 이메일 안 들어옴
+    @Column(nullable = true, unique = true, length = 100)
     private String email;
 
-    @Column(length = 255) // oauth 로그인 시 비밀번호 없음
+    @Column(length = 255)
     private String password;
 
     @Column(nullable = false, length = 50)
@@ -34,6 +34,9 @@ public class User extends BaseTimeEntity{
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private Role role;
+
+    @Column(nullable = false)
+    private boolean blocked = false;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<MentorApplication> mentorApplications = new ArrayList<>();
@@ -57,4 +60,15 @@ public class User extends BaseTimeEntity{
         return new User(email, null, name, role);
     }
 
+    public void block() {
+        this.blocked = true;
+    }
+
+    public void unblock() {
+        this.blocked = false;
+    }
+
+    public boolean isBlocked() {
+        return this.blocked;
+    }
 }

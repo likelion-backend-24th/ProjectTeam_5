@@ -3,14 +3,18 @@ package com.example.findAnswer.mentorbridge.service;
 import com.example.findAnswer.mentorbridge.dto.question.*;
 import com.example.findAnswer.mentorbridge.entity.Question;
 import com.example.findAnswer.mentorbridge.entity.QuestionLike;
+import com.example.findAnswer.mentorbridge.entity.QuestionAttachmentFile;
 import com.example.findAnswer.mentorbridge.entity.User;
 import com.example.findAnswer.mentorbridge.constants.Role;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
 import com.example.findAnswer.mentorbridge.constants.ErrorCode;
 import com.example.findAnswer.mentorbridge.repository.QuestionLikeRepository;
+import com.example.findAnswer.mentorbridge.repository.QuestionAttachmentFileRepository;
 import com.example.findAnswer.mentorbridge.repository.QuestionRepository;
 import com.example.findAnswer.mentorbridge.repository.UserRepository;
+import com.example.findAnswer.mentorbridge.storage.AttachmentStorage;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -18,6 +22,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
+import java.util.ArrayList;
+import java.util.List;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -26,6 +34,11 @@ public class QuestionService {
     private final QuestionRepository questionRepository;
     private final UserRepository userRepository;
     private final QuestionLikeRepository questionLikeRepository;
+    private final QuestionAttachmentFileRepository questionAttachmentFileRepository;
+    private final AttachmentStorage attachmentStorage;
+
+    // Cloudinary 전송 시 자동 포맷/품질 최적화
+    private static final String IMAGE_TRANSFORM = "f_auto,q_auto";
 
     // 질문 등록
     @Transactional
@@ -41,7 +54,20 @@ public class QuestionService {
                 .build();
 
         Question savedQuestion = questionRepository.save(question);
-        return QuestionResponse.from(savedQuestion);
+
+        List<String> imageUrls = new ArrayList<>();
+        for(Long attachmentId : request.getAttachmentIds()) {
+            QuestionAttachmentFile file = questionAttachmentFileRepository.findById(attachmentId)
+                    .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+
+            if(!file.isOwnedBy(userId)){
+                throw new CustomException(ErrorCode.ACCESS_DENIED);
+            }
+
+            file.attachedToQuestion(savedQuestion);
+            imageUrls.add(attachmentStorage.publicUrl(file.getStorageKey(), IMAGE_TRANSFORM));
+        }
+        return QuestionResponse.from(savedQuestion, imageUrls);
     }
 
     // 질문 상세 조회 (답변 목록 포함)
@@ -53,7 +79,15 @@ public class QuestionService {
         if (currentUserId != null) {
             isLiked = questionLikeRepository.existsByQuestion_IdAndUser_Id(questionId, currentUserId);
         }
-        return QuestionResponse.from(question, isLiked);
+        return QuestionResponse.from(question, imageUrlsOf(question), isLiked);
+    }
+
+    // 질문에 연결된(ATTACHED) 첨부의 CDN URL 목록 생성
+    private List<String> imageUrlsOf(Question question) {
+        return question.getQuestionAttachmentFiles().stream()
+                .filter(QuestionAttachmentFile::isAttached)
+                .map(file -> attachmentStorage.publicUrl(file.getStorageKey(), IMAGE_TRANSFORM))
+                .toList();
     }
 
     // 질문 전체 목록 조회 (페이징)
@@ -122,7 +156,22 @@ public class QuestionService {
                 .orElseThrow(() -> new CustomException(ErrorCode.QUESTION_NOT_FOUND));
 
         validateAuthorOrAdmin(question.getUser().getId(), userId);
-        questionRepository.delete(question);
+
+        // 첨부 먼저 정리: (1) Cloudinary 원본 삭제 (2) DB 행 삭제 → (3) 질문 삭제.
+        // 순서 중요 — question_attachment_files.question_id 가 questions(id)를 FK로 참조하므로
+        // 질문을 먼저 지우면 FK 위반이 난다.
+        List<QuestionAttachmentFile> attachments =
+                questionAttachmentFileRepository.findByQuestion(question);
+        for (QuestionAttachmentFile file : attachments) {
+            try {
+                attachmentStorage.delete(file.getStorageKey());   // 외부 저장소는 실패해도 삭제는 진행
+            } catch (RuntimeException e) {
+                log.warn("Cloudinary 원본 삭제 실패(무시하고 진행): storageKey={}", file.getStorageKey(), e);
+            }
+        }
+        questionAttachmentFileRepository.deleteAll(attachments);
+
+        questionRepository.delete(question);   // answers 는 cascade+orphanRemoval 로 함께 삭제됨
     }
 
     // 작성자 본인 검증

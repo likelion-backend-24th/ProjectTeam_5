@@ -24,12 +24,10 @@ public class QuestionResponse {
 
     @JsonProperty("isLiked")
     private boolean isLiked;
+    private List<String> imageUrls;   // 첨부 이미지 CDN URL 목록 (없으면 빈 리스트)
 
-    public static QuestionResponse from(Question question) {
-        return from(question, false); // 기본값 false 전달
-    }
-
-    public static QuestionResponse from(Question question, boolean isLiked) {
+    // 이미지 URL은 storageKey로부터 서비스에서 생성해 넘겨준다.
+    public static QuestionResponse from(Question question, List<String> imageUrls, boolean isLiked) {
         QuestionResponse response = new QuestionResponse();
         response.id = question.getId();
         response.title = question.getTitle();
@@ -43,6 +41,11 @@ public class QuestionResponse {
                 .collect(Collectors.toList());
         response.likeCount = question.getLikeCount();
         response.isLiked = isLiked;
+        response.imageUrls = imageUrls == null ? List.of() : imageUrls;
         return response;
+    }
+
+    public static QuestionResponse from(Question question) {
+        return from(question, List.of(), false);
     }
 }

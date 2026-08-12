@@ -177,50 +177,125 @@ Base URL: `/api`
 
 ---
 
-## 🚀 시작하기
+## ⚙️ 로컬 실행 방법 (Getting Started)
 
 ### 사전 준비
-- Java 17
-- Node.js (Next.js 16 지원 버전)
-- Docker & Docker Compose (선택)
-- PostgreSQL 또는 MySQL
+- **Java 17**
+- **Node.js** (Next.js 16 지원 버전)
+- **Docker & Docker Compose** (로컬 DB 구동용 · 선택)
+- **PostgreSQL** 로컬 인스턴스 (또는 아래 Docker 방식)
 
-### 1. Backend 실행
+> ⚠️ **중요 — 로컬 DB 설정 필수**
+> `backend/src/main/resources/application-dev.yaml`의 DB 기본값은 **배포 서버(Supabase PostgreSQL)** 를 가리키고 있습니다.
+> 로컬에서 실행할 때는 아래처럼 **환경변수로 로컬 DB 정보를 오버라이드**해서 배포 DB에 직접 연결되지 않도록 해야 합니다.
+> (dev 프로필은 PostgreSQL 드라이버를 사용하므로, 로컬 DB도 **PostgreSQL**로 준비하는 것을 권장합니다.)
 
+---
+
+### 1. 로컬 데이터베이스 준비 (PostgreSQL)
+
+Docker로 로컬 PostgreSQL을 간단히 띄울 수 있습니다.
+
+```bash
+docker run -d --name findanswer-postgres \
+  -e POSTGRES_DB=findanswer \
+  -e POSTGRES_USER=findanswer \
+  -e POSTGRES_PASSWORD=findanswer123 \
+  -p 5432:5432 \
+  postgres:16
+```
+
+> 이미 로컬에 PostgreSQL이 설치되어 있다면 `findanswer` 데이터베이스만 생성해 두면 됩니다.
+> `ddl-auto: update` 설정이라 테이블은 애플리케이션 실행 시 자동 생성됩니다.
+
+---
+
+### 2. Backend 실행
+
+**환경변수로 로컬 DB를 지정**한 뒤 실행합니다. (지정하지 않으면 배포 DB에 붙으니 주의)
+
+**macOS / Linux (bash)**
 ```bash
 cd backend
 
-# 환경변수 설정 (예시 — 실제 값은 .env 또는 실행 환경에 주입)
-# DB_HOST, DB_PORT, DB_NAME, DB_USERNAME, DB_PASSWORD
-# JWT_SECRET_KEY
-# GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
-# KAKAO_REST_API_KEY, KAKAO_CLIENT_SECRET, KAKAO_ADMIN_KEY
+export DB_HOST=localhost
+export DB_PORT=5432
+export DB_NAME=findanswer
+export DB_USERNAME=findanswer
+export DB_PASSWORD=findanswer123
+export JWT_SECRET_KEY=local-dev-secret-please-change-me-32chars-min
+
+# OAuth 로그인을 테스트하지 않는다면 아래는 생략 가능 (일반 로그인/회원가입은 정상 동작)
+# export GOOGLE_CLIENT_ID=...   export GOOGLE_CLIENT_SECRET=...
+# export KAKAO_REST_API_KEY=... export KAKAO_CLIENT_SECRET=... export KAKAO_ADMIN_KEY=...
 
 ./gradlew bootRun
 ```
 
-기본 프로필은 `dev`이며, 미설정 시 개발용 기본값으로 동작합니다. 서버는 `8080` 포트에서 실행됩니다.
+**Windows (PowerShell)**
+```powershell
+cd backend
 
-### 2. Frontend 실행
+$env:DB_HOST="localhost"
+$env:DB_PORT="5432"
+$env:DB_NAME="findanswer"
+$env:DB_USERNAME="findanswer"
+$env:DB_PASSWORD="findanswer123"
+$env:JWT_SECRET_KEY="local-dev-secret-please-change-me-32chars-min"
+
+./gradlew bootRun
+```
+
+- 기본 프로필은 `dev`이며, 서버는 **`http://localhost:8080`** 에서 실행됩니다.
+- API 문서: **`http://localhost:8080/swagger-ui/index.html`**
+- 헬스체크: **`http://localhost:8080/health`**
+
+> 💡 OAuth 관련 환경변수를 생략하면 개발용 더미 값으로 부팅되므로 서버는 정상 기동됩니다. 단, 실제 구글/카카오 소셜 로그인은 각 플랫폼에서 발급받은 키를 넣어야 동작합니다.
+
+---
+
+### 3. Frontend 실행
 
 ```bash
 cd frontend
 npm install
 
-# .env.local
-# NEXT_PUBLIC_API_URL=http://localhost:8080
+# .env.local 생성
+echo "NEXT_PUBLIC_API_URL=http://localhost:8080" > .env.local
 
 npm run dev
 ```
 
-프론트엔드는 `3000` 포트에서 실행됩니다.
+- 프론트엔드는 **`http://localhost:3000`** 에서 실행됩니다.
+- 백엔드 CORS 허용 목록에 `http://localhost:3000`이 포함되어 있어 별도 설정 없이 연동됩니다.
 
-### 3. Docker Compose로 실행 (Backend + DB + Nginx)
+---
+
+### 4. (선택) Docker Compose로 한 번에 실행
+
+`backend + MySQL + Nginx + Certbot` 구성을 컨테이너로 실행합니다.
 
 ```bash
-# .env.dev 파일에 DB_NAME, DB_USERNAME, DB_PASSWORD, DB_ROOT_PASSWORD 등 설정
+# 루트에 .env.dev 파일 작성
+#   DB_NAME=findanswer
+#   DB_USERNAME=findanswer
+#   DB_PASSWORD=findanswer123
+#   DB_ROOT_PASSWORD=rootpassword
+#   JWT_SECRET_KEY=... (그 외 OAuth 키 등)
+
 docker compose up -d
 ```
+
+> ℹ️ 이 방식은 Nginx 리버스 프록시를 포함한 배포에 가까운 구성입니다. 프런트엔드까지 함께 붙여 빠르게 확인하려면 위의 **1~3단계(로컬 개별 실행)** 방식을 권장합니다.
+
+---
+
+### ✅ 실행 확인 체크리스트
+
+1. `http://localhost:8080/health` 응답 확인 → 백엔드 정상 기동
+2. `http://localhost:8080/swagger-ui/index.html` 접속 → API 문서 확인
+3. 프론트 `http://localhost:3000`에서 회원가입 → 로그인 → 질문 작성 흐름 테스트
+4. 로그 상단의 datasource URL이 **`localhost`(로컬 DB)** 로 찍히는지 확인 (배포 DB가 아닌지)
 
 ---
 
@@ -253,22 +328,15 @@ docker compose up -d
 ## 👥 팀
 
 멋쟁이사자처럼 백엔드 24기 — 5팀 (FindAnswer)
-
-
 | 이름 | 역할 |
 |--|---|
 | 김선우 | 팀장 |
 | 이상민 | 부팀장 |
 | 박준성 | 팀원 |
 | 이동건 | 팀원 |
-
-
 ---
 
-## main 브랜치를 참조하여 확인하시면 됩니다.
-
 ⚙️ 로컬 실행 방법 (Getting Started)
-
 
 환경 변수 설정
    - 백엔드 .env.dev 파일 생성 후 데이터베이스 및 OAuth 키 설정

@@ -66,13 +66,35 @@ export default function Header() {
           >
             내 프로필
           </Link>
+
+          {/* 🔥 관리자(ADMIN) 역할일 때만 노출되는 탭 */}
+          {!loading && isLoggedIn && user?.role === "ADMIN" && (
+            <Link
+              href="/admin"
+              className={
+                pathname?.startsWith("/admin") ? styles.navActive : undefined
+              }
+            >
+              관리자
+            </Link>
+          )}
         </nav>
 
         <div className={styles.authArea}>
           {isLoggedIn ? (
             <>
-              <span>{user?.name}</span>
-              <button onClick={handleLogout}>로그아웃</button>
+              <div className={styles.userInfo}>
+                <span>{user?.name}님</span>
+                {user?.role === "ADMIN" && (
+                  <span className={styles.badge}>ADMIN</span>
+                )}
+                {user?.role === "MENTOR" && (
+                  <span className={styles.badge}>MENTOR</span>
+                )}
+              </div>
+              <button type="button" onClick={handleLogout}>
+                로그아웃
+              </button>
             </>
           ) : (
             <Link href="/login">로그인</Link>
