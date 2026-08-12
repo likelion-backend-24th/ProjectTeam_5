@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 import { getQuestion, updateQuestion } from "@/lib/questions";
+import { uploadImage, validateImage } from "@/lib/attachments";
 
 import styles from "../../new/form.module.css";
 
@@ -18,16 +19,37 @@ export default function EditQuestionPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const [existingImages, setExistingImages] = useState([]); // [{ attachId, url }] 유지 대상
+  const [newFiles, setNewFiles] = useState([]); // 새로 올릴 File[]
+
+  const contentRef = useRef(null);
+
+  // 커서 위치에 마크다운 코드블록(```java ... ```)을 삽입
+  const insertCodeBlock = () => {
+    const el = contentRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const selected = content.slice(start, end);
+    const snippet = "```java\n" + (selected || "여기에 코드") + "\n```\n";
+    setContent(content.slice(0, start) + snippet + content.slice(end));
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + "```java\n".length;
+      el.setSelectionRange(pos, pos + (selected ? selected.length : 6));
+    });
+  };
+
   useEffect(() => {
     let ignore = false;
 
+    // getQuestion 로드 시 기존 이미지도 세팅
     getQuestion(id)
       .then((question) => {
-        if (!ignore) {
-          setTitle(question.title || "");
-          setCategory(question.category || "개발");
-          setContent(question.content || "");
-        }
+        setTitle(question.title || "");
+        setCategory(question.category || "개발");
+        setContent(question.content || "");
+        setExistingImages(question.images || []); // ★ STEP 1에서 바뀐 형태
       })
       .catch((error) => {
         if (!ignore) setErrorMessage(error.message);
@@ -56,14 +78,27 @@ export default function EditQuestionPage() {
     setSubmitting(true);
 
     try {
-      await updateQuestion(id, title, content, category);
+      // 1) 새로 추가한 파일만 지금 업로드 → 새 attachId
+      const uploaded = await Promise.all(newFiles.map((f) => uploadImage(f)));
+      const newIds = uploaded.map((u) => u.attachId);
+
+      // 2) 유지할 기존 id + 새 id = 최종 목록
+      const attachmentIds = [
+        ...existingImages.map((img) => img.attachId),
+        ...newIds,
+      ];
+
+      // 3) 수정 요청
+      await updateQuestion(id, title, content, category, attachmentIds);
       router.push(`/questions/${id}`);
     } catch (error) {
       setSubmitting(false);
 
       // 2. 백엔드에서 인증 관련 에러(401 또는 403)를 보낸 경우
       if (error.status === 401 || error.status === 403) {
-        alert("로그인 세션이 만료되었거나 권한이 없습니다. 다시 로그인해주세요.");
+        alert(
+          "로그인 세션이 만료되었거나 권한이 없습니다. 다시 로그인해주세요.",
+        );
         router.push("/login");
         return;
       }
@@ -72,6 +107,25 @@ export default function EditQuestionPage() {
       setErrorMessage(error.message || "질문 수정 중 오류가 발생했습니다.");
     }
   };
+
+  // 기존 이미지 제거(화면에서만 빼고, 저장 시 최종 목록에서 빠지면 백엔드가 삭제)
+  const removeExisting = (attachId) =>
+    setExistingImages((prev) => prev.filter((img) => img.attachId !== attachId));
+
+  // 새 파일 선택(검증만, 업로드는 저장 시)
+  const handleFileChange = (event) => {
+    const selected = Array.from(event.target.files || []);
+    event.target.value = "";
+    try {
+      selected.forEach(validateImage);
+      setNewFiles((prev) => [...prev, ...selected]);
+    } catch (err) {
+      setErrorMessage(err.message);
+    }
+  };
+
+  const removeNewFile = (index) =>
+    setNewFiles((prev) => prev.filter((_, i) => i !== index));
 
   if (loading) {
     return (
@@ -128,26 +182,111 @@ export default function EditQuestionPage() {
 
           <div className={styles.field}>
             <div className={styles.fieldHeader}>
-              <label htmlFor="content">질문 내용</label>
-              <span>{content.length}/5000</span>
+              <label htmlFor="content">질문 내용 (마크다운)</label>
+              <span>
+                <button
+                  type="button"
+                  onClick={insertCodeBlock}
+                  style={{ marginRight: 8 }}
+                >
+                  &lt;/&gt; 코드블록
+                </button>
+                {content.length}/20000
+              </span>
             </div>
             <textarea
               id="content"
+              ref={contentRef}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              maxLength={5000}
-              rows={8}
+              maxLength={20000}
+              rows={10}
+              style={{ fontFamily: "monospace" }}
               required
             />
           </div>
 
-          {/* 파일 업로드는 백엔드 미지원, UI만 유지 */}
           <div className={styles.field}>
-            <label>파일 첨부</label>
-            <input type="file" disabled />
+            <label htmlFor="images">파일 첨부 (이미지, 최대 5MB)</label>
+            <input
+              id="images"
+              type="file"
+              accept="image/png,image/jpeg,image/gif,image/webp"
+              multiple
+              onChange={handleFileChange}
+              disabled={submitting}
+            />
+
+            {/* 기존 이미지 (서버 URL) */}
+            {existingImages.length > 0 && (
+              <ul
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                  listStyle: "none",
+                  padding: 0,
+                }}
+              >
+                {existingImages.map((img) => (
+                  <li key={img.attachId} style={{ position: "relative" }}>
+                    <img
+                      src={img.url}
+                      alt=""
+                      width={96}
+                      height={96}
+                      style={{ objectFit: "cover", borderRadius: 6 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeExisting(img.attachId)}
+                      aria-label="삭제"
+                      style={{ position: "absolute", top: 2, right: 2 }}
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* 새로 추가한 파일 (로컬 미리보기) */}
+            {newFiles.length > 0 && (
+              <ul
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                  listStyle: "none",
+                  padding: 0,
+                }}
+              >
+                {newFiles.map((file, index) => (
+                  <li key={index} style={{ position: "relative" }}>
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt={file.name}
+                      width={96}
+                      height={96}
+                      style={{ objectFit: "cover", borderRadius: 6 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeNewFile(index)}
+                      aria-label="삭제"
+                      style={{ position: "absolute", top: 2, right: 2 }}
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
-          {errorMessage && <p className={styles.errorMessage}>{errorMessage}</p>}
+          {errorMessage && (
+            <p className={styles.errorMessage}>{errorMessage}</p>
+          )}
 
           <div className={styles.actions}>
             <button
@@ -157,7 +296,11 @@ export default function EditQuestionPage() {
             >
               취소
             </button>
-            <button type="submit" className={styles.submitButton} disabled={submitting}>
+            <button
+              type="submit"
+              className={styles.submitButton}
+              disabled={submitting}
+            >
               {submitting ? "저장 중..." : "질문 수정 완료"}
             </button>
           </div>

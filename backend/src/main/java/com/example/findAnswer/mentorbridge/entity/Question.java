@@ -27,9 +27,6 @@ public class Question extends BaseTimeEntity{
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<QuestionCodeFile> questionCodeFiles = new ArrayList<>();
-
     @OneToMany(mappedBy = "question")
     private List<QuestionAttachmentFile> questionAttachmentFiles = new ArrayList<>();
 

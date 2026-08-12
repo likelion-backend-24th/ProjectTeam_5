@@ -25,6 +25,12 @@ function createSignature({ filename, fileSize }) {
 
 // ② 발급받은 서명으로 Cloudinary에 직접 업로드
 async function uploadToCloudinary(file, sign) {
+  // 서명 응답이 예상과 다르면(예: uploadURL 누락) 여기서 실제 내용을 드러낸다.
+  if (!sign?.uploadURL) {
+    console.error("[attachments] 서명 응답에 uploadURL이 없습니다. 실제 응답:", sign);
+    throw new Error("업로드 URL을 받지 못했습니다. 백엔드 서명 응답을 확인하세요.");
+  }
+
   const formData = new FormData();
   formData.append("file", file);
   formData.append("api_key", sign.apiKey);

@@ -60,10 +60,11 @@ export async function createQuestion(title, content, category, attachmentIds = [
 }
 
 // 수정된 부분: category 파라미터 추가 및 body에 포함
-export async function updateQuestion(id, title, content, category) {
+// 변경 전: updateQuestion(id, title, content, category)
+export async function updateQuestion(id, title, content, category, attachmentIds = []) {
   return request(`/api/questions/${id}`, {
     method: "PATCH",
-    body: { title, content, category },
+    body: { title, content, category, attachmentIds },
     fallbackMessage: "질문 수정에 실패했습니다.",
   });
 }
