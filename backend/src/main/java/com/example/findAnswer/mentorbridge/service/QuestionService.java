@@ -67,7 +67,7 @@ public class QuestionService {
             file.attachedToQuestion(savedQuestion);
             imageUrls.add(attachmentStorage.publicUrl(file.getStorageKey(), IMAGE_TRANSFORM));
         }
-        return QuestionResponse.from(savedQuestion, imageUrls);
+        return QuestionResponse.from(savedQuestion, imageUrls, false);
     }
 
     // 질문 상세 조회 (답변 목록 포함)
