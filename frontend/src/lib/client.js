@@ -4,11 +4,11 @@ if (!API_URL) {
   throw new Error("NEXT_PUBLIC_API_URL이 설정되지 않았습니다.");
 }
 
-
 export function startOAuth(provider) {
   window.location.href = `${API_URL}/oauth2/authorization/${provider}`;
 }
 
+// 하나의 request 함수 선언
 export async function request(
   path,
   { body, fallbackMessage = "요청에 실패했습니다.", ...options } = {}
@@ -33,11 +33,18 @@ export async function request(
   const data = isJson ? await response.json() : await response.text();
 
   if (!response.ok) {
-    let message =
-      (typeof data === "object" ? data?.message || data?.error : data) || fallbackMessage;
+    // 백엔드 에러 메시지(data.message) 우선 추출
+    let serverMessage = typeof data === "object" ? data?.message || data?.error : data;
 
-    if (response.status === 401 || response.status === 403) {
-      message = "로그인이 필요한 서비스입니다.";
+    let message = serverMessage;
+
+    // 백엔드 메시지가 없을 때만 기본 처리
+    if (!message) {
+      if (response.status === 401 || response.status === 403) {
+        message = "로그인이 필요한 서비스입니다.";
+      } else {
+        message = fallbackMessage;
+      }
     }
 
     const error = new Error(message);
