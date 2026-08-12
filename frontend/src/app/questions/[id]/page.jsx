@@ -261,6 +261,7 @@ export default function QuestionDetailPage() {
                       />
                     ))}
                   </div>
+               )} 
 
                 {/* 좋아요 버튼 섹션 */}
                 <div className={styles.likeSection}>
