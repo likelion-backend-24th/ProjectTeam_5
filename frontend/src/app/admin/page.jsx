@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/contexts/AuthContext";
 import {
@@ -19,11 +19,16 @@ export default function AdminPage() {
   const router = useRouter();
   const { user, isLoggedIn, loading: authLoading } = useAuth();
 
-  const [activeTab, setActiveTab] = useState("users"); 
+  const [activeTab, setActiveTab] = useState("users"); // "users" | "mentors"
   const [users, setUsers] = useState([]);
   const [mentorApps, setMentorApps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+
+  // 🔍 검색, 역할 필터, 정렬 상태
+  const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("ALL"); // "ALL" | "USER" | "MENTOR" | "ADMIN"
+  const [sortOrder, setSortOrder] = useState("newest"); // "newest" | "oldest"
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -56,7 +61,12 @@ export default function AdminPage() {
     fetchData();
   }, [isLoggedIn, user, authLoading, fetchData, router]);
 
-  // 회원 차단 / 해제
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setSearchQuery("");
+    setRoleFilter("ALL");
+  };
+
   const handleBlockToggle = async (userId, isBlocked) => {
     const actionText = isBlocked ? "차단 해제" : "차단";
     if (!confirm(`해당 회원을 ${actionText}하시겠습니까?`)) return;
@@ -74,7 +84,6 @@ export default function AdminPage() {
     }
   };
 
-  // 회원 강제 삭제
   const handleDeleteUser = async (userId, userName) => {
     if (
       !confirm(
@@ -93,7 +102,6 @@ export default function AdminPage() {
     }
   };
 
-  // 멘토 승인
   const handleApprove = async (userId) => {
     if (!confirm("해당 회원을 멘토로 승인하시겠습니까?")) return;
     try {
@@ -105,7 +113,6 @@ export default function AdminPage() {
     }
   };
 
-  // 멘토 거절
   const handleReject = async (userId) => {
     if (!confirm("해당 회원의 멘토 신청을 거절하시겠습니까?")) return;
     try {
@@ -116,6 +123,58 @@ export default function AdminPage() {
       alert(error.message || "거절 처리에 실패했습니다.");
     }
   };
+
+  // 🔍 회원 데이터 검색, 역할 필터링 및 ID 정렬
+  const filteredUsers = useMemo(() => {
+    let result = [...users];
+
+    // 1. 역할(ROLE) 필터링
+    if (roleFilter !== "ALL") {
+      result = result.filter((u) => u.role === roleFilter);
+    }
+
+    // 2. 검색어 필터링
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (u) =>
+          u.name?.toLowerCase().includes(q) ||
+          u.email?.toLowerCase().includes(q)
+      );
+    }
+
+    // 3. ID 기준 정렬
+    result.sort((a, b) => {
+      if (sortOrder === "newest") return b.id - a.id;
+      if (sortOrder === "oldest") return a.id - b.id;
+      return 0;
+    });
+
+    return result;
+  }, [users, searchQuery, roleFilter, sortOrder]);
+
+  // 🔍 멘토 신청 데이터 검색 및 ID 정렬
+  const filteredMentorApps = useMemo(() => {
+    let result = [...mentorApps];
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (app) =>
+          app.name?.toLowerCase().includes(q) ||
+          app.email?.toLowerCase().includes(q) ||
+          app.interests?.toLowerCase().includes(q)
+      );
+    }
+
+    result.sort((a, b) => {
+      if (sortOrder === "newest") return b.id - a.id;
+      if (sortOrder === "oldest") return a.id - b.id;
+      return 0;
+    });
+
+    return result;
+  }, [mentorApps, searchQuery, sortOrder]);
 
   if (authLoading) return <p className={styles.statusText}>권한 확인 중...</p>;
 
@@ -135,7 +194,7 @@ export default function AdminPage() {
             className={`${styles.tabButton} ${
               activeTab === "users" ? styles.tabActive : ""
             }`}
-            onClick={() => setActiveTab("users")}
+            onClick={() => handleTabChange("users")}
           >
             전체 회원 관리
           </button>
@@ -144,10 +203,79 @@ export default function AdminPage() {
             className={`${styles.tabButton} ${
               activeTab === "mentors" ? styles.tabActive : ""
             }`}
-            onClick={() => setActiveTab("mentors")}
+            onClick={() => handleTabChange("mentors")}
           >
             멘토 신청 관리
           </button>
+        </div>
+
+        {/* 🔍 검색, 역할 필터 및 정렬 도구 바 */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: "12px",
+            marginBottom: "16px",
+            flexWrap: "wrap",
+          }}
+        >
+          <input
+            type="text"
+            placeholder={
+              activeTab === "users"
+                ? "이름 또는 이메일 검색..."
+                : "이름, 이메일, 관심분야 검색..."
+            }
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              padding: "8px 14px",
+              borderRadius: "6px",
+              border: "1px solid #d1d5db",
+              fontSize: "14px",
+              width: "260px",
+            }}
+          />
+
+          <div style={{ display: "flex", gap: "8px" }}>
+            {/* 역할 필터 셀렉트 (회원 관리 탭에서만 노출) */}
+            {activeTab === "users" && (
+              <select
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: "6px",
+                  border: "1px solid #d1d5db",
+                  fontSize: "14px",
+                  backgroundColor: "#fff",
+                  cursor: "pointer",
+                }}
+              >
+                <option value="ALL">전체 역할</option>
+                <option value="USER">USER (일반)</option>
+                <option value="MENTOR">MENTOR (멘토)</option>
+                <option value="ADMIN">ADMIN (관리자)</option>
+              </select>
+            )}
+
+            {/* 정렬 셀렉트 */}
+            <select
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value)}
+              style={{
+                padding: "8px 12px",
+                borderRadius: "6px",
+                border: "1px solid #d1d5db",
+                fontSize: "14px",
+                backgroundColor: "#fff",
+                cursor: "pointer",
+              }}
+            >
+              <option value="newest">최신순</option>
+              <option value="oldest">오래된순</option>
+            </select>
+          </div>
         </div>
 
         {loading && <p className={styles.statusText}>불러오는 중...</p>}
@@ -158,8 +286,12 @@ export default function AdminPage() {
         {/* 1. 회원 목록 탭 */}
         {!loading && !errorMessage && activeTab === "users" && (
           <>
-            {users.length === 0 ? (
-              <p className={styles.statusText}>등록된 회원이 없습니다.</p>
+            {filteredUsers.length === 0 ? (
+              <p className={styles.statusText}>
+                {searchQuery || roleFilter !== "ALL"
+                  ? "조건에 맞는 회원이 없습니다."
+                  : "등록된 회원이 없습니다."}
+              </p>
             ) : (
               <table className={styles.table}>
                 <thead>
@@ -174,13 +306,13 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((u) => {
+                  {filteredUsers.map((u) => {
                     const isUserBlocked = Boolean(u.blocked ?? u.isBlocked);
 
                     return (
                       <tr key={u.id}>
                         <td style={{ textAlign: "center" }}>{u.id}</td>
-                        <td>{u.email || "OAuth 계정"}</td>
+                        <td>{u.email || "KAKAO 계정"}</td>
                         <td>{u.name}</td>
                         <td>
                           <span
@@ -237,9 +369,9 @@ export default function AdminPage() {
         {/* 2. 멘토 신청 탭 */}
         {!loading && !errorMessage && activeTab === "mentors" && (
           <>
-            {mentorApps.length === 0 ? (
+            {filteredMentorApps.length === 0 ? (
               <p className={styles.statusText}>
-                대기 중인 멘토 신청이 없습니다.
+                {searchQuery ? "검색 결과가 없습니다." : "대기 중인 멘토 신청이 없습니다."}
               </p>
             ) : (
               <table className={styles.table}>
@@ -254,7 +386,7 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {mentorApps.map((app) => (
+                  {filteredMentorApps.map((app) => (
                     <tr key={app.id}>
                       <td style={{ textAlign: "center" }}>{app.id}</td>
                       <td>{app.email || "-"}</td>

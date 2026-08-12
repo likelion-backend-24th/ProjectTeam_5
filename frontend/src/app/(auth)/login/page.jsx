@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import styles from "./page.module.css";
 
@@ -10,8 +10,9 @@ import { useAuth } from "@/app/contexts/AuthContext";
 import SocialLoginButtons from "@/app/oauth/SocialLoginButtons";
 import { EyeIcon, EyeOffIcon } from "@/components/Icons/Icons";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login } = useAuth();
 
   const [form, setForm] = useState({
@@ -22,6 +23,22 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  // 🔍 URL의 쿼리 파라미터 감지 (차단 계정 및 에러 처리)
+  useEffect(() => {
+    const errorCode = searchParams.get("errorCode");
+    const error = searchParams.get("error");
+
+    if (errorCode === "oauth2_user_blocked") {
+      const msg = "차단된 계정입니다. 관리자에게 문의해주세요.";
+      setErrorMessage(msg);
+      alert(msg);
+    } else if (errorCode || (error && error !== "null")) {
+      const msg = "소셜 로그인 중 문제가 발생했습니다. 다시 시도해주세요.";
+      setErrorMessage(msg);
+      alert(msg);
+    }
+  }, [searchParams]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -143,7 +160,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <SocialLoginButtons/>
+        <SocialLoginButtons />
 
         <div className={styles.signup}>
           <span>계정이 없으신가요?</span>
@@ -151,5 +168,14 @@ export default function LoginPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+// Next.js App Router의 useSearchParams 사용 규칙 준수
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>로딩 중...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }
