@@ -99,6 +99,9 @@ export default function QuestionsPage() {
 
   const handleAskClick = () => {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 12d03c88a6a27ef25c953ef23974f59330ec7990
     const isLoggedIn = Boolean(localStorage.getItem("accessToken"));
 =======
     const isLoggedIn = Boolean(localStorage.getItem("accessToken") || localStorage.getItem("token"));
@@ -269,6 +272,9 @@ export default function QuestionsPage() {
           ))}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 12d03c88a6a27ef25c953ef23974f59330ec7990
           <button
             type="button"
             onClick={() =>
@@ -281,6 +287,7 @@ export default function QuestionsPage() {
         </div>
       </section>
     </main>
+<<<<<<< HEAD
 =======
             {!loading && !errorMessage && questions.length === 0 && (
                 <p className={styles.statusText}>아직 등록된 질문이 없습니다.</p>
@@ -366,6 +373,8 @@ export default function QuestionsPage() {
         </main>
       </>
 >>>>>>> main
+=======
+>>>>>>> 12d03c88a6a27ef25c953ef23974f59330ec7990
   );
 }
 
