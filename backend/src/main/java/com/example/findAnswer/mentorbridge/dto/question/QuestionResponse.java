@@ -19,8 +19,10 @@ public class QuestionResponse {
     private LocalDateTime updatedAt;
     private List<AnswerResponse> answers;
     private String category;
+    private List<String> imageUrls;   // 첨부 이미지 CDN URL 목록 (없으면 빈 리스트)
 
-    public static QuestionResponse from(Question question) {
+    // 이미지 URL은 storageKey로부터 서비스에서 생성해 넘겨준다.
+    public static QuestionResponse from(Question question, List<String> imageUrls) {
         QuestionResponse response = new QuestionResponse();
         response.id = question.getId();
         response.title = question.getTitle();
@@ -32,6 +34,11 @@ public class QuestionResponse {
         response.answers = question.getAnswers().stream()
                 .map(AnswerResponse::from)
                 .collect(Collectors.toList());
+        response.imageUrls = imageUrls == null ? List.of() : imageUrls;
         return response;
+    }
+
+    public static QuestionResponse from(Question question) {
+        return from(question, List.of());
     }
 }

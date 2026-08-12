@@ -5,6 +5,9 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 //질문 등록 요청시 클라이언트로부터 전달
 @Getter
 @NoArgsConstructor
@@ -20,4 +23,10 @@ public class QuestionCreateRequest {
 
     @NotBlank(message = "카테고리는 필수 입력값입니다.")
     private String category;
+
+    private List<Long> attachmentIds = new ArrayList<>();
+
+    public List<Long> getAttachmentIds() {
+        return attachmentIds == null ? List.of() : attachmentIds;
+    }
 }
