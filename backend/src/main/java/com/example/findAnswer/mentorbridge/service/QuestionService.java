@@ -1,15 +1,14 @@
 package com.example.findAnswer.mentorbridge.service;
 
-import com.example.findAnswer.mentorbridge.dto.question.QuestionCreateRequest;
-import com.example.findAnswer.mentorbridge.dto.question.QuestionListResponse;
-import com.example.findAnswer.mentorbridge.dto.question.QuestionResponse;
-import com.example.findAnswer.mentorbridge.dto.question.QuestionUpdateRequest;
+import com.example.findAnswer.mentorbridge.dto.question.*;
 import com.example.findAnswer.mentorbridge.entity.Question;
+import com.example.findAnswer.mentorbridge.entity.QuestionLike;
 import com.example.findAnswer.mentorbridge.entity.QuestionAttachmentFile;
 import com.example.findAnswer.mentorbridge.entity.User;
 import com.example.findAnswer.mentorbridge.constants.Role;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
 import com.example.findAnswer.mentorbridge.constants.ErrorCode;
+import com.example.findAnswer.mentorbridge.repository.QuestionLikeRepository;
 import com.example.findAnswer.mentorbridge.repository.QuestionAttachmentFileRepository;
 import com.example.findAnswer.mentorbridge.repository.QuestionRepository;
 import com.example.findAnswer.mentorbridge.repository.UserRepository;
@@ -20,6 +19,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +33,7 @@ public class QuestionService {
 
     private final QuestionRepository questionRepository;
     private final UserRepository userRepository;
+    private final QuestionLikeRepository questionLikeRepository;
     private final QuestionAttachmentFileRepository questionAttachmentFileRepository;
     private final AttachmentStorage attachmentStorage;
 
@@ -65,14 +67,19 @@ public class QuestionService {
             file.attachedToQuestion(savedQuestion);
             imageUrls.add(attachmentStorage.publicUrl(file.getStorageKey(), IMAGE_TRANSFORM));
         }
-        return QuestionResponse.from(savedQuestion, imageUrls);
+        return QuestionResponse.from(savedQuestion, imageUrls, false);
     }
 
     // 질문 상세 조회 (답변 목록 포함)
-    public QuestionResponse getQuestion(Long questionId) {
+    public QuestionResponse getQuestion(Long questionId, Long currentUserId) {
         Question question = questionRepository.findById(questionId)
                 .orElseThrow(() -> new CustomException(ErrorCode.QUESTION_NOT_FOUND));
-        return QuestionResponse.from(question, imageUrlsOf(question));
+
+        boolean isLiked = false;
+        if (currentUserId != null) {
+            isLiked = questionLikeRepository.existsByQuestion_IdAndUser_Id(questionId, currentUserId);
+        }
+        return QuestionResponse.from(question, imageUrlsOf(question), isLiked);
     }
 
     // 질문에 연결된(ATTACHED) 첨부의 CDN URL 목록 생성
@@ -102,6 +109,33 @@ public class QuestionService {
             return questionRepository.findAll(pageable).map(QuestionListResponse::from);
         }
         return questionRepository.findByCategory(category, pageable).map(QuestionListResponse::from);
+    }
+
+    @Transactional
+    public QuestionLikeResponse toggleLike(Long questionId, Long userId) {
+        Question question = questionRepository.findById(questionId)
+                .orElseThrow(() -> new CustomException(ErrorCode.QUESTION_NOT_FOUND));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        Optional<QuestionLike> optionalLike = questionLikeRepository.findByQuestion_IdAndUser_Id(questionId, userId);
+
+        boolean isLiked;
+        if (optionalLike.isPresent()) {
+            // 이미 좋아요를 누른 상태 -> 좋아요 취소
+            questionLikeRepository.delete(optionalLike.get());
+            question.decreaseLikeCount();
+            isLiked = false;
+        } else {
+            // 안 누른 상태 -> 좋아요 등록
+            questionLikeRepository.save(new QuestionLike(question, user));
+            question.increaseLikeCount();
+            isLiked = true;
+        }
+
+        // 변경된 최신 likeCount를 그대로 반환
+        return new QuestionLikeResponse(isLiked, question.getLikeCount());
     }
 
     // 질문 수정 (작성자 본인만 가능)

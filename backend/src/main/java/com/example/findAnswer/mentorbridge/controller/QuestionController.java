@@ -1,9 +1,6 @@
 package com.example.findAnswer.mentorbridge.controller;
 
-import com.example.findAnswer.mentorbridge.dto.question.QuestionCreateRequest;
-import com.example.findAnswer.mentorbridge.dto.question.QuestionListResponse;
-import com.example.findAnswer.mentorbridge.dto.question.QuestionResponse;
-import com.example.findAnswer.mentorbridge.dto.question.QuestionUpdateRequest;
+import com.example.findAnswer.mentorbridge.dto.question.*;
 import com.example.findAnswer.mentorbridge.service.QuestionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -54,9 +51,19 @@ public class QuestionController {
 
     //질문 상세 조회 (GET /api/questions/{questionId}) - 200 OK
     @GetMapping("/{questionId}")
-    public ResponseEntity<QuestionResponse> getQuestion(@PathVariable Long questionId) {
+    public ResponseEntity<QuestionResponse> getQuestion(@PathVariable Long questionId , @AuthenticationPrincipal Long currentUserId) {
 
-        QuestionResponse response = questionService.getQuestion(questionId);
+        QuestionResponse response = questionService.getQuestion(questionId, currentUserId);
+        return ResponseEntity.ok(response);
+    }
+
+    //좋아요 토글 api
+    @PostMapping("/{questionId}/like")
+    public ResponseEntity<QuestionLikeResponse> toggleLike(
+            @PathVariable Long questionId,
+            @AuthenticationPrincipal Long currentUserId) {
+
+        QuestionLikeResponse response = questionService.toggleLike(questionId, currentUserId);
         return ResponseEntity.ok(response);
     }
 

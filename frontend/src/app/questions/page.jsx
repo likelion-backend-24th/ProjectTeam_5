@@ -98,7 +98,11 @@ export default function QuestionsPage() {
   const totalPages = Math.max(Math.ceil(totalElements / 10), 1);
 
   const handleAskClick = () => {
+<<<<<<< HEAD
     const isLoggedIn = Boolean(localStorage.getItem("accessToken"));
+=======
+    const isLoggedIn = Boolean(localStorage.getItem("accessToken") || localStorage.getItem("token"));
+>>>>>>> main
 
     if (!isLoggedIn) {
       alert("질문 등록은 로그인 후 이용 가능합니다.");
@@ -264,6 +268,7 @@ export default function QuestionsPage() {
             </button>
           ))}
 
+<<<<<<< HEAD
           <button
             type="button"
             onClick={() =>
@@ -276,6 +281,91 @@ export default function QuestionsPage() {
         </div>
       </section>
     </main>
+=======
+            {!loading && !errorMessage && questions.length === 0 && (
+                <p className={styles.statusText}>아직 등록된 질문이 없습니다.</p>
+            )}
+
+            {!loading && !errorMessage && questions.length > 0 && (
+                <table className={styles.table}>
+                  <thead>
+                  <tr>
+                    <th style={{ width: "80px", textAlign: "center" }}>분류</th>
+                    <th>질문 제목</th>
+                    <th>작성자</th>
+                    <th>답변수</th>
+                    <th>좋아요</th> {/* 🌟 좋아요 컬럼 추가 */}
+                    <th>등록일</th>
+                  </tr>
+                  </thead>
+
+                  <tbody>
+                  {questions.map((question) => (
+                      <tr key={question.id}>
+                        <td style={{ textAlign: "center" }}>
+                      <span style={{ color: "#2867e8", fontSize: "13px", fontWeight: "bold" }}>
+                        [{question.category || "기타"}]
+                      </span>
+                        </td>
+                        <td>
+                          <Link href={`/questions/${question.id}`}>
+                            {question.title}
+                          </Link>
+                        </td>
+                        <td>{question.authorName || question.name || "익명"}</td>
+                        <td>
+                      <span className={styles.answerCount}>
+                        {question.answerCount ?? 0}개
+                      </span>
+                        </td>
+                        <td>
+                          {/* 🌟 좋아요 개수 뱃지 추가 */}
+                          <span className={styles.likeCountBadge}>
+                            ❤️ {question.likeCount ?? 0}
+                          </span>
+                        </td>
+                        <td>{formatDate(question.createdAt)}</td>
+                      </tr>
+                  ))}
+                  </tbody>
+                </table>
+            )}
+
+            <div className={styles.pagination}>
+              <button
+                  type="button"
+                  onClick={() => setPage((previous) => Math.max(previous - 1, 0))}
+                  disabled={page === 0 || loading}
+              >
+                {"<"}
+              </button>
+
+              {Array.from({ length: totalPages }).map((_, index) => (
+                  <button
+                      key={index}
+                      type="button"
+                      className={index === page ? styles.pageActive : undefined}
+                      onClick={() => setPage(index)}
+                      disabled={loading}
+                  >
+                    {index + 1}
+                  </button>
+              ))}
+
+              <button
+                  type="button"
+                  onClick={() =>
+                      setPage((previous) => Math.min(previous + 1, totalPages - 1))
+                  }
+                  disabled={page + 1 >= totalPages || loading}
+              >
+                {">"}
+              </button>
+            </div>
+          </section>
+        </main>
+      </>
+>>>>>>> main
   );
 }
 

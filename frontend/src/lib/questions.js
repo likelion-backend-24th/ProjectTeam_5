@@ -74,3 +74,11 @@ export async function deleteQuestion(id) {
     fallbackMessage: "질문 삭제에 실패했습니다.",
   });
 }
+
+// 좋아요 토글
+export async function toggleLike(questionId) {
+  return request(`/api/questions/${questionId}/like`, {
+    method: "POST",
+    fallbackMessage: "좋아요 처리에 실패했습니다.",
+  });
+}
