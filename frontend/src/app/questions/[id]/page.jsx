@@ -198,9 +198,21 @@ export default function QuestionDetailPage() {
             <h1>{question.title}</h1>
             <p className={styles.content}>{question.content}</p>
 
-            {question.attachmentName && (
-              <div className={styles.attachment}>
-                📎 첨부파일: {question.attachmentName}
+            {question.imageUrls?.length > 0 && (
+              <div className={styles.attachments}>
+                {question.imageUrls.map((url, index) => (
+                  <img
+                    key={index}
+                    src={url}
+                    alt={`첨부 이미지 ${index + 1}`}
+                    style={{
+                      maxWidth: "100%",
+                      borderRadius: 8,
+                      marginTop: 12,
+                      display: "block",
+                    }}
+                  />
+                ))}
               </div>
             )}
           </section>
