@@ -17,8 +17,7 @@ export default function NewQuestionPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const [images, setImages] = useState([]); // [{ attachId, url, name }]
-  const [uploading, setUploading] = useState(false);
+  const [files, setFiles] = useState([]); // 선택한 원본 File[] (등록 시 업로드)
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -63,19 +62,20 @@ export default function NewQuestionPage() {
     }
   };
 
-const handleFileChange = (event) => {        // async 필요 없음
-  const selected = Array.from(event.target.files || []);
-  event.target.value = "";
-  try {
-    selected.forEach(validateImage);
-    setFiles((prev) => [...prev, ...selected]);
-  } catch (err) {
-    setErrorMessage(err.message);
-  }
-};
+  const handleFileChange = (event) => {
+    // async 필요 없음
+    const selected = Array.from(event.target.files || []);
+    event.target.value = "";
+    try {
+      selected.forEach(validateImage);
+      setFiles((prev) => [...prev, ...selected]);
+    } catch (err) {
+      setErrorMessage(err.message);
+    }
+  };
 
-  const removeImage = (attachId) =>
-    setImages((prev) => prev.filter((img) => img.attachId !== attachId));
+  const removeFile = (index) =>
+    setFiles((prev) => prev.filter((_, i) => i !== index));
 
   return (
     <>
@@ -137,7 +137,7 @@ const handleFileChange = (event) => {        // async 필요 없음
             />
           </div>
 
-          {/* 파일 업로드는 백엔드 미지원, UI만 있음 */}
+          {/* 이미지는 선택만 해두고, 실제 업로드는 등록 시 handleSubmit에서 수행 */}
           <div className={styles.field}>
             <label htmlFor="images">파일 첨부 (이미지, 최대 5MB)</label>
             <input
@@ -146,11 +146,10 @@ const handleFileChange = (event) => {        // async 필요 없음
               accept="image/png,image/jpeg,image/gif,image/webp"
               multiple
               onChange={handleFileChange}
-              disabled={uploading || submitting}
+              disabled={submitting}
             />
-            {uploading && <p>업로드 중…</p>}
 
-            {images.length > 0 && (
+            {files.length > 0 && (
               <ul
                 style={{
                   display: "flex",
@@ -160,18 +159,18 @@ const handleFileChange = (event) => {        // async 필요 없음
                   padding: 0,
                 }}
               >
-                {images.map((img) => (
-                  <li key={img.attachId} style={{ position: "relative" }}>
+                {files.map((file, index) => (
+                  <li key={index} style={{ position: "relative" }}>
                     <img
-                      src={img.url}
-                      alt={img.name}
+                      src={URL.createObjectURL(file)}
+                      alt={file.name}
                       width={96}
                       height={96}
                       style={{ objectFit: "cover", borderRadius: 6 }}
                     />
                     <button
                       type="button"
-                      onClick={() => removeImage(img.attachId)}
+                      onClick={() => removeFile(index)}
                       aria-label="삭제"
                       style={{ position: "absolute", top: 2, right: 2 }}
                     >
