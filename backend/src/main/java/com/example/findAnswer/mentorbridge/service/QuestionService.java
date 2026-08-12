@@ -20,10 +20,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
-
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -55,19 +53,21 @@ public class QuestionService {
 
         Question savedQuestion = questionRepository.save(question);
 
-        List<String> imageUrls = new ArrayList<>();
-        for(Long attachmentId : request.getAttachmentIds()) {
+        List<ImageResponse> images = new ArrayList<>();
+        for (Long attachmentId : request.getAttachmentIds()) {
             QuestionAttachmentFile file = questionAttachmentFileRepository.findById(attachmentId)
                     .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
 
-            if(!file.isOwnedBy(userId)){
+            if (!file.isOwnedBy(userId)) {
                 throw new CustomException(ErrorCode.ACCESS_DENIED);
             }
 
             file.attachedToQuestion(savedQuestion);
-            imageUrls.add(attachmentStorage.publicUrl(file.getStorageKey(), IMAGE_TRANSFORM));
+
+            String url = attachmentStorage.publicUrl(file.getStorageKey(), IMAGE_TRANSFORM);
+            images.add(new ImageResponse(file.getId(), url));
         }
-        return QuestionResponse.from(savedQuestion, imageUrls, false);
+        return QuestionResponse.from(savedQuestion, images, false);
     }
 
     // 질문 상세 조회 (답변 목록 포함)
@@ -79,16 +79,16 @@ public class QuestionService {
         if (currentUserId != null) {
             isLiked = questionLikeRepository.existsByQuestion_IdAndUser_Id(questionId, currentUserId);
         }
-        return QuestionResponse.from(question, imageUrlsOf(question), isLiked);
+        return QuestionResponse.from(question, imagesOf(questionAttachmentFileRepository.findByQuestion(question)), isLiked);
     }
 
-    // 질문에 연결된(ATTACHED) 첨부의 CDN URL 목록 생성
-    private List<String> imageUrlsOf(Question question) {
-        return question.getQuestionAttachmentFiles().stream()
-                .filter(QuestionAttachmentFile::isAttached)
-                .map(file -> attachmentStorage.publicUrl(file.getStorageKey(), IMAGE_TRANSFORM))
-                .toList();
-    }
+//    // 질문에 연결된(ATTACHED) 첨부의 CDN URL 목록 생성
+//    private List<ImageResponse> imageUrlsOf(Question question) {
+//        return question.getQuestionAttachmentFiles().stream()
+//                .filter(QuestionAttachmentFile::isAttached)
+//                .map(file -> new ImageResponse(file.getId(), attachmentStorage.publicUrl(file.getStorageKey(), IMAGE_TRANSFORM)))
+//                .toList();
+//    }
 
     // 질문 전체 목록 조회 (페이징)
     public Page<QuestionListResponse> getQuestions(Pageable pageable) {
@@ -144,9 +144,65 @@ public class QuestionService {
         Question question = questionRepository.findById(questionId)
                 .orElseThrow(() -> new CustomException(ErrorCode.QUESTION_NOT_FOUND));
 
+        Optional<QuestionLike> optionalLike = questionLikeRepository.findByQuestion_IdAndUser_Id(questionId, userId);
+
         validateAuthor(question.getUser().getId(), userId);
         question.update(request.getTitle(), request.getContent(), request.getCategory());
-        return QuestionResponse.from(question);
+
+        List<QuestionAttachmentFile> current = questionAttachmentFileRepository.findByQuestion(question);
+
+        Set<Long> editFile = new HashSet<>(request.getAttachmentIds());
+
+        Set<Long> currentFile = current
+                .stream()
+                .map(QuestionAttachmentFile::getId)
+                .collect(Collectors.toSet());
+
+        List<QuestionAttachmentFile> lastFiles = new ArrayList<>();
+
+        // 빠진 이미지 제거
+        for (QuestionAttachmentFile file: current) {
+            if(editFile.contains(file.getId())) {
+                lastFiles.add(file);
+            } else {
+                try{
+                    attachmentStorage.delete(file.getStorageKey());
+                } catch (RuntimeException e) {
+                    log.warn("cloudinary 파일 삭제 실패 {}", file.getStorageKey());
+                }
+                questionAttachmentFileRepository.delete(file);
+            }
+        }
+
+        // 이미지 새로 추가
+        for (Long attachmentId : editFile) {
+            if(currentFile.contains(attachmentId)) {
+                continue;
+            }
+
+            QuestionAttachmentFile file = questionAttachmentFileRepository.findById(attachmentId)
+                    .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+
+            if(!file.isOwnedBy(userId)) {
+                throw new CustomException(ErrorCode.ACCESS_DENIED);
+            }
+            if(file.isAttached()) {
+                throw new CustomException(ErrorCode.INVALID_REQUEST);
+            }
+
+            file.attachedToQuestion(question);
+            lastFiles.add(file);
+        }
+
+        return QuestionResponse.from(question, imagesOf(lastFiles), optionalLike.isPresent());
+    }
+
+    private List<ImageResponse> imagesOf(List<QuestionAttachmentFile> files) {
+        return files.stream()
+                .filter(QuestionAttachmentFile::isAttached)
+                .map(f -> new ImageResponse(f.getId(),
+                        attachmentStorage.publicUrl(f.getStorageKey(), IMAGE_TRANSFORM)))
+                .toList();
     }
 
     // 질문 삭제 (작성자 본인 또는 관리자 가능)
