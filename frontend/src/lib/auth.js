@@ -16,9 +16,11 @@ export function login({ email, password }) {
   });
 }
 
-export function getMe(token) {
+// 토큰은 request 헬퍼가 localStorage에서 읽어 자동으로 붙인다.
+// (명시적 헤더로 넘기면 401 자동 refresh 재시도 때 옛 토큰이 재사용되어 갱신이 안 됨)
+export function getMe() {
   return request("/api/users/me", {
-    headers: { Authorization: `Bearer ${token}` },
+    fallbackMessage: "사용자 정보를 불러오지 못했습니다.",
   });
 }
 
