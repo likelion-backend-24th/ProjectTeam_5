@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { createQuestion } from "@/lib/questions";
 
 import styles from "./form.module.css";
-import { uploadImage } from "@/lib/attachments";
+import { uploadImage, validateImage } from "@/lib/attachments";
 
 export default function NewQuestionPage() {
   const router = useRouter();
