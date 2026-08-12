@@ -2,6 +2,7 @@ package com.example.findAnswer.mentorbridge.dto.question;
 
 import com.example.findAnswer.mentorbridge.dto.answer.AnswerResponse;
 import com.example.findAnswer.mentorbridge.entity.Question;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
@@ -19,8 +20,16 @@ public class QuestionResponse {
     private LocalDateTime updatedAt;
     private List<AnswerResponse> answers;
     private String category;
+    private int likeCount;
+
+    @JsonProperty("isLiked")
+    private boolean isLiked;
 
     public static QuestionResponse from(Question question) {
+        return from(question, false); // 기본값 false 전달
+    }
+
+    public static QuestionResponse from(Question question, boolean isLiked) {
         QuestionResponse response = new QuestionResponse();
         response.id = question.getId();
         response.title = question.getTitle();
@@ -32,6 +41,8 @@ public class QuestionResponse {
         response.answers = question.getAnswers().stream()
                 .map(AnswerResponse::from)
                 .collect(Collectors.toList());
+        response.likeCount = question.getLikeCount();
+        response.isLiked = isLiked;
         return response;
     }
 }
