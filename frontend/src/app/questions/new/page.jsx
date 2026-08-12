@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 import { createQuestion } from "@/lib/questions";
@@ -16,6 +16,24 @@ export default function NewQuestionPage() {
   const [content, setContent] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const contentRef = useRef(null);
+
+  // 커서 위치에 마크다운 코드블록(```java ... ```)을 삽입
+  const insertCodeBlock = () => {
+    const el = contentRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const selected = content.slice(start, end);
+    const snippet = "```java\n" + (selected || "여기에 코드") + "\n```\n";
+    setContent(content.slice(0, start) + snippet + content.slice(end));
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + "```java\n".length;
+      el.setSelectionRange(pos, pos + (selected ? selected.length : 6));
+    });
+  };
 
   const [files, setFiles] = useState([]); // 선택한 원본 File[] (등록 시 업로드)
 
@@ -124,15 +142,26 @@ export default function NewQuestionPage() {
 
           <div className={styles.field}>
             <div className={styles.fieldHeader}>
-              <label htmlFor="content">질문 내용</label>
-              <span>{content.length}/5000</span>
+              <label htmlFor="content">질문 내용 (마크다운)</label>
+              <span>
+                <button
+                  type="button"
+                  onClick={insertCodeBlock}
+                  style={{ marginRight: 8 }}
+                >
+                  &lt;/&gt; 코드블록
+                </button>
+                {content.length}/20000
+              </span>
             </div>
             <textarea
               id="content"
+              ref={contentRef}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              maxLength={5000}
-              rows={8}
+              maxLength={20000}
+              rows={10}
+              style={{ fontFamily: "monospace" }}
               required
             />
           </div>
