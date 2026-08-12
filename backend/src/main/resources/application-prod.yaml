@@ -59,3 +59,7 @@ server:
 
 kakao:
   admin-key: ${KAKAO_ADMIN_KEY:kakao_admin_key}
+
+cloudinary:
+  url: ${CLOUDINARY_URL}          # cloudinary://key:secret@cloudname
+  folder: findanswer/posts
