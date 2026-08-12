@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/contexts/AuthContext";
 import {
@@ -19,11 +19,16 @@ export default function AdminPage() {
   const router = useRouter();
   const { user, isLoggedIn, loading: authLoading } = useAuth();
 
-  const [activeTab, setActiveTab] = useState("users"); 
+  const [activeTab, setActiveTab] = useState("users");
   const [users, setUsers] = useState([]);
   const [mentorApps, setMentorApps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+
+  // 🔍 검색, 정렬, 필터 상태
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOption, setSortOption] = useState("latest");
+  const [roleFilter, setRoleFilter] = useState("ALL");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -56,7 +61,63 @@ export default function AdminPage() {
     fetchData();
   }, [isLoggedIn, user, authLoading, fetchData, router]);
 
-  // 회원 차단 / 해제
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setSearchQuery("");
+    setSortOption("latest");
+    setRoleFilter("ALL");
+  };
+
+  // 🔍 1. 전체 회원 검색, 역할 필터링 및 ID 기준 정렬 로직
+  const filteredUsers = useMemo(() => {
+    let list = [...users];
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (u) =>
+          (u.name || "").toLowerCase().includes(q) ||
+          (u.email || "").toLowerCase().includes(q)
+      );
+    }
+
+    if (roleFilter !== "ALL") {
+      list = list.filter((u) => u.role === roleFilter);
+    }
+
+    // 💡 날짜 대신 ID 기준으로 정렬 (최신순: ID 내림차순, 오래된순: ID 오름차순)
+    list.sort((a, b) => {
+      const idA = Number(a.id || 0);
+      const idB = Number(b.id || 0);
+      return sortOption === "latest" ? idB - idA : idA - idB;
+    });
+
+    return list;
+  }, [users, searchQuery, roleFilter, sortOption]);
+
+  // 🔍 2. 멘토 신청 검색 및 ID 기준 정렬 로직
+  const filteredMentorApps = useMemo(() => {
+    let list = [...mentorApps];
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (app) =>
+          (app.name || "").toLowerCase().includes(q) ||
+          (app.email || "").toLowerCase().includes(q)
+      );
+    }
+
+    // 💡 날짜 대신 ID 기준으로 정렬
+    list.sort((a, b) => {
+      const idA = Number(a.id || 0);
+      const idB = Number(b.id || 0);
+      return sortOption === "latest" ? idB - idA : idA - idB;
+    });
+
+    return list;
+  }, [mentorApps, searchQuery, sortOption]);
+
   const handleBlockToggle = async (userId, isBlocked) => {
     const actionText = isBlocked ? "차단 해제" : "차단";
     if (!confirm(`해당 회원을 ${actionText}하시겠습니까?`)) return;
@@ -74,7 +135,6 @@ export default function AdminPage() {
     }
   };
 
-  // 회원 강제 삭제
   const handleDeleteUser = async (userId, userName) => {
     if (
       !confirm(
@@ -93,7 +153,6 @@ export default function AdminPage() {
     }
   };
 
-  // 멘토 승인
   const handleApprove = async (userId) => {
     if (!confirm("해당 회원을 멘토로 승인하시겠습니까?")) return;
     try {
@@ -105,7 +164,6 @@ export default function AdminPage() {
     }
   };
 
-  // 멘토 거절
   const handleReject = async (userId) => {
     if (!confirm("해당 회원의 멘토 신청을 거절하시겠습니까?")) return;
     try {
@@ -135,7 +193,7 @@ export default function AdminPage() {
             className={`${styles.tabButton} ${
               activeTab === "users" ? styles.tabActive : ""
             }`}
-            onClick={() => setActiveTab("users")}
+            onClick={() => handleTabChange("users")}
           >
             전체 회원 관리
           </button>
@@ -144,10 +202,44 @@ export default function AdminPage() {
             className={`${styles.tabButton} ${
               activeTab === "mentors" ? styles.tabActive : ""
             }`}
-            onClick={() => setActiveTab("mentors")}
+            onClick={() => handleTabChange("mentors")}
           >
             멘토 신청 관리
           </button>
+        </div>
+
+        <div className={styles.controlsBar}>
+          <input
+            type="text"
+            placeholder="이름 또는 이메일 검색..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={styles.searchInput}
+          />
+
+          <div className={styles.selectGroup}>
+            {activeTab === "users" && (
+              <select
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+                className={styles.selectBox}
+              >
+                <option value="ALL">모든 역할</option>
+                <option value="USER">일반 사용자 (USER)</option>
+                <option value="MENTOR">멘토 (MENTOR)</option>
+                <option value="ADMIN">관리자 (ADMIN)</option>
+              </select>
+            )}
+
+            <select
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value)}
+              className={styles.selectBox}
+            >
+              <option value="latest">최신순</option>
+              <option value="oldest">오래된순</option>
+            </select>
+          </div>
         </div>
 
         {loading && <p className={styles.statusText}>불러오는 중...</p>}
@@ -155,33 +247,34 @@ export default function AdminPage() {
           <p className={styles.errorMessage}>{errorMessage}</p>
         )}
 
-        {/* 1. 회원 목록 탭 */}
         {!loading && !errorMessage && activeTab === "users" && (
           <>
-            {users.length === 0 ? (
-              <p className={styles.statusText}>등록된 회원이 없습니다.</p>
+            {filteredUsers.length === 0 ? (
+              <p className={styles.statusText}>
+                {searchQuery ? "검색 결과가 없습니다." : "등록된 회원이 없습니다."}
+              </p>
             ) : (
               <table className={styles.table}>
                 <thead>
                   <tr>
                     <th style={{ width: "60px", textAlign: "center" }}>ID</th>
-                    <th>이메일</th>
-                    <th>이름</th>
-                    <th>역할</th>
-                    <th style={{ textAlign: "center" }}>상태</th>
-                    <th>가입일</th>
-                    <th style={{ textAlign: "center" }}>관리</th>
+                    <th style={{ width: "220px" }}>이메일</th>
+                    <th style={{ width: "100px" }}>이름</th>
+                    <th style={{ width: "80px" }}>역할</th>
+                    <th style={{ width: "70px", textAlign: "center" }}>상태</th>
+                    <th style={{ width: "100px" }}>가입일</th>
+                    <th style={{ width: "120px", textAlign: "center" }}>관리</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((u) => {
+                  {filteredUsers.map((u) => {
                     const isUserBlocked = Boolean(u.blocked ?? u.isBlocked);
 
                     return (
                       <tr key={u.id}>
                         <td style={{ textAlign: "center" }}>{u.id}</td>
-                        <td>{u.email || "OAuth 계정"}</td>
-                        <td>{u.name}</td>
+                        <td className={styles.ellipsisCell}>{u.email || "OAuth 계정"}</td>
+                        <td className={styles.ellipsisCell}>{u.name}</td>
                         <td>
                           <span
                             className={
@@ -234,32 +327,31 @@ export default function AdminPage() {
           </>
         )}
 
-        {/* 2. 멘토 신청 탭 */}
         {!loading && !errorMessage && activeTab === "mentors" && (
           <>
-            {mentorApps.length === 0 ? (
+            {filteredMentorApps.length === 0 ? (
               <p className={styles.statusText}>
-                대기 중인 멘토 신청이 없습니다.
+                {searchQuery ? "검색 결과가 없습니다." : "대기 중인 멘토 신청이 없습니다."}
               </p>
             ) : (
               <table className={styles.table}>
                 <thead>
                   <tr>
                     <th style={{ width: "60px", textAlign: "center" }}>ID</th>
-                    <th>이메일</th>
-                    <th>이름</th>
-                    <th>관심 분야</th>
-                    <th>신청일</th>
-                    <th style={{ textAlign: "center" }}>승인 처리</th>
+                    <th style={{ width: "180px" }}>이메일</th>
+                    <th style={{ width: "100px" }}>이름</th>
+                    <th style={{ width: "140px" }}>관심 분야</th>
+                    <th style={{ width: "100px" }}>신청일</th>
+                    <th style={{ width: "120px", textAlign: "center" }}>승인 처리</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {mentorApps.map((app) => (
+                  {filteredMentorApps.map((app) => (
                     <tr key={app.id}>
                       <td style={{ textAlign: "center" }}>{app.id}</td>
-                      <td>{app.email || "-"}</td>
-                      <td>{app.name}</td>
-                      <td>{app.interests || "-"}</td>
+                      <td className={styles.ellipsisCell}>{app.email || "-"}</td>
+                      <td className={styles.ellipsisCell}>{app.name}</td>
+                      <td className={styles.ellipsisCell}>{app.interests || "-"}</td>
                       <td>{formatDate(app.createdAt)}</td>
                       <td style={{ textAlign: "center" }}>
                         <div className={styles.actionButtons}>
