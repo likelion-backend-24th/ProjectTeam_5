@@ -7,6 +7,7 @@ import com.example.findAnswer.mentorbridge.jwt.JwtAuthenticationFilter;
 import com.example.findAnswer.mentorbridge.jwt.JwtTokenProvider;
 import com.example.findAnswer.mentorbridge.service.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -49,6 +50,13 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // oAuth 로그인 state 파라미터 검증에 세션이 필요
+                )
+
+                // 인증 실패 시 OAuth 로그인으로 302 리다이렉트하지 않고 401을 반환한다.
+                // (SPA + JWT 구조 — 리다이렉트하면 fetch가 루프에 빠져 ERR_TOO_MANY_REDIRECTS 발생)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) ->
+                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED))
                 )
 
                 //API 명세서 기준 접근 권한 설정
