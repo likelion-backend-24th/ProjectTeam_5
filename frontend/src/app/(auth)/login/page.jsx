@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -22,6 +22,19 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  // OAuth 로그인 실패 시 백엔드가 /login?errorCode=...&error=... 로 리다이렉트한다.
+  // 진입 시 그 메시지를 읽어 표시하고, URL은 정리(새로고침 반복 표시 방지).
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get("error");        // URLSearchParams가 자동 디코딩
+    const errorCode = params.get("errorCode");
+
+    if (error || errorCode) {
+      setErrorMessage(error || "로그인에 실패했습니다.");
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
