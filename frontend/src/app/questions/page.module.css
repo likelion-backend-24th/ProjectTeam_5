@@ -53,9 +53,11 @@
   color: #dc2626;
 }
 
+/* 💡 table-layout: fixed를 적용하여 검색어 변경 시에도 열 너비 고정 */
 .table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .table th {
@@ -81,6 +83,13 @@
 .table td:nth-child(4),
 .table th:nth-child(4) {
   color: #526176;
+}
+
+/* 💡 제목이 길 때 말줄임표(...) 처리 */
+.titleCell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .table a {
