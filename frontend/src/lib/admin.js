@@ -1,4 +1,3 @@
-// src/lib/admin.js
 import { request } from "./client";
 
 export const getToken = () => localStorage.getItem("accessToken");

@@ -273,7 +273,7 @@ export default function AdminPage() {
                     return (
                       <tr key={u.id}>
                         <td style={{ textAlign: "center" }}>{u.id}</td>
-                        <td className={styles.ellipsisCell}>{u.email || "OAuth 계정"}</td>
+                        <td className={styles.ellipsisCell}>{u.email || "KAKAO 계정"}</td>
                         <td className={styles.ellipsisCell}>{u.name}</td>
                         <td>
                           <span

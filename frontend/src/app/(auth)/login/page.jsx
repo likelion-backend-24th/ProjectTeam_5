@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation"; // 💡 useSearchParams 추가
 
 import styles from "./page.module.css";
 
@@ -12,6 +12,7 @@ import { EyeIcon, EyeOffIcon } from "@/components/Icons/Icons";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams(); // 💡 쿼리 파라미터 감지
   const { login } = useAuth();
 
   const [form, setForm] = useState({
@@ -22,6 +23,18 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  // 💡 URL에 error 파라미터가 넘어왔을 때 메시지 자동 설정
+  useEffect(() => {
+    const errorType = searchParams.get("error");
+    if (!errorType) return;
+
+    if (errorType === "blocked" || errorType.includes("block")) {
+      setErrorMessage("차단된 계정입니다. 관리자에게 문의하세요.");
+    } else {
+      setErrorMessage("소셜 로그인에 실패했습니다. 다시 시도해주세요.");
+    }
+  }, [searchParams]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -143,7 +156,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <SocialLoginButtons/>
+        <SocialLoginButtons />
 
         <div className={styles.signup}>
           <span>계정이 없으신가요?</span>
