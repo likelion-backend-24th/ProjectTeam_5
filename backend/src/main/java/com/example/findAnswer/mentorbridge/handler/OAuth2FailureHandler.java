@@ -11,6 +11,8 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationFa
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @Component
 @Slf4j
@@ -27,16 +29,28 @@ public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler 
                 exception.getClass().getName(), exception.getMessage(), exception);
 
         String errorCode = "oauth2_auth_error";
+        String errorDescription = exception.getMessage();   // 기본값 예외 메시지
+
         if (exception instanceof OAuth2AuthenticationException oae) {
             OAuth2Error err = oae.getError();
             log.error("[OAuth2] error={}, desc={}, uri={}",
                     err.getErrorCode(), err.getDescription(), err.getUri());
             errorCode = err.getErrorCode();
-
-            String errorDescription = request.getParameter("error_description");
-
-            getRedirectStrategy().sendRedirect(request, response, failureRedirectUri + "?errorCode=" + errorCode + "&error=" + errorDescription);
+            if (err.getDescription() != null) {
+                errorDescription = err.getDescription();    // 예외 메시지(차단)
+            }
         }
 
+        if (errorDescription == null) {
+            errorDescription = "로그인에 실패했습니다.";
+        }
+
+        // URL 인코딩
+        String redirectUri = failureRedirectUri
+                + "?errorCode=" + URLEncoder.encode(errorCode, StandardCharsets.UTF_8)
+                + "&error=" + URLEncoder.encode(errorDescription, StandardCharsets.UTF_8);
+
+        // OAuth2AuthenticationException 이 아닌 실패도 리다이렉트
+        getRedirectStrategy().sendRedirect(request, response, redirectUri);
     }
 }
