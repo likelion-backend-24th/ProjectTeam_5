@@ -72,9 +72,7 @@ export default function QuestionsPage() {
 
   // 질문하기 버튼 클릭 핸들러
   const handleAskClick = () => {
-    // TODO: 프로젝트의 실제 로그인 검증 로직으로 대체하세요.
-    // 예: localStorage.getItem("accessToken"), AuthContext의 user 객체 등
-    const isLoggedIn = Boolean(localStorage.getItem("accessToken"));
+    const isLoggedIn = Boolean(localStorage.getItem("accessToken") || localStorage.getItem("token"));
 
     if (!isLoggedIn) {
       alert("질문 등록은 로그인 후 이용 가능합니다.");
@@ -141,11 +139,11 @@ export default function QuestionsPage() {
                 <table className={styles.table}>
                   <thead>
                   <tr>
-                    {/* 분류 열 추가 */}
                     <th style={{ width: "80px", textAlign: "center" }}>분류</th>
                     <th>질문 제목</th>
                     <th>작성자</th>
                     <th>답변수</th>
+                    <th>좋아요</th> {/* 🌟 좋아요 컬럼 추가 */}
                     <th>등록일</th>
                   </tr>
                   </thead>
@@ -153,7 +151,6 @@ export default function QuestionsPage() {
                   <tbody>
                   {questions.map((question) => (
                       <tr key={question.id}>
-                        {/* 카테고리 데이터 표시 */}
                         <td style={{ textAlign: "center" }}>
                       <span style={{ color: "#2867e8", fontSize: "13px", fontWeight: "bold" }}>
                         [{question.category || "기타"}]
@@ -169,6 +166,12 @@ export default function QuestionsPage() {
                       <span className={styles.answerCount}>
                         {question.answerCount ?? 0}개
                       </span>
+                        </td>
+                        <td>
+                          {/* 🌟 좋아요 개수 뱃지 추가 */}
+                          <span className={styles.likeCountBadge}>
+                            ❤️ {question.likeCount ?? 0}
+                          </span>
                         </td>
                         <td>{formatDate(question.createdAt)}</td>
                       </tr>

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { FaHeart, FaRegHeart } from "react-icons/fa";
 
 import {
   getQuestion,
@@ -11,6 +12,7 @@ import {
   createAnswer,
   updateAnswer,
   deleteAnswer,
+  toggleLike, // 추가
 } from "@/lib/questions";
 import { getMe } from "@/lib/auth";
 
@@ -28,6 +30,7 @@ export default function QuestionDetailPage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLikeLoading, setIsLikeLoading] = useState(false); // 좋아요 로딩 상태
 
   const fetchAnswers = useCallback(async () => {
     try {
@@ -46,9 +49,9 @@ export default function QuestionDetailPage() {
       setErrorMessage("");
 
       const token =
-        typeof window !== "undefined"
-          ? localStorage.getItem("token") || localStorage.getItem("accessToken")
-          : null;
+          typeof window !== "undefined"
+              ? localStorage.getItem("token") || localStorage.getItem("accessToken")
+              : null;
 
       try {
         const [questionResult, answersResult, userResult] = await Promise.all([
@@ -96,6 +99,50 @@ export default function QuestionDetailPage() {
       router.push("/questions");
     } catch (error) {
       alert(error.message);
+    }
+  };
+
+  // 좋아요 토글 핸들러
+  const handleToggleLike = async () => {
+    if (!currentUser) {
+      alert("로그인 후 이용 가능합니다.");
+      router.push("/login");
+      return;
+    }
+
+    if (isLikeLoading) return;
+
+    const prevIsLiked = question.isLiked;
+    const prevLikeCount = question.likeCount;
+
+    const nextIsLiked = !prevIsLiked;
+    const nextLikeCount = nextIsLiked ? prevLikeCount + 1 : Math.max(0, prevLikeCount - 1);
+
+    setQuestion((prev) => ({
+      ...prev,
+      isLiked: nextIsLiked,
+      likeCount: nextLikeCount,
+    }));
+
+    try {
+      setIsLikeLoading(true);
+      const res = await toggleLike(id);
+
+      // 상태 즉시 업데이트
+      setQuestion((prev) => ({
+        ...prev,
+        isLiked: res.isLiked ?? nextIsLiked,
+        likeCount: res.likeCount ?? nextLikeCount,
+      }));
+    } catch (error) {
+      setQuestion((prev) => ({
+        ...prev,
+        isLiked: prevIsLiked,
+        likeCount: prevLikeCount,
+      }));
+      alert(error.message || "좋아요 처리에 실패했습니다.");
+    } finally {
+      setIsLikeLoading(false);
     }
   };
 
@@ -150,94 +197,115 @@ export default function QuestionDetailPage() {
   };
 
   const isQuestionOwner =
-    currentUser &&
-    question &&
-    (currentUser.id === question.authorId ||
-      currentUser.id === question.userId ||
-      currentUser.id === question.author?.id ||
-      currentUser.name === question.authorName);
+      currentUser &&
+      question &&
+      (currentUser.id === question.authorId ||
+          currentUser.id === question.userId ||
+          currentUser.id === question.author?.id ||
+          currentUser.name === question.authorName);
 
   const isAdmin =
-    currentUser?.role === "ADMIN" || currentUser?.role === "ROLE_ADMIN";
+      currentUser?.role === "ADMIN" || currentUser?.role === "ROLE_ADMIN";
 
   const canManageQuestion = isQuestionOwner || isAdmin;
 
   return (
-    <main className={styles.page}>
-      <Link href="/questions" className={styles.backLink}>
-        ← 목록으로
-      </Link>
+      <main className={styles.page}>
+        <Link href="/questions" className={styles.backLink}>
+          ← 목록으로
+        </Link>
 
-      {loading && <p className={styles.statusText}>불러오는 중...</p>}
+        {loading && <p className={styles.statusText}>불러오는 중...</p>}
 
-      {!loading && errorMessage && (
-        <p className={styles.errorMessage}>{errorMessage}</p>
-      )}
+        {!loading && errorMessage && (
+            <p className={styles.errorMessage}>{errorMessage}</p>
+        )}
 
-      {!loading && !errorMessage && question && (
-        <>
-          <section className={styles.panel}>
-            <div className={styles.meta}>
+        {!loading && !errorMessage && question && (
+            <>
+              <section className={styles.panel}>
+                <div className={styles.meta}>
               <span>
                 작성자: {question.authorName || question.name || "익명"} |{" "}
                 {formatDate(question.createdAt)}
               </span>
 
-              <span className={styles.ownerActions}>
+                  <span className={styles.ownerActions}>
                 {isQuestionOwner && (
-                  <Link href={`/questions/${id}/edit`}>수정</Link>
+                    <Link href={`/questions/${id}/edit`}>수정</Link>
                 )}
-                {canManageQuestion && (
-                  <button type="button" onClick={handleDeleteQuestion}>
-                    삭제
-                  </button>
-                )}
+                    {canManageQuestion && (
+                        <button type="button" onClick={handleDeleteQuestion}>
+                          삭제
+                        </button>
+                    )}
               </span>
-            </div>
+                </div>
 
-            <h1>{question.title}</h1>
-            <p className={styles.content}>{question.content}</p>
+                <h1>{question.title}</h1>
+                <p className={styles.content}>{question.content}</p>
 
-            {question.imageUrls?.length > 0 && (
-              <div className={styles.attachments}>
-                {question.imageUrls.map((url, index) => (
-                  <img
-                    key={index}
-                    src={url}
-                    alt={`첨부 이미지 ${index + 1}`}
-                    style={{
-                      maxWidth: "100%",
-                      borderRadius: 8,
-                      marginTop: 12,
-                      display: "block",
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
+                {question.imageUrls?.length > 0 && (
+                  <div className={styles.attachments}>
+                    {question.imageUrls.map((url, index) => (
+                      <img
+                        key={index}
+                        src={url}
+                        alt={`첨부 이미지 ${index + 1}`}
+                        style={{
+                          maxWidth: "100%",
+                          borderRadius: 8,
+                          marginTop: 12,
+                          display: "block",
+                        }}
+                      />
+                    ))}
+                  </div>
+               )} 
 
-          <section className={styles.answers}>
-            <h2>답변 목록 ({answers.length})</h2>
+                {/* 좋아요 버튼 섹션 */}
+                <div className={styles.likeSection}>
+                  <button
+                      type="button"
+                      className={styles.likeButton}
+                      onClick={handleToggleLike}
+                      disabled={isLikeLoading}
+                  >
+                    <div
+                        className={`${styles.likeIcon} ${
+                            question.isLiked ? styles.likeIconActive : ""
+                        }`}
+                    >
+                      {question.isLiked ? <FaHeart /> : <FaRegHeart />}
+                    </div>
+                    <span className={styles.likeCount}>
+                  좋아요 {question.likeCount ?? 0}
+                </span>
+                  </button>
+                </div>
+              </section>
 
-            <AnswerForm
-              onSubmit={handleCreateAnswer}
-              isSubmitting={isSubmitting}
-              currentUser={currentUser}
-            />
+              <section className={styles.answers}>
+                <h2>답변 목록 ({answers.length})</h2>
 
-            <AnswerList
-              answers={answers}
-              currentUser={currentUser}
-              onUpdate={handleUpdateAnswer}
-              onDelete={handleDeleteAnswer}
-              formatDate={formatDate}
-              onCreateAnswer={handleCreateAnswer}
-            />
-          </section>
-        </>
-      )}
-    </main>
+                <AnswerForm
+                    onSubmit={handleCreateAnswer}
+                    isSubmitting={isSubmitting}
+                    currentUser={currentUser}
+                />
+
+                <AnswerList
+                    answers={answers}
+                    currentUser={currentUser}
+                    onUpdate={handleUpdateAnswer}
+                    onDelete={handleDeleteAnswer}
+                    formatDate={formatDate}
+                    onCreateAnswer={handleCreateAnswer}
+                />
+              </section>
+            </>
+        )}
+      </main>
   );
 }
 

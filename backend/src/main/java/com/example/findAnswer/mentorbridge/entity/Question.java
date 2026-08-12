@@ -36,6 +36,18 @@ public class Question extends BaseTimeEntity{
     @Column(nullable = false, length = 50)
     private String category;
 
+    @Column(nullable = false)
+    private int likeCount = 0;
+    public void increaseLikeCount() {
+        this.likeCount += 1;
+    }
+
+    public void decreaseLikeCount() {
+        if (this.likeCount > 0) {
+            this.likeCount -= 1;
+        }
+    }
+
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true) //질문이 삭제될때 답변들도 함께 삭제
     private List<Answer> answers = new ArrayList<>();
 

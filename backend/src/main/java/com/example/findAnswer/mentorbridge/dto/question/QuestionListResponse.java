@@ -15,6 +15,7 @@ public class QuestionListResponse {
     private int answerCount;
     private LocalDateTime createdAt;
     private String category;
+    private int likeCount;
 
     public static QuestionListResponse from(Question question) {
 
@@ -25,6 +26,7 @@ public class QuestionListResponse {
         response.answerCount = question.getAnswers().size();
         response.createdAt = question.getCreatedAt();
         response.category = question.getCategory();
+        response.likeCount = question.getLikeCount();
         return response;
     }
 }
