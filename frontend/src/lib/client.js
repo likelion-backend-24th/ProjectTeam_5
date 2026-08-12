@@ -8,10 +8,32 @@ export function startOAuth(provider) {
   window.location.href = `${API_URL}/oauth2/authorization/${provider}`;
 }
 
+// AccessToken 만료(401) 시 refresh 토큰(HttpOnly 쿠키)으로 새 AccessToken을 발급받는다.
+// 성공하면 새 토큰을 localStorage에 저장하고 반환, 실패하면 null.
+async function tryRefreshToken() {
+  try {
+    const res = await fetch(`${API_URL}/api/auth/refresh`, {
+      method: "POST",
+      credentials: "include", // refresh 쿠키 전송
+    });
+    if (!res.ok) return null;
+
+    const data = await res.json().catch(() => null);
+    const newToken = data?.accessToken;
+    if (newToken) {
+      localStorage.setItem("accessToken", newToken);
+      return newToken;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 // 하나의 request 함수 선언
 export async function request(
   path,
-  { body, fallbackMessage = "요청에 실패했습니다.", ...options } = {}
+  { body, fallbackMessage = "요청에 실패했습니다.", _retry = false, ...options } = {}
 ) {
   const token =
     typeof window !== "undefined"
@@ -28,6 +50,24 @@ export async function request(
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
+
+  // 401(AccessToken 만료 추정) → refresh 후 원요청 1회 재시도.
+  // 무한루프 방지: 이미 재시도했거나(_retry), auth 엔드포인트 자체는 제외.
+  if (
+    response.status === 401 &&
+    !_retry &&
+    typeof window !== "undefined" &&
+    !path.startsWith("/api/auth/")
+  ) {
+    const newToken = await tryRefreshToken();
+    if (newToken) {
+      // 재시도: 헬퍼가 localStorage의 새 토큰을 다시 읽어 Authorization을 붙인다.
+      // (options.headers 에 명시적 Authorization을 넘긴 호출은 그 값이 우선하니 주의)
+      return request(path, { body, fallbackMessage, _retry: true, ...options });
+    }
+    // refresh 실패 → 로그인 만료. 토큰 정리.
+    localStorage.removeItem("accessToken");
+  }
 
   const isJson = response.headers.get("content-type")?.includes("application/json");
   const data = isJson ? await response.json() : await response.text();
