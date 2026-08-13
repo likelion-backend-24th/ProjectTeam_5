@@ -1,4 +1,7 @@
 services:
   backend:
+    volumes:
+      - /srv/mentorbridge/uploads:/app/uploads   # 호스트 SSD ↔ 컨테이너 (재배포해도 유지)
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      UPLOAD_DIR: /app/uploads
