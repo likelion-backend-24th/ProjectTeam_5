@@ -75,6 +75,23 @@ public class PaymentMethodService {
 
     }
 
+    @Transactional
+    public PaymentMethodResponse setDefaultPaymentMethod(Long userId, Long paymentMethodId) {
+        PaymentMethod targetPaymentMethod = paymentMethodRepository.findById(paymentMethodId).orElseThrow(
+                () -> new CustomException(ErrorCode.PAYMENT_METHOD_NOT_FOUND)
+        );
+        if (!targetPaymentMethod.isOwnedBy(userId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        paymentMethodRepository.findByIdAndPaymentMethodStatus(paymentMethodId, PaymentMethodStatus.ACTIVE).ifPresent(PaymentMethod::unsetDefault);
+
+        targetPaymentMethod.setDefault();
+
+        return PaymentMethodResponse.from(targetPaymentMethod);
+    }
+
 
 
 }
