@@ -26,4 +26,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     @Modifying(clearAutomatically = true)
     @Query("UPDATE Question q SET q.likeCount = q.likeCount - 1 WHERE q.id = :id AND q.likeCount > 0")
     void decrementLikeCount(@Param("id") Long id);
+
+    @EntityGraph(attributePaths = {"user"})
+    Page<Question> findByUserId(Long userId, Pageable pageable);
 }
