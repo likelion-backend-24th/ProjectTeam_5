@@ -1,0 +1,182 @@
+.page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.heading h1 {
+  margin: 0;
+  color: #111827;
+  font-size: 26px;
+}
+
+.backLink {
+  color: #526176;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.backLink:hover {
+  color: #2867e8;
+}
+
+.askButton {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  background-color: #2867e8;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.panel {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background-color: #ffffff;
+  padding: 32px 24px;
+}
+
+.statusText {
+  padding: 40px 0;
+  text-align: center;
+  color: #526176;
+}
+
+.errorMessage {
+  padding: 40px 0;
+  text-align: center;
+  color: #dc2626;
+}
+
+/* 🔒 비구독자 안내 박스 */
+.blockedBox {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.lockIcon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.blockedBox h3 {
+  font-size: 20px;
+  color: #111827;
+  margin: 0 0 8px;
+}
+
+.blockedBox p {
+  color: #526176;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+/* 게시글 본문 */
+.article {
+  min-height: 200px;
+}
+
+.postTitle {
+  font-size: 22px;
+  color: #111827;
+  margin: 0 0 12px;
+}
+
+.metaInfo {
+  font-size: 13px;
+  color: #526176;
+}
+
+.divider {
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+  margin: 20px 0;
+}
+
+.postContent {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #374151;
+  white-space: pre-wrap;
+}
+
+/* F-29: 구독 유도 모달 스타일 */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(17, 24, 39, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background-color: #ffffff;
+  border-radius: 16px;
+  padding: 32px;
+  width: 90%;
+  max-width: 440px;
+  text-align: center;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.modalBadge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background-color: #eef2ff;
+  color: #2867e8;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.modalContent h2 {
+  font-size: 20px;
+  color: #111827;
+  margin: 0 0 10px;
+}
+
+.modalDescription {
+  font-size: 14px;
+  color: #526176;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.modalActions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.cancelButton {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #526176;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancelButton:hover {
+  background-color: #f9fafb;
+}
