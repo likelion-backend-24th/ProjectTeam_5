@@ -52,7 +52,7 @@ export default function ProfilePage() {
   return (
     <main className={styles.page}>
       <div className={styles.pageHead}>
-        <h1>🔒 내 프로필</h1>
+        <h1>내 프로필</h1>
         <span className={styles.privateText}>개인 정보는 본인만 확인할 수 있습니다.</span>
       </div>
 
@@ -63,7 +63,7 @@ export default function ProfilePage() {
             <FaUserLarge />
           </div>
           <button type="button" className={styles.changeImgBtn} onClick={notReady}>
-            📷 프로필 이미지 변경
+            프로필 이미지 변경
           </button>
         </div>
 
@@ -78,8 +78,8 @@ export default function ProfilePage() {
               ? `관심 분야: ${user.interests}`
               : "소개가 아직 등록되지 않았습니다."}
           </p>
-          <div className={styles.meta}>📁 전문 분야 {tags.length ? tags.join(", ") : "미등록"}</div>
-          <div className={styles.meta}>📅 MentorBridge 가입일 {joinedAt}</div>
+          <div className={styles.meta}>전문 분야 {tags.length ? tags.join(", ") : "미등록"}</div>
+          <div className={styles.meta}>MentorBridge 가입일 {joinedAt}</div>
         </div>
 
         <div className={styles.stats}>
