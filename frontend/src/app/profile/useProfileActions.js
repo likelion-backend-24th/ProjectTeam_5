@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/contexts/AuthContext";
 import * as usersApi from "@/lib/users";
 import { getToken } from "@/lib/users";
+import { getMySubscriptions, unsubscribeMentor } from "@/lib/subscriptions";
 
 export function useProfileActions() {
   const router = useRouter();
@@ -14,22 +15,31 @@ export function useProfileActions() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", interests: "" });
   const [hasAppliedMentor, setHasAppliedMentor] = useState(false);
-  const [mentorApps, setMentorApps] = useState([]);
+
+  // 구독 목록 관련 state
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [loadingSubs, setLoadingSubs] = useState(false);
 
   const onChange = (field) => (e) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
-  const fetchAdminData = useCallback(async () => {
+  // 내 구독 목록 조회
+  const fetchSubscriptions = useCallback(async () => {
     const token = getToken();
-    if (user?.role !== "ADMIN" || !token) return;
-    try {
-      setMentorApps((await usersApi.getMentorApplications(token)) || []);
-    } catch (err) {
-      console.error("멘토 신청 목록 조회 실패:", err);
-    }
-  }, [user]);
+    if (!token) return;
 
-  // 유저 정보 → 폼 동기화 + 멘토 신청 상태 복원
+    try {
+      setLoadingSubs(true);
+      const data = await getMySubscriptions(token);
+      setSubscriptions(Array.isArray(data) ? data : data?.content || []);
+    } catch (err) {
+      console.error("구독 목록 조회 실패:", err);
+    } finally {
+      setLoadingSubs(false);
+    }
+  }, []);
+
+  // 유저 정보 → 폼 동기화 + 멘토 신청 상태 복원 + 구독 목록 로드
   useEffect(() => {
     if (!user) return;
     let ignore = false;
@@ -49,11 +59,40 @@ export function useProfileActions() {
       } catch {
         if (!ignore) setHasAppliedMentor(false);
       }
-      if (!ignore) fetchAdminData();
     })();
 
-    return () => { ignore = true; };
-  }, [user, fetchAdminData]);
+    fetchSubscriptions();
+
+    return () => {
+      ignore = true;
+    };
+  }, [user, fetchSubscriptions]);
+
+  // 구독 해지 핸들러 (인자로 subscriptionId를 넘겨받도록 명시)
+  const handleUnsubscribe = async (subscriptionId, mentorName) => {
+    const token = getToken();
+    if (!token) return;
+
+    if (!subscriptionId) {
+      alert("구독 정보 식별자(ID)를 찾을 수 없습니다.");
+      return;
+    }
+
+    const confirmMsg = mentorName
+      ? `'${mentorName}' 멘토 구독을 해지하시겠습니까?`
+      : "정말 구독을 해지하시겠습니까?";
+
+    if (!confirm(confirmMsg)) return;
+
+    try {
+      // lib/subscriptions 의 unsubscribeMentor 함수에 subscriptionId 전달
+      await unsubscribeMentor(subscriptionId, token);
+      alert("구독이 해지되었습니다.");
+      fetchSubscriptions();
+    } catch (err) {
+      alert(err.message || "구독 해지에 실패했습니다.");
+    }
+  };
 
   const handleViewInfo = async () => {
     const token = getToken();
@@ -62,10 +101,10 @@ export function useProfileActions() {
       const me = await usersApi.getMyProfile(token);
       alert(
         `📌 [최신 회원 정보]\n` +
-        `• 이름: ${me.name}\n` +
-        `• 이메일: ${me.email || "미등록"}\n` +
-        `• 권한: ${me.role}\n` +
-        `• 관심 분야: ${me.interests || "-"}`
+          `• 이름: ${me.name}\n` +
+          `• 이메일: ${me.email || "미등록"}\n` +
+          `• 권한: ${me.role}\n` +
+          `• 관심 분야: ${me.interests || "-"}`
       );
     } catch (err) {
       alert(err.message || "회원 정보를 조회하지 못했습니다.");
@@ -130,30 +169,24 @@ export function useProfileActions() {
     }
   };
 
-  const handleApprove = async (targetId) => {
-    try {
-      await usersApi.approveMentor(targetId, getToken());
-      await fetchAdminData();
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-
-  const handleReject = async (targetId) => {
-    try {
-      await usersApi.rejectMentor(targetId, getToken());
-      await fetchAdminData();
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-
   return {
-    user, isLoggedIn, loading,
-    isEditing, setIsEditing, cancelEdit,
-    isSubmitting, form, onChange,
-    hasAppliedMentor, mentorApps,
-    handleViewInfo, handleSaveProfile, handleApplyMentor,
-    handleDeleteAccount, handleApprove, handleReject,
+    user,
+    isLoggedIn,
+    loading,
+    isEditing,
+    setIsEditing,
+    cancelEdit,
+    isSubmitting,
+    form,
+    onChange,
+    hasAppliedMentor,
+    handleViewInfo,
+    handleSaveProfile,
+    handleApplyMentor,
+    handleDeleteAccount,
+    subscriptions,
+    loadingSubs,
+    handleUnsubscribe,
+    fetchSubscriptions,
   };
 }
