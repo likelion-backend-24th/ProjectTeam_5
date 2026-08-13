@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/app/contexts/AuthContext";
 import {
   getAllUsers,
@@ -12,6 +13,8 @@ import {
   approveMentor,
   rejectMentor,
 } from "@/lib/admin";
+import { getQuestions, deleteQuestion } from "@/lib/questions";
+import { getQuestionsByUser } from "@/lib/users";
 
 import styles from "./page.module.css";
 
@@ -22,24 +25,31 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("users");
   const [users, setUsers] = useState([]);
   const [mentorApps, setMentorApps] = useState([]);
+  const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // 🔍 검색, 정렬, 필터 상태
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState("latest");
   const [roleFilter, setRoleFilter] = useState("ALL");
+
+  const [expandedUserId, setExpandedUserId] = useState(null);
+  const [userQuestionsMap, setUserQuestionsMap] = useState({});
+  const [subLoadingId, setSubLoadingId] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     setErrorMessage("");
     try {
-      if (activeTab === "users") {
-        const data = await getAllUsers();
-        setUsers(data || []);
-      } else {
+      const usersData = await getAllUsers();
+      setUsers(usersData || []);
+
+      if (activeTab === "mentors") {
         const data = await getMentorApplications();
         setMentorApps(data || []);
+      } else if (activeTab === "questions") {
+        const data = await getQuestions({ page: 0, size: 1000, category: "전체", keyword: "", sort: "latest" });
+        setQuestions(data.content || data || []);
       }
     } catch (error) {
       console.error(error);
@@ -66,9 +76,9 @@ export default function AdminPage() {
     setSearchQuery("");
     setSortOption("latest");
     setRoleFilter("ALL");
+    setExpandedUserId(null);
   };
 
-  // 🔍 1. 전체 회원 검색, 역할 필터링 및 ID 기준 정렬 로직
   const filteredUsers = useMemo(() => {
     let list = [...users];
 
@@ -85,7 +95,6 @@ export default function AdminPage() {
       list = list.filter((u) => u.role === roleFilter);
     }
 
-    // 💡 날짜 대신 ID 기준으로 정렬 (최신순: ID 내림차순, 오래된순: ID 오름차순)
     list.sort((a, b) => {
       const idA = Number(a.id || 0);
       const idB = Number(b.id || 0);
@@ -95,7 +104,6 @@ export default function AdminPage() {
     return list;
   }, [users, searchQuery, roleFilter, sortOption]);
 
-  // 🔍 2. 멘토 신청 검색 및 ID 기준 정렬 로직
   const filteredMentorApps = useMemo(() => {
     let list = [...mentorApps];
 
@@ -108,7 +116,6 @@ export default function AdminPage() {
       );
     }
 
-    // 💡 날짜 대신 ID 기준으로 정렬
     list.sort((a, b) => {
       const idA = Number(a.id || 0);
       const idB = Number(b.id || 0);
@@ -117,6 +124,88 @@ export default function AdminPage() {
 
     return list;
   }, [mentorApps, searchQuery, sortOption]);
+
+  const authorSummary = useMemo(() => {
+    const map = {};
+    const userMapByName = {};
+    const userMapById = {};
+    users.forEach((u) => {
+      if (u.id) userMapById[String(u.id)] = u;
+      if (u.name) userMapByName[u.name] = u;
+    });
+
+    questions.forEach((q) => {
+      const qUserId = q.userId || q.authorId || q.writerId;
+      const qUserName = q.writerName || q.authorName || "알 수 없음";
+
+      const matchedUser = (qUserId && userMapById[String(qUserId)]) || userMapByName[qUserName];
+
+      const authorId = matchedUser?.id || qUserId || qUserName;
+      const authorName = matchedUser?.name || qUserName;
+      const authorRole = matchedUser?.role || q.writerRole || q.authorRole || q.role || "USER";
+
+      if (!map[authorId]) {
+        map[authorId] = {
+          id: authorId,
+          name: authorName,
+          role: authorRole,
+          count: 0,
+        };
+      }
+      map[authorId].count += 1;
+    });
+
+    let list = Object.values(map);
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter((item) => item.name.toLowerCase().includes(q));
+    }
+
+    list.sort((a, b) => {
+      if (sortOption === "latest") {
+        return b.count - a.count;
+      } else {
+        return a.count - b.count;
+      }
+    });
+
+    return list;
+  }, [questions, users, searchQuery, sortOption]);
+
+  const handleToggleExpand = async (userId) => {
+    if (expandedUserId === userId) {
+      setExpandedUserId(null);
+      return;
+    }
+
+    setExpandedUserId(userId);
+
+    if (userQuestionsMap[userId]) return;
+
+    setSubLoadingId(userId);
+    try {
+      const res = await getQuestionsByUser(userId);
+      let list = res?.content || res || [];
+
+      // 📌 작성글 목록 최신순(등록일 및 ID 기준) 정렬 적용
+      list.sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        if (dateA !== dateB) {
+          return dateB - dateA;
+        }
+        return Number(b.id || 0) - Number(a.id || 0);
+      });
+
+      setUserQuestionsMap((prev) => ({ ...prev, [userId]: list }));
+    } catch (error) {
+      console.error(error);
+      alert("해당 유저의 작성글을 불러오는 데 실패했습니다.");
+    } finally {
+      setSubLoadingId(null);
+    }
+  };
 
   const handleBlockToggle = async (userId, isBlocked) => {
     const actionText = isBlocked ? "차단 해제" : "차단";
@@ -182,7 +271,7 @@ export default function AdminPage() {
       <div className={styles.heading}>
         <div>
           <h1>관리자 페이지</h1>
-          <p>회원 정보 관리 및 멘토 신청을 승인/거절할 수 있습니다.</p>
+          <p>회원 정보, 멘토 신청 및 커뮤니티 게시글을 통합 관리할 수 있습니다.</p>
         </div>
       </div>
 
@@ -190,28 +279,35 @@ export default function AdminPage() {
         <div className={styles.tabGroup}>
           <button
             type="button"
-            className={`${styles.tabButton} ${
-              activeTab === "users" ? styles.tabActive : ""
-            }`}
+            className={`${styles.tabButton} ${activeTab === "users" ? styles.tabActive : ""}`}
             onClick={() => handleTabChange("users")}
           >
             전체 회원 관리
           </button>
           <button
             type="button"
-            className={`${styles.tabButton} ${
-              activeTab === "mentors" ? styles.tabActive : ""
-            }`}
+            className={`${styles.tabButton} ${activeTab === "mentors" ? styles.tabActive : ""}`}
             onClick={() => handleTabChange("mentors")}
           >
             멘토 신청 관리
+          </button>
+          <button
+            type="button"
+            className={`${styles.tabButton} ${activeTab === "questions" ? styles.tabActive : ""}`}
+            onClick={() => handleTabChange("questions")}
+          >
+            게시글 관리
           </button>
         </div>
 
         <div className={styles.controlsBar}>
           <input
             type="text"
-            placeholder="이름 또는 이메일 검색..."
+            placeholder={
+              activeTab === "questions"
+                ? "작성자 이름 검색..."
+                : "이름 또는 이메일 검색..."
+            }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className={styles.searchInput}
@@ -236,8 +332,8 @@ export default function AdminPage() {
               onChange={(e) => setSortOption(e.target.value)}
               className={styles.selectBox}
             >
-              <option value="latest">최신순</option>
-              <option value="oldest">오래된순</option>
+              <option value="latest">{activeTab === "questions" ? "작성글 많은 순" : "최신순"}</option>
+              <option value="oldest">{activeTab === "questions" ? "작성글 적은 순" : "오래된순"}</option>
             </select>
           </div>
         </div>
@@ -247,6 +343,7 @@ export default function AdminPage() {
           <p className={styles.errorMessage}>{errorMessage}</p>
         )}
 
+        {/* 1. 전체 회원 관리 탭 */}
         {!loading && !errorMessage && activeTab === "users" && (
           <>
             {filteredUsers.length === 0 ? (
@@ -257,13 +354,13 @@ export default function AdminPage() {
               <table className={styles.table}>
                 <thead>
                   <tr>
-                    <th style={{ width: "60px", textAlign: "center" }}>ID</th>
-                    <th style={{ width: "220px" }}>이메일</th>
-                    <th style={{ width: "100px" }}>이름</th>
-                    <th style={{ width: "80px" }}>역할</th>
-                    <th style={{ width: "70px", textAlign: "center" }}>상태</th>
-                    <th style={{ width: "100px" }}>가입일</th>
-                    <th style={{ width: "120px", textAlign: "center" }}>관리</th>
+                    <th style={{ width: "50px", textAlign: "center" }}>ID</th>
+                    <th style={{ width: "180px" }}>이메일</th>
+                    <th style={{ width: "90px" }}>이름</th>
+                    <th style={{ width: "70px" }}>역할</th>
+                    <th style={{ width: "60px", textAlign: "center" }}>상태</th>
+                    <th style={{ width: "90px" }}>가입일</th>
+                    <th style={{ width: "110px", textAlign: "center" }}>관리</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -274,7 +371,9 @@ export default function AdminPage() {
                       <tr key={u.id}>
                         <td style={{ textAlign: "center" }}>{u.id}</td>
                         <td className={styles.ellipsisCell}>{u.email || "OAuth 계정"}</td>
-                        <td className={styles.ellipsisCell}>{u.name}</td>
+                        <td className={styles.ellipsisCell} style={{ fontWeight: "bold", color: "#333" }}>
+                          {u.name}
+                        </td>
                         <td>
                           <span
                             className={
@@ -300,11 +399,7 @@ export default function AdminPage() {
                           <div className={styles.actionButtons}>
                             <button
                               type="button"
-                              className={
-                                isUserBlocked
-                                  ? styles.unblockBtn
-                                  : styles.blockBtn
-                              }
+                              className={isUserBlocked ? styles.unblockBtn : styles.blockBtn}
                               onClick={() => handleBlockToggle(u.id, isUserBlocked)}
                             >
                               {isUserBlocked ? "해제" : "차단"}
@@ -327,6 +422,7 @@ export default function AdminPage() {
           </>
         )}
 
+        {/* 2. 멘토 신청 관리 탭 */}
         {!loading && !errorMessage && activeTab === "mentors" && (
           <>
             {filteredMentorApps.length === 0 ? (
@@ -373,6 +469,126 @@ export default function AdminPage() {
                       </td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            )}
+          </>
+        )}
+
+        {/* 3. 게시글 관리 탭 */}
+        {!loading && !errorMessage && activeTab === "questions" && (
+          <>
+            {authorSummary.length === 0 ? (
+              <p className={styles.statusText}>
+                {searchQuery ? "검색 결과가 없습니다." : "등록된 게시글이 없습니다."}
+              </p>
+            ) : (
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={{ width: "80px", textAlign: "center" }}>번호</th>
+                    <th style={{ width: "200px" }}>작성자 이름</th>
+                    <th style={{ width: "120px" }}>역할</th>
+                    <th style={{ width: "120px", textAlign: "center" }}>총 작성글 수</th>
+                    <th style={{ width: "150px", textAlign: "center" }}>작성글 보기</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {authorSummary.map((item, index) => {
+                    const isExpanded = expandedUserId === item.id;
+                    const userQuestions = userQuestionsMap[item.id] || [];
+                    const isSubLoading = subLoadingId === item.id;
+
+                    return (
+                      <React.Fragment key={item.id}>
+                        <tr>
+                          <td style={{ textAlign: "center" }}>{index + 1}</td>
+                          <td>
+                            <span style={{ fontWeight: "bold", color: "#333" }}>
+                              {item.name}
+                            </span>
+                          </td>
+                          <td>
+                            <span
+                              className={
+                                item.role === "ADMIN"
+                                  ? styles.roleAdmin
+                                  : item.role === "MENTOR"
+                                  ? styles.roleMentor
+                                  : styles.roleUser
+                              }
+                            >
+                              {item.role}
+                            </span>
+                          </td>
+                          <td style={{ textAlign: "center" }}>
+                            <span style={{ fontWeight: "bold", color: "#2867e8" }}>
+                              {item.count}개
+                            </span>
+                          </td>
+                          <td style={{ textAlign: "center" }}>
+                            <button
+                              type="button"
+                              className={styles.askButton}
+                              style={{ padding: "6px 12px", fontSize: "12px", cursor: "pointer" }}
+                              onClick={() => handleToggleExpand(item.id)}
+                            >
+                              {isExpanded ? "닫기 ▲" : "작성글 보기 ▼"}
+                            </button>
+                          </td>
+                        </tr>
+
+                        {/* 아코디언 펼쳐짐 영역 */}
+                        {isExpanded && (
+                          <tr>
+                            <td colSpan="5" style={{ backgroundColor: "#f9fbff", padding: "16px" }}>
+                              <div style={{ border: "1px solid #d0e1fd", borderRadius: "8px", padding: "12px", background: "#fff" }}>
+                                <p style={{ fontWeight: "bold", marginBottom: "8px", color: "#2867e8", fontSize: "13px" }}>
+                                  📌 {item.name} 님이 작성한 질문 목록
+                                </p>
+                                {isSubLoading ? (
+                                  <p style={{ textAlign: "center", padding: "12px", color: "#666" }}>불러오는 중...</p>
+                                ) : userQuestions.length === 0 ? (
+                                  <p style={{ textAlign: "center", padding: "12px", color: "#666" }}>작성한 질문이 없습니다.</p>
+                                ) : (
+                                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                                    <thead>
+                                      <tr style={{ borderBottom: "1px solid #eee", textAlign: "left", color: "#555" }}>
+                                        <th style={{ padding: "6px", width: "80px" }}>분류</th>
+                                        <th style={{ padding: "6px" }}>제목</th>
+                                        <th style={{ padding: "6px", width: "60px", textAlign: "center" }}>답변</th>
+                                        <th style={{ padding: "6px", width: "60px", textAlign: "center" }}>좋아요</th>
+                                        <th style={{ padding: "6px", width: "90px", textAlign: "center" }}>등록일</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {userQuestions.map((q) => (
+                                        <tr key={q.id} style={{ borderBottom: "1px solid #f2f2f2" }}>
+                                          <td style={{ padding: "8px 6px", color: "#2867e8", fontWeight: "bold" }}>
+                                            [{q.category || "기타"}]
+                                          </td>
+                                          <td style={{ padding: "8px 6px" }}>
+                                            <Link href={`/questions/${q.id}`} target="_blank" style={{ color: "#333", textDecoration: "none" }}>
+                                              {q.title}
+                                            </Link>
+                                          </td>
+                                          <td style={{ padding: "8px 6px", textAlign: "center" }}>{q.answerCount ?? 0}</td>
+                                          <td style={{ padding: "8px 6px", textAlign: "center" }}>❤️ {q.likeCount ?? 0}</td>
+                                          <td style={{ padding: "8px 6px", textAlign: "center", color: "#777" }}>
+                                            {q.createdAt?.slice(0, 10)}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             )}
