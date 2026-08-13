@@ -96,6 +96,14 @@ public class QuestionService {
                 .map(QuestionListResponse::from);
     }
 
+    // 특정 유저가 작성한 질문 목록 조회 (페이징)
+    public Page<QuestionListResponse> getQuestionsByUserId(Long userId, Pageable pageable) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        return questionRepository.findByUserId(userId, pageable)
+                .map(QuestionListResponse::from);
+    }
+
     // 질문 검색 (제목 + 본문 통합 검색, 페이징)
     public Page<QuestionListResponse> searchQuestions(String keyword, Pageable pageable) {
         return questionRepository.findByTitleContainingOrContentContaining(keyword, keyword, pageable)

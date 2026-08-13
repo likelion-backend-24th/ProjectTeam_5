@@ -57,6 +57,17 @@ public class QuestionController {
         return ResponseEntity.ok(response);
     }
 
+    // 특정 유저가 작성한 질문 목록 조회 (GET /api/questions/user/{userId})
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<Page<QuestionListResponse>> getQuestionsByUser(
+            @PathVariable Long userId,
+            @ParameterObject
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        Page<QuestionListResponse> response = questionService.getQuestionsByUserId(userId, pageable);
+        return ResponseEntity.ok(response);
+    }
+
     //좋아요 토글 api
     @PostMapping("/{questionId}/like")
     public ResponseEntity<QuestionLikeResponse> toggleLike(

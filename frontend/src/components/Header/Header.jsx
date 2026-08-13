@@ -55,6 +55,21 @@ export default function Header() {
             멘토피드
           </Link>
 
+          {/* 유저 목록 탭: 관리자(ADMIN)일 때만 노출되도록 변경 */}
+          {!loading && isLoggedIn && user?.role === "ADMIN" && (
+              <Link
+                  href="/users"
+                  onClick={(e) =>
+                      handleProtectedNavigation(e, "/users", "유저 목록")
+                  }
+                  className={
+                    pathname?.startsWith("/users") ? styles.navActive : undefined
+                  }
+              >
+                유저 목록
+              </Link>
+          )}
+
           <Link
             href="/profile"
             onClick={(e) =>
