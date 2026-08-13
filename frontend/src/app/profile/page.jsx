@@ -16,13 +16,13 @@ export default function ProfilePage() {
     form,
     onChange,
     hasAppliedMentor,
-    mentorApps,
     handleViewInfo,
     handleSaveProfile,
     handleApplyMentor,
     handleDeleteAccount,
-    handleApprove,
-    handleReject,
+    subscriptions,
+    loadingSubs,
+    handleUnsubscribe,
   } = useProfileActions();
 
   if (loading) return <main className={styles.page} />;
@@ -115,25 +115,25 @@ export default function ProfilePage() {
               <dt>관심 분야</dt>
               <dd>
                 {isEditing ? (
-                    <select
-                        className={styles.inlineInput}
-                        value={form.interests}
-                        onChange={onChange("interests")}
-                    >
-                      <option value="">관심 분야를 선택해주세요</option>
-                      <option value="개발">개발</option>
-                      <option value="멘토링">멘토링</option>
-                      <option value="취업">취업</option>
-                      <option value="기타">기타</option>
-                    </select>
+                  <select
+                    className={styles.inlineInput}
+                    value={form.interests}
+                    onChange={onChange("interests")}
+                  >
+                    <option value="">관심 분야를 선택해주세요</option>
+                    <option value="개발">개발</option>
+                    <option value="멘토링">멘토링</option>
+                    <option value="취업">취업</option>
+                    <option value="기타">기타</option>
+                  </select>
                 ) : (
-                    user.interests || "-"
+                  user.interests || "-"
                 )}
               </dd>
             </div>
           </dl>
 
-          {/* 이메일 미등록 안내 (카카오 로그인 등) */}
+          {/* 이메일 미등록 안내 */}
           {!user.email && !isEditing && (
             <div className={styles.mentorBanner}>
               <div className={styles.mentorBannerIcon}>✉️</div>
@@ -267,53 +267,57 @@ export default function ProfilePage() {
         </section>
       </div>
 
-      {/* ================= 하단: 관리자 전용 승인/거절 영역 ================= */}
-      {user.role === "ADMIN" && (
-        <section
-          className={styles.profileCard}
-          style={{ marginTop: "36px", borderColor: "#10b981" }}
-        >
-          <div className={styles.cardHeading}>
-            <h1 style={{ color: "#059669" }}>
-              🛡️ 멘토 신청 대기 목록 (관리자 전용)
-            </h1>
-          </div>
+      {/* ================= 하단: 내가 구독 중인 멘토 목록 ================= */}
+      <section className={styles.profileCard} style={{ marginTop: "36px" }}>
+        <div className={styles.cardHeading}>
+          <h1>⭐ 내가 구독 중인 멘토</h1>
+          <span className={styles.privateText}>
+            총 {subscriptions.length}명의 멘토를 구독 중입니다.
+          </span>
+        </div>
 
-          {mentorApps.length === 0 ? (
-            <p style={{ marginTop: "20px", color: "#64748b" }}>
-              현재 승인 대기 중인 멘토 신청자가 없습니다.
-            </p>
-          ) : (
-            <div className={styles.managementList} style={{ marginTop: "20px" }}>
-              {mentorApps.map((app) => (
-                <div key={app.id} className={styles.managementItem}>
-                  <div className={styles.itemIcon}>👤</div>
-                  <div className={styles.itemContent}>
-                    <strong>{app.name}</strong>
-                    <p>이메일: {app.email || "미등록"}</p>
+        {loadingSubs ? (
+          <p style={{ marginTop: "20px", color: "#64748b" }}>
+            구독 목록을 불러오는 중입니다...
+          </p>
+        ) : subscriptions.length === 0 ? (
+          <p style={{ marginTop: "20px", color: "#64748b" }}>
+            현재 구독 중인 멘토가 없습니다. 관심 있는 멘토를 구독해 보세요!
+          </p>
+        ) : (
+          <div className={styles.subscriptionGrid}>
+            {subscriptions.map((sub) => {
+              // 💡 핵심: 구독 객체에서 subscriptionId를 우선적으로 가져옵니다.
+              const subId = sub.subscriptionId || sub.id;
+              const mentorName = sub.mentorName || sub.name || `멘토 #${sub.mentorId || subId}`;
+              
+              const dateRaw = sub.currentPeriodStart || sub.createdAt;
+              const subscribedAt = dateRaw
+                ? new Date(dateRaw).toLocaleDateString("ko-KR")
+                : null;
+
+              return (
+                <div key={subId || sub.mentorId} className={styles.subCard}>
+                  <div className={styles.subCardInfo}>
+                    <div className={styles.subAvatar}>🎓</div>
+                    <div>
+                      <strong>{mentorName}</strong>
+                      {subscribedAt && <p>구독일: {subscribedAt}</p>}
+                    </div>
                   </div>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <button
-                      type="button"
-                      className={styles.primaryButton}
-                      onClick={() => handleApprove(app.id)}
-                    >
-                      승인
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.dangerButton}
-                      onClick={() => handleReject(app.id)}
-                    >
-                      거절
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className={styles.subCancelButton}
+                    onClick={() => handleUnsubscribe(subId, mentorName)}
+                  >
+                    구독 해지
+                  </button>
                 </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </section>
     </main>
   );
 }
