@@ -105,6 +105,26 @@ export function getMyProfile(token) {
     });
 }
 
+// 전체 유저 목록 조회
+export async function getUsers() {
+    const token = getToken();
+    return request("/api/users", {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+        fallbackMessage: "유저 목록을 불러오지 못했습니다.",
+    });
+}
+
+// 특정 유저가 작성한 질문 목록 조회
+export async function getQuestionsByUser(userId, page = 0) {
+    const token = getToken();
+    return request(`/api/questions/user/${userId}?page=${page}&size=10`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+        fallbackMessage: "유저의 질문 목록을 불러오지 못했습니다.",
+    });
+}
+
 
 // [기능 1] 정보 조회 기능 (최신 정보 불러오기 & 안내창 표시)
 export const handleViewInfo = async () => {
@@ -213,3 +233,5 @@ export const handleReject = async (targetId) => {
         alert(err.message);
     }
 };
+
+

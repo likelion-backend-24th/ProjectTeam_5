@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -26,6 +28,13 @@ public class UserController {
     public ResponseEntity<UserResponse> getProfile(@AuthenticationPrincipal Long userId) {
         UserResponse response = userService.getUserProfile(userId);
         return ResponseEntity.ok(response);
+    }
+
+    // 전체 회원 목록 조회 (공개)
+    @GetMapping
+    public ResponseEntity<List<UserResponse>> getUsers() {
+        List<UserResponse> responses = userService.getAllUsers();
+        return ResponseEntity.ok(responses);
     }
 
     //프로필(이름) 수정 (PATCH /api/users/me) - 200 OK
