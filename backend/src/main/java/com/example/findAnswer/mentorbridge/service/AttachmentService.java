@@ -19,6 +19,7 @@ import org.apache.tomcat.util.http.fileupload.InvalidFileNameException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
@@ -76,6 +77,12 @@ public class AttachmentService {
 
         return SignResponse.create(questionAttachmentFile.getId(), signedUpload);
 
+    }
+
+    public SignedUpload createProfileImageSignature(Long userId) {
+
+        String storageKey = "findanswer/profiles/user_" + userId + "_" + Instant.now().getEpochSecond();
+        return attachmentStorage.createSignedUpload(storageKey);
     }
 
 

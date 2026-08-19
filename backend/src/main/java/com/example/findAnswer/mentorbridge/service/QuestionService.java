@@ -80,7 +80,7 @@ public class QuestionService {
         return QuestionResponse.from(question, imagesOf(questionAttachmentFileRepository.findByQuestion(question)), isLiked);
     }
 
-    // 🔍 통합 질문 목록 조회 (검색어, 카테고리, 정렬 반영)
+    //통합 질문 목록 조회 (검색어, 카테고리, 정렬 반영)
     public Page<QuestionListResponse> getQuestions(String category, String keyword, Pageable pageable) {
         boolean hasCategory = category != null && !category.equals("전체");
         boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
@@ -134,6 +134,20 @@ public class QuestionService {
         userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         return questionRepository.findByUserId(userId, pageable)
+                .map(QuestionListResponse::from);
+    }
+
+    //팔로잉 유저들의 질문 목록 조회
+    @Transactional(readOnly = true)
+    public Page<QuestionListResponse> getFollowingQuestions(Long followerId, Pageable pageable) {
+        return questionRepository.findByFollowingUsers(followerId, pageable)
+                .map(QuestionListResponse::from);
+    }
+
+    // 유저가 답변한 질문 목록 조회
+    @Transactional(readOnly = true)
+    public Page<QuestionListResponse> getAnsweredQuestionsByUser(Long userId, Pageable pageable) {
+        return questionRepository.findQuestionsByAnsweredUserId(userId, pageable)
                 .map(QuestionListResponse::from);
     }
 

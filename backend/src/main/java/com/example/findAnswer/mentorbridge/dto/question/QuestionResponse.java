@@ -14,9 +14,11 @@ import java.util.stream.Collectors;
 @Getter
 public class QuestionResponse {
     private Long id;
+    private Long userId;
     private String title;
     private String content;
     private String authorName;
+    private String authorProfileImageUrl;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<AnswerResponse> answers;
@@ -33,9 +35,11 @@ public class QuestionResponse {
     public static QuestionResponse from(Question question, List<ImageResponse> images, boolean isLiked) {
         QuestionResponse response = new QuestionResponse();
         response.id = question.getId();
+        response.userId = question.getUser().getId();
         response.title = question.getTitle();
         response.content = question.getContent();
         response.authorName = question.getUser().getName();
+        response.authorProfileImageUrl = question.getUser().getProfileImageUrl();
         response.createdAt = question.getCreatedAt();
         response.updatedAt = question.getUpdatedAt();
         response.category = question.getCategory();
