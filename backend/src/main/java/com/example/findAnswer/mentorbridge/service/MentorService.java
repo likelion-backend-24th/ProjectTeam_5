@@ -124,8 +124,8 @@ public class MentorService {
                 dto.getCareer(),
                 dto.getTags(),
                 dto.getEducation(),
-                dto.getSchedule(),
-                dto.getSubscriptionPrice()
+                dto.getSchedule()
+//                dto.getSubscriptionPrice()
         );
 
         List<SubscriptionStatus> activeStatuses = List.of(SubscriptionStatus.ACTIVE, SubscriptionStatus.CANCEL_RESERVED);

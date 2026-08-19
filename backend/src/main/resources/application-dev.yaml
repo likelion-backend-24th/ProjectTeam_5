@@ -17,7 +17,10 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
 
   security:
     oauth2:
@@ -57,6 +60,8 @@ app:
   oauth2:
     failure-redirect-uri: ${FAILURE_FRONT_REDIRECT_URI:http://localhost:3000/login}
     success-redirect-uri: ${SUCCESS_FRONT_REDIRECT_URI:http://localhost:3000/oauth/callback}
+  upload:
+    dir: ${UPLOAD_DIR:./uploads}
 
 
 server:
@@ -69,6 +74,16 @@ kakao:
 cloudinary:
   url: ${CLOUDINARY_URL:cloudinary://API_KEY:API_SECRET@CLOUD_NAME}
   folder: findanswer/posts
+
+
+portone:
+  store-id: ${PORTONE_STORE_ID:store-test-0000}
+  channel-key-payment: ${PORTONE_CHANNEL_KEY_PAYMENT:channel-key-test-0000}
+  channel-key-billing: ${PORTONE_CHANNEL_KEY_BILLING:channel-key-test-0000}
+  api-secret: ${PORTONE_API_SECRET:portone-test-api-secret}
+  api-base-url: ${PORTONE_API_BASE_URL:https://api.portone.io}
+  payment-id-prefix: ${PORTONE_PAYMENT_ID_PREFIX:MB}
+
 
 #cloudinary:
 #  url: ${CLOUDINARY_URL}

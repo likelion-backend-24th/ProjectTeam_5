@@ -14,7 +14,10 @@ spring:
     properties:
       hibernate:
         format_sql: false
-
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
   security:
     oauth2:
       client:
@@ -53,6 +56,8 @@ app:
   oauth2:
     success-redirect-uri: https://like-lion-team5-find-answer.vercel.app/oauth/callback
     failure-redirect-uri: https://like-lion-team5-find-answer.vercel.app/login
+  upload:
+    dir: ${UPLOAD_DIR:./uploads}
 
 server:
   forward-headers-strategy: framework
@@ -61,5 +66,14 @@ kakao:
   admin-key: ${KAKAO_ADMIN_KEY:kakao_admin_key}
 
 cloudinary:
-  url: ${CLOUDINARY_URL}          # cloudinary://key:secret@cloudname
+  url: ${CLOUDINARY_URL:cloudinary://key:secret@cloudname}          # cloudinary://key:secret@cloudname
   folder: findanswer/posts
+
+
+portone:
+  store-id: ${PORTONE_STORE_ID}
+  channel-key-payment: ${PORTONE_CHANNEL_KEY_PAYMENT}
+  channel-key-billing: ${PORTONE_CHANNEL_KEY_BILLING}
+  api-secret: ${PORTONE_API_SECRET}
+  api-base-url: ${PORTONE_API_BASE_URL:https://api.portone.io}
+  payment-id-prefix: ${PORTONE_PAYMENT_ID_PREFIX:MB}

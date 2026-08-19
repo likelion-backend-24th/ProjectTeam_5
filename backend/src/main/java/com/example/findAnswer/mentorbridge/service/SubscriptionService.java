@@ -1,9 +1,14 @@
 package com.example.findAnswer.mentorbridge.service;
 
+import com.example.findAnswer.mentorbridge.constants.ErrorCode;
 import com.example.findAnswer.mentorbridge.constants.SubscriptionStatus;
 import com.example.findAnswer.mentorbridge.dto.subscription.SubscriptionCheckResponse;
 import com.example.findAnswer.mentorbridge.dto.subscription.SubscriptionResponse;
+import com.example.findAnswer.mentorbridge.entity.MentorPlan;
 import com.example.findAnswer.mentorbridge.entity.Subscription;
+import com.example.findAnswer.mentorbridge.entity.User;
+import com.example.findAnswer.mentorbridge.exception.CustomException;
+import com.example.findAnswer.mentorbridge.repository.MentorPlanRepository;
 import com.example.findAnswer.mentorbridge.repository.SubscriptionRepository;
 import com.example.findAnswer.mentorbridge.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,27 +25,30 @@ public class SubscriptionService {
 
     private final SubscriptionRepository subscriptionRepository;
     private final UserRepository userRepository;
+    private final MentorPlanRepository mentorPlanRepository;
 
     /**
      * F-24: 구독 신청 (멘토가 지정한 가격 동적 반영)
      */
     @Transactional
-    public SubscriptionResponse subscribe(Long userId, Long mentorId) {
+    public SubscriptionResponse subscribe(Long userId, Long mentorPlanId) {
         LocalDateTime now = LocalDateTime.now();
 
-        // 💡 [수정] 멘토가 설정한 구독 금액 조회
-        Integer mentorPrice = userRepository.findById(mentorId)
-                .map(user -> user.getSubscriptionPrice() != null ? user.getSubscriptionPrice() : 9900)
-                .orElse(9900);
+//        // 💡 [수정] 멘토가 설정한 구독 금액 조회
+//        Integer mentorPrice = userRepository.findById(mentorId)
+//                .map(user -> user.getSubscriptionPrice() != null ? user.getSubscriptionPrice() : 9900)
+//                .orElse(9900);
+
+        MentorPlan mentorPlan = mentorPlanRepository.findById(mentorPlanId).orElseThrow(() -> new CustomException(ErrorCode.PLAN_NOT_FOUND));
 
         // 기존 구독 이력이 있는지 확인
-        Subscription subscription = subscriptionRepository.findByUserIdAndMentorId(userId, mentorId)
+        Subscription subscription = subscriptionRepository.findByUserIdAndMentorId(userId, mentorPlan.getMentorId())
                 .map(sub -> {
                     if (sub.hasActivePermission(now)) {
                         throw new IllegalStateException("이미 진행 중인 구독이 존재합니다.");
                     }
                     // 만료된 상태라면 최신 멘토 가격을 반영하여 재활용
-                    sub.reactivate(now, now.plusMonths(1), mentorPrice);
+                    sub.reactivate(now, now.plusMonths(1), mentorPlan.getPrice());
                     return sub;
                 })
                 .orElseGet(() -> {
@@ -48,17 +56,17 @@ public class SubscriptionService {
                     return subscriptionRepository.save(
                             Subscription.builder()
                                     .userId(userId)
-                                    .mentorId(mentorId)
+                                    .mentorId(mentorPlan.getMentorId())
                                     .status(SubscriptionStatus.ACTIVE)
-                                    .amount(mentorPrice)
+                                    .amount(mentorPlan.getPrice())
                                     .currentPeriodStart(now)
                                     .currentPeriodEnd(now.plusMonths(1))
                                     .build()
                     );
                 });
 
-        String mentorName = userRepository.findById(mentorId)
-                .map(user -> user.getName())
+        String mentorName = userRepository.findById(mentorPlan.getMentorId())
+                .map(User::getName)
                 .orElse("알 수 없는 멘토");
 
         return SubscriptionResponse.of(subscription, mentorName);
@@ -103,7 +111,7 @@ public class SubscriptionService {
                 .stream()
                 .map(sub -> {
                     String mentorName = userRepository.findById(sub.getMentorId())
-                            .map(user -> user.getName())
+                            .map(User::getName)
                             .orElse("알 수 없는 멘토");
 
                     return SubscriptionResponse.of(sub, mentorName);

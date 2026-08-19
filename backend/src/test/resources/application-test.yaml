@@ -12,7 +12,10 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
-
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
   security:
     oauth2:
       client:
@@ -52,6 +55,8 @@ app:
   oauth2:
     success-redirect-uri: https://like-lion-team5-find-answer.vercel.app/oauth/callback
     failure-redirect-uri: https://like-lion-team5-find-answer.vercel.app/login
+  upload:
+    dir: ${UPLOAD_DIR:./uploads}
 
 kakao:
   admin-key: kakao-admin-key-secret
