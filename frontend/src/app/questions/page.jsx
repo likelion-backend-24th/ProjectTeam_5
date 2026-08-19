@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -31,7 +31,14 @@ export default function QuestionsPage() {
       setErrorMessage("");
 
       try {
-        const result = await getQuestions({ page, size: 10, category });
+        // 서버로 검색어(keyword)와 정렬(sort) 조건 전달
+        const result = await getQuestions({ 
+          page, 
+          size: 10, 
+          category, 
+          keyword: searchQuery, 
+          sort: sortOption 
+        });
 
         if (!ignore) {
           setData(result);
@@ -58,7 +65,7 @@ export default function QuestionsPage() {
     return () => {
       ignore = true;
     };
-  }, [page, category]);
+  }, [page, category, searchQuery, sortOption]); // 👈 검색어 변경 시에도 서버에서 다시 조회
 
   const handleCategoryChange = (newCategory) => {
     if (category !== newCategory) {
@@ -67,32 +74,19 @@ export default function QuestionsPage() {
     }
   };
 
-  const rawQuestions = data?.content ?? [];
+  // 검색어 변경 시 페이지 초기화
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+    setPage(0);
+  };
 
-  // 🔍 질문 목록 검색 및 정렬 필터링 (좋아요 순 추가)
-  const filteredQuestions = useMemo(() => {
-    let list = [...rawQuestions];
+  // 정렬 변경 시 페이지 초기화
+  const handleSortChange = (e) => {
+    setSortOption(e.target.value);
+    setPage(0);
+  };
 
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(
-        (item) =>
-          item.title?.toLowerCase().includes(q) ||
-          (item.authorName || item.name || "").toLowerCase().includes(q)
-      );
-    }
-
-    list.sort((a, b) => {
-      if (sortOption === "latest") return new Date(b.createdAt) - new Date(a.createdAt);
-      if (sortOption === "oldest") return new Date(a.createdAt) - new Date(b.createdAt);
-      if (sortOption === "mostAnswers") return (b.answerCount ?? 0) - (a.answerCount ?? 0);
-      if (sortOption === "mostLikes") return (b.likeCount ?? 0) - (a.likeCount ?? 0); // ❤️ 좋아요 많은순
-      return 0;
-    });
-
-    return list;
-  }, [rawQuestions, searchQuery, sortOption]);
-
+  const questions = data?.content ?? [];
   const totalElements = data?.totalElements ?? 0;
   const totalPages = Math.max(Math.ceil(totalElements / 10), 1);
 
@@ -164,9 +158,9 @@ export default function QuestionsPage() {
         >
           <input
             type="text"
-            placeholder="질문 제목 또는 작성자 검색..."
+            placeholder="질문 제목 또는 내용 검색..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={handleSearchChange}
             style={{
               padding: "8px 14px",
               borderRadius: "6px",
@@ -178,7 +172,7 @@ export default function QuestionsPage() {
 
           <select
             value={sortOption}
-            onChange={(e) => setSortOption(e.target.value)}
+            onChange={handleSortChange}
             style={{
               padding: "8px 12px",
               borderRadius: "6px",
@@ -201,13 +195,13 @@ export default function QuestionsPage() {
           <p className={styles.errorMessage}>{errorMessage}</p>
         )}
 
-        {!loading && !errorMessage && filteredQuestions.length === 0 && (
+        {!loading && !errorMessage && questions.length === 0 && (
           <p className={styles.statusText}>
             {searchQuery ? "검색 결과가 없습니다." : "아직 등록된 질문이 없습니다."}
           </p>
         )}
 
-        {!loading && !errorMessage && filteredQuestions.length > 0 && (
+        {!loading && !errorMessage && questions.length > 0 && (
           <table className={styles.table}>
             <thead>
               <tr>
@@ -221,7 +215,7 @@ export default function QuestionsPage() {
             </thead>
 
             <tbody>
-              {filteredQuestions.map((question) => (
+              {questions.map((question) => (
                 <tr key={question.id}>
                   <td style={{ textAlign: "center" }}>
                     <span style={{ color: "#2867e8", fontSize: "13px", fontWeight: "bold" }}>

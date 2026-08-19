@@ -14,16 +14,23 @@ export async function getAnswers(id) {
   });
 }
 
-// 수정된 부분: URL에 category 쿼리 스트링 추가
-export function getQuestions({ page = 0, size = 10, category = "전체" }) {
+// 수정된 부분: keyword, sort 파라미터 추가 및 쿼리스트링 조합 (mostAnswers 매핑 포함)
+export function getQuestions({ page = 0, size = 10, category = "전체", keyword = "", sort = "latest" }) {
   const categoryQuery = category !== "전체" ? `&category=${encodeURIComponent(category)}` : "";
+  const keywordQuery = keyword && keyword.trim() !== "" ? `&keyword=${encodeURIComponent(keyword)}` : "";
+  
+  // 백엔드 정렬 조건 매핑
+  let sortParam = "createdAt,desc";
+  if (sort === "oldest") sortParam = "createdAt,asc";
+  if (sort === "mostLikes") sortParam = "likeCount,desc";
+  if (sort === "mostAnswers") sortParam = "answerCount,desc"; // 🚀 답변 많은순 매핑 추가됨
 
   return request(
-      `/api/questions?page=${page}&size=${size}&sort=createdAt,desc${categoryQuery}`,
-      {
-        method: "GET",
-        fallbackMessage: "질문 목록을 불러오지 못했습니다.",
-      }
+    `/api/questions?page=${page}&size=${size}&sort=${sortParam}${categoryQuery}${keywordQuery}`,
+    {
+      method: "GET",
+      fallbackMessage: "질문 목록을 불러오지 못했습니다.",
+    }
   );
 }
 
@@ -50,7 +57,6 @@ export async function deleteAnswer(answerId) {
   });
 }
 
-// 수정된 부분: category 파라미터 추가 및 body에 포함, attachmentIds 추가
 export async function createQuestion(title, content, category, attachmentIds = []) {
   return request("/api/questions", {
     method: "POST",
@@ -59,8 +65,6 @@ export async function createQuestion(title, content, category, attachmentIds = [
   });
 }
 
-// 수정된 부분: category 파라미터 추가 및 body에 포함
-// 변경 전: updateQuestion(id, title, content, category)
 export async function updateQuestion(id, title, content, category, attachmentIds = []) {
   return request(`/api/questions/${id}`, {
     method: "PATCH",
