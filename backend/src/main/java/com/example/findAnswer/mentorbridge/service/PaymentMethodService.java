@@ -71,8 +71,20 @@ public class PaymentMethodService {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
 
+        boolean wasDefault = paymentMethod.isDefault();
         paymentMethod.softDelete(); // soft delete
 
+        // 대표 카드를 삭제했다면, 남은 ACTIVE 카드 중 가장 최근 것을 대표로 자동 승격.
+        // (softDelete 로 status=DELETED 가 flush 되므로 아래 ACTIVE 조회에서 방금 지운 카드는 빠진다.
+        //  혹시 모를 flush 타이밍 대비로 방금 지운 id 는 한 번 더 걸러낸다.)
+        if (wasDefault) {
+            paymentMethodRepository
+                    .findByUserAndPaymentMethodStatusOrderByCreatedAtDesc(paymentMethod.getUser(), PaymentMethodStatus.ACTIVE)
+                    .stream()
+                    .filter(pm -> !pm.getId().equals(paymentMethodId))
+                    .findFirst()
+                    .ifPresent(PaymentMethod::setDefault);
+        }
     }
 
     @Transactional
@@ -85,7 +97,10 @@ public class PaymentMethodService {
         }
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        paymentMethodRepository.findByIdAndPaymentMethodStatus(paymentMethodId, PaymentMethodStatus.ACTIVE).ifPresent(PaymentMethod::unsetDefault);
+        // 기존 "대표 카드"(다른 카드)를 찾아 해제해야 대표가 1개로 유지된다.
+        // 기존 코드는 target 자신을 다시 찾아 unset→set 하기만 해서 기존 대표가 안 풀려 대표가 2개가 됐다.
+        paymentMethodRepository.findByUserAndIsDefaultTrueAndPaymentMethodStatus(user, PaymentMethodStatus.ACTIVE)
+                .ifPresent(PaymentMethod::unsetDefault);
 
         targetPaymentMethod.setDefault();
 

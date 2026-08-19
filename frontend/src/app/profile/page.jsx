@@ -1,8 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { FaUserLarge } from "react-icons/fa6";
 import { useProfileActions } from "./useProfileActions";
+import ProfilePaymentSection from "./ProfilePaymentSection";
 import styles from "./page.module.css";
+
+const TABS = ["프로필 정보", "활동 내역", "결제 수단 관리", "구독 관리", "보안 설정"];
 
 export default function ProfilePage() {
   const {
@@ -16,308 +20,281 @@ export default function ProfilePage() {
     form,
     onChange,
     hasAppliedMentor,
-    handleViewInfo,
     handleSaveProfile,
     handleApplyMentor,
     handleDeleteAccount,
     subscriptions,
-    loadingSubs,
-    handleUnsubscribe,
   } = useProfileActions();
+
+  const [activeTab, setActiveTab] = useState("프로필 정보");
 
   if (loading) return <main className={styles.page} />;
 
   if (!isLoggedIn || !user) {
     return (
       <main className={styles.page}>
-        <p style={{ textAlign: "center", padding: "40px" }}>
-          로그인이 필요합니다.
-        </p>
+        <p style={{ textAlign: "center", padding: "40px" }}>로그인이 필요합니다.</p>
       </main>
     );
   }
 
   const roleLabel =
-    user.role === "ADMIN"
-      ? "관리자"
-      : user.role === "MENTOR"
-      ? "현직 전문가"
-      : "일반 회원";
+    user.role === "ADMIN" ? "관리자" : user.role === "MENTOR" ? "현직 멘토" : "일반 회원";
 
   const joinedAt = user.createdAt
-    ? new Date(user.createdAt).toLocaleDateString("ko-KR", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
+    ? new Date(user.createdAt).toLocaleDateString("ko-KR").replace(/\.$/, "")
     : "-";
+
+  const handle = user.email ? "@" + user.email.split("@")[0] : "@user";
+  const tags = (user.interests || "").split(/[,#\s]+/).filter(Boolean);
+  const notReady = () => alert("아직 준비 중인 기능입니다.");
 
   return (
     <main className={styles.page}>
-      <div className={styles.contentGrid}>
+      <div className={styles.pageHead}>
+        <h1>내 프로필</h1>
+        <span className={styles.privateText}>개인 정보는 본인만 확인할 수 있습니다.</span>
+      </div>
 
-        {/* ================= 좌측: 내 프로필 카드 ================= */}
-        <section className={styles.profileCard}>
-          <div className={styles.cardHeading}>
-            <h1>내 프로필 (마이페이지)</h1>
-            <span className={styles.privateText}>
-              🔒 개인 정보는 본인만 확인할 수 있습니다
-            </span>
+      {/* ===== 히어로 ===== */}
+      <section className={styles.hero}>
+        <div className={styles.heroLeft}>
+          <div className={styles.avatar} aria-hidden="true">
+            <FaUserLarge />
           </div>
+          <button type="button" className={styles.changeImgBtn} onClick={notReady}>
+            프로필 이미지 변경
+          </button>
+        </div>
 
-          <div className={styles.profileSummary}>
-            <div className={styles.avatar} aria-hidden="true">
-              <FaUserLarge />
+        <div className={styles.heroMid}>
+          <div className={styles.nameRow}>
+            <h2>{user.name}</h2>
+            <span className={styles.roleBadge}>{roleLabel}</span>
+          </div>
+          <div className={styles.handle}>{handle}</div>
+          <p className={styles.bio}>
+            {user.interests
+              ? `관심 분야: ${user.interests}`
+              : "소개가 아직 등록되지 않았습니다."}
+          </p>
+          <div className={styles.meta}>전문 분야 {tags.length ? tags.join(", ") : "미등록"}</div>
+          <div className={styles.meta}>MentorBridge 가입일 {joinedAt}</div>
+        </div>
+
+        <div className={styles.stats}>
+          {[
+            ["팔로워", "-"],
+            ["팔로잉", "-"],
+            ["작성 질문", "-"],
+            ["작성 답변", "-"],
+            ["받은 좋아요", "-"],
+          ].map(([lbl, num]) => (
+            <div key={lbl} className={styles.stat}>
+              <div className={styles.statNum}>{num}</div>
+              <div className={styles.statLbl}>{lbl}</div>
             </div>
-            <div className={styles.profileIdentity}>
+          ))}
+        </div>
+      </section>
+
+      {/* ===== 탭 ===== */}
+      <nav className={styles.tabs}>
+        {TABS.map((t) => (
+          <button
+            key={t}
+            type="button"
+            className={`${styles.tab} ${activeTab === t ? styles.tabActive : ""}`}
+            onClick={() => setActiveTab(t)}
+          >
+            {t}
+          </button>
+        ))}
+      </nav>
+
+      {/* ===== 2단 콘텐츠 ===== */}
+      <div className={styles.grid}>
+        {/* 좌측 */}
+        <div className={styles.col}>
+          {/* 기본 정보 */}
+          <section className={styles.card}>
+            <h2 className={styles.cardTitle}>기본 정보</h2>
+
+            <InfoRow label="이름">
+              {isEditing ? (
+                <input className={styles.inlineInput} value={form.name} onChange={onChange("name")} />
+              ) : (
+                user.name
+              )}
+            </InfoRow>
+
+            <InfoRow label="이메일">
+              {isEditing ? (
+                <input className={styles.inlineInput} value={form.email} onChange={onChange("email")} />
+              ) : (
+                user.email || <span className={styles.muted}>미등록</span>
+              )}
+            </InfoRow>
+
+            <InfoRow label="닉네임">
+              <span className={styles.muted}>{handle}</span>
+            </InfoRow>
+
+            <InfoRow label="전문 분야">
               {isEditing ? (
                 <input
-                  type="text"
-                  className={styles.nameInput}
-                  value={form.name}
-                  onChange={onChange("name")}
-                  placeholder="이름"
+                  className={styles.inlineInput}
+                  value={form.interests}
+                  onChange={onChange("interests")}
+                  placeholder="쉼표로 구분 (예: 백엔드, Spring Boot, Java)"
                 />
+              ) : tags.length ? (
+                <div className={styles.tags}>
+                  {tags.map((t) => (
+                    <span key={t} className={styles.tag}>
+                      #{t}
+                    </span>
+                  ))}
+                </div>
               ) : (
-                <h2>{user.name}</h2>
+                <span className={styles.muted}>미등록</span>
               )}
-              <div className={styles.roleLine}>
-                <span>{roleLabel}</span>
-                <span className={styles.roleBadge}>{user.role}</span>
+            </InfoRow>
+
+            <InfoRow label="가입일">{joinedAt}</InfoRow>
+
+            {isEditing ? (
+              <div className={styles.editActions}>
+                <button type="button" className={styles.cancelButton} onClick={cancelEdit} disabled={isSubmitting}>
+                  취소
+                </button>
+                <button type="button" className={styles.saveButton} onClick={handleSaveProfile} disabled={isSubmitting}>
+                  {isSubmitting ? "저장 중..." : "저장하기"}
+                </button>
               </div>
-            </div>
-          </div>
-
-          <div className={styles.divider} />
-
-          <dl className={styles.profileDetails}>
-            <div>
-              <dt>이메일 주소</dt>
-              <dd>
-                {isEditing ? (
-                  <input
-                    type="email"
-                    className={styles.inlineInput}
-                    value={form.email}
-                    onChange={onChange("email")}
-                    placeholder="이메일을 입력하세요"
-                  />
-                ) : (
-                  user.email || "미등록"
-                )}
-              </dd>
-            </div>
-            <div>
-              <dt>가입 일시</dt>
-              <dd>{joinedAt}</dd>
-            </div>
-            <div>
-              <dt>관심 분야</dt>
-              <dd>
-                {isEditing ? (
-                  <select
-                    className={styles.inlineInput}
-                    value={form.interests}
-                    onChange={onChange("interests")}
-                  >
-                    <option value="">관심 분야를 선택해주세요</option>
-                    <option value="개발">개발</option>
-                    <option value="멘토링">멘토링</option>
-                    <option value="취업">취업</option>
-                    <option value="기타">기타</option>
-                  </select>
-                ) : (
-                  user.interests || "-"
-                )}
-              </dd>
-            </div>
-          </dl>
-
-          {/* 이메일 미등록 안내 */}
-          {!user.email && !isEditing && (
-            <div className={styles.mentorBanner}>
-              <div className={styles.mentorBannerIcon}>✉️</div>
-              <div className={styles.mentorBannerContent}>
-                <div className={styles.mentorBannerTitle}>
-                  <strong>이메일 미등록</strong>
-                </div>
-                <p>
-                  결제 및 알림 수신을 위해 이메일을 등록해 주세요.{" "}
-                  <button
-                    type="button"
-                    className={styles.linkButton}
-                    onClick={() => setIsEditing(true)}
-                  >
-                    지금 등록하기
-                  </button>
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* 멘토 승인 대기 배너 */}
-          {user.role === "USER" && hasAppliedMentor && (
-            <div className={styles.mentorBanner}>
-              <div className={styles.mentorBannerIcon}>📋</div>
-              <div className={styles.mentorBannerContent}>
-                <div className={styles.mentorBannerTitle}>
-                  <strong>멘토 신청</strong>
-                  <span>멘토 승인 대기 중</span>
-                </div>
-                <p>관리자 승인 후 멘토로 활동할 수 있습니다.</p>
-              </div>
-            </div>
-          )}
-
-          {/* 수정 모드 버튼 영역 */}
-          {isEditing && (
-            <div className={styles.editActions}>
-              <button
-                type="button"
-                className={styles.cancelButton}
-                onClick={cancelEdit}
-                disabled={isSubmitting}
-              >
-                취소
-              </button>
-              <button
-                type="button"
-                className={styles.saveButton}
-                onClick={handleSaveProfile}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "저장 중..." : "저장하기"}
-              </button>
-            </div>
-          )}
-        </section>
-
-        {/* ================= 우측: 프로필 관리 액션 카드 ================= */}
-        <section className={styles.managementCard}>
-          <h2>프로필 관리</h2>
-
-          <div className={styles.managementList}>
-            {/* 1. 정보 조회 */}
-            <div className={styles.managementItem}>
-              <div className={styles.itemIcon}>🔍</div>
-              <div className={styles.itemContent}>
-                <strong>조회</strong>
-                <p>현재 등록된 정보를 확인합니다.</p>
-              </div>
-              <button
-                type="button"
-                className={styles.outlineButton}
-                onClick={handleViewInfo}
-              >
-                정보 조회
-              </button>
-            </div>
-
-            {/* 2. 프로필 수정 */}
-            <div className={styles.managementItem}>
-              <div className={styles.itemIcon}>✏️</div>
-              <div className={styles.itemContent}>
-                <strong>수정</strong>
-                <p>이름, 이메일, 관심 분야를 변경할 수 있습니다.</p>
-              </div>
-              <button
-                type="button"
-                className={styles.primaryButton}
-                onClick={() => setIsEditing(true)}
-                disabled={isEditing}
-              >
-                프로필 수정
-              </button>
-            </div>
-
-            {/* 3. 멘토 신청 */}
-            {user.role === "USER" && !hasAppliedMentor && (
-              <div className={styles.managementItem}>
-                <div className={`${styles.itemIcon} ${styles.mentorIcon}`}>🏅</div>
-                <div className={styles.itemContent}>
-                  <strong>멘토 신청</strong>
-                  <p>멘토로 활동하기 위한 신청을 진행합니다.</p>
-                </div>
-                <button
-                  type="button"
-                  className={styles.mentorButton}
-                  onClick={handleApplyMentor}
-                >
-                  신청하기
+            ) : (
+              <div className={styles.editActions}>
+                <button type="button" className={styles.editBtn} onClick={() => setIsEditing(true)}>
+                  프로필 수정
                 </button>
               </div>
             )}
+          </section>
 
-            {/* 4. 회원 탈퇴 */}
-            <div className={`${styles.managementItem} ${styles.dangerItem}`}>
-              <div className={`${styles.itemIcon} ${styles.dangerIcon}`}>👤❌</div>
-              <div className={styles.itemContent}>
-                <strong className={styles.dangerText}>탈퇴</strong>
-                <p>탈퇴 시 계정 정보와 활동 내역은 복구되지 않습니다.</p>
-              </div>
-              <button
-                type="button"
-                className={styles.dangerButton}
-                onClick={handleDeleteAccount}
-              >
-                회원 탈퇴
-              </button>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {/* ================= 하단: 내가 구독 중인 멘토 목록 ================= */}
-      <section className={styles.profileCard} style={{ marginTop: "36px" }}>
-        <div className={styles.cardHeading}>
-          <h1>⭐ 내가 구독 중인 멘토</h1>
-          <span className={styles.privateText}>
-            총 {subscriptions.length}명의 멘토를 구독 중입니다.
-          </span>
+          {/* 보안 설정 */}
+          <section className={styles.card}>
+            <h2 className={styles.cardTitle}>보안 설정</h2>
+            <button type="button" className={styles.rowLink} onClick={notReady}>
+              <span className={styles.rowIcon}>🔒</span>
+              <span className={styles.rowText}>
+                <strong>비밀번호 변경</strong>
+                <p>계정 비밀번호를 변경합니다.</p>
+              </span>
+              <span className={styles.chev}>›</span>
+            </button>
+            <button type="button" className={styles.rowLink} onClick={notReady}>
+              <span className={styles.rowIcon}>🔔</span>
+              <span className={styles.rowText}>
+                <strong>알림 설정</strong>
+                <p>이메일 및 푸시 알림 설정을 관리합니다.</p>
+              </span>
+              <span className={styles.chev}>›</span>
+            </button>
+          </section>
         </div>
 
-        {loadingSubs ? (
-          <p style={{ marginTop: "20px", color: "#64748b" }}>
-            구독 목록을 불러오는 중입니다...
-          </p>
-        ) : subscriptions.length === 0 ? (
-          <p style={{ marginTop: "20px", color: "#64748b" }}>
-            현재 구독 중인 멘토가 없습니다. 관심 있는 멘토를 구독해 보세요!
-          </p>
-        ) : (
-          <div className={styles.subscriptionGrid}>
-            {subscriptions.map((sub) => {
-              // 💡 핵심: 구독 객체에서 subscriptionId를 우선적으로 가져옵니다.
-              const subId = sub.subscriptionId || sub.id;
-              const mentorName = sub.mentorName || sub.name || `멘토 #${sub.mentorId || subId}`;
-              
-              const dateRaw = sub.currentPeriodStart || sub.createdAt;
-              const subscribedAt = dateRaw
-                ? new Date(dateRaw).toLocaleDateString("ko-KR")
-                : null;
+        {/* 우측 */}
+        <div className={styles.col}>
+          {/* 결제 수단 관리 (실제 백엔드 연동) */}
+          <ProfilePaymentSection />
 
-              return (
-                <div key={subId || sub.mentorId} className={styles.subCard}>
-                  <div className={styles.subCardInfo}>
-                    <div className={styles.subAvatar}>🎓</div>
-                    <div>
-                      <strong>{mentorName}</strong>
-                      {subscribedAt && <p>구독일: {subscribedAt}</p>}
+          {/* 구독 현황 */}
+          <section className={styles.card}>
+            <h2 className={styles.cardTitle}>구독 현황</h2>
+            {subscriptions.length === 0 ? (
+              <p className={styles.muted} style={{ marginTop: 8 }}>
+                구독 중인 멘토가 없습니다.
+              </p>
+            ) : (
+              subscriptions.slice(0, 3).map((sub) => {
+                const subId = sub.subscriptionId || sub.id;
+                const mentorName = sub.mentorName || sub.name || `멘토 #${sub.mentorId || subId}`;
+                const started = sub.currentPeriodStart || sub.createdAt;
+                return (
+                  <div key={subId} style={{ marginTop: 12 }}>
+                    <div className={styles.subHead}>
+                      <div className={styles.subCrown}>👑</div>
+                      <div style={{ flex: 1 }}>
+                        <strong>{mentorName} 구독</strong>
+                        {started && (
+                          <div className={styles.subBetween}>
+                            <span className={styles.muted}>구독 시작일</span>
+                            <span>{new Date(started).toLocaleDateString("ko-KR")}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    className={styles.subCancelButton}
-                    onClick={() => handleUnsubscribe(subId, mentorName)}
-                  >
-                    구독 해지
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
+                );
+              })
+            )}
+          </section>
+
+          {/* 계정 관리 */}
+          <section className={styles.card}>
+            <h2 className={styles.cardTitle}>계정 관리</h2>
+
+            <button type="button" className={styles.rowLink} onClick={() => setIsEditing(true)}>
+              <span className={styles.rowIcon}>👤</span>
+              <span className={styles.rowText}>
+                <strong>프로필 정보 수정</strong>
+                <p>이름, 이메일, 전문 분야 등 프로필 정보를 수정합니다.</p>
+              </span>
+              <span className={styles.chev}>›</span>
+            </button>
+
+            {user.role === "USER" && !hasAppliedMentor && (
+              <button type="button" className={styles.rowLink} onClick={handleApplyMentor}>
+                <span className={styles.rowIcon}>🏅</span>
+                <span className={styles.rowText}>
+                  <strong>멘토 신청</strong>
+                  <p>멘토로 활동하기 위한 신청을 진행합니다.</p>
+                </span>
+                <span className={styles.chev}>›</span>
+              </button>
+            )}
+            {user.role === "USER" && hasAppliedMentor && (
+              <button type="button" className={styles.rowLink} onClick={notReady}>
+                <span className={styles.rowIcon}>📋</span>
+                <span className={styles.rowText}>
+                  <strong>멘토 승인 대기 중</strong>
+                  <p>관리자 승인 후 멘토로 활동할 수 있습니다.</p>
+                </span>
+                <span className={styles.chev}>›</span>
+              </button>
+            )}
+
+            <button type="button" className={`${styles.rowLink} ${styles.danger}`} onClick={handleDeleteAccount}>
+              <span className={styles.rowIcon}>❌</span>
+              <span className={styles.rowText}>
+                <strong>회원 탈퇴</strong>
+                <p>계정과 모든 데이터를 삭제합니다.</p>
+              </span>
+              <span className={styles.chev}>›</span>
+            </button>
+          </section>
+        </div>
+      </div>
     </main>
+  );
+}
+
+// 기본 정보의 한 줄 (라벨 / 값)
+function InfoRow({ label, children }) {
+  return (
+    <div className={styles.infoRow}>
+      <span className={styles.infoLabel}>{label}</span>
+      <span className={styles.infoValue}>{children}</span>
+    </div>
   );
 }
