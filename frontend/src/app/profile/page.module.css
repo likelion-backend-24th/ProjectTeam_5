@@ -1,0 +1,345 @@
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+  color: #0f172a;
+}
+
+/* ===== 페이지 헤더 ===== */
+.pageHead {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.pageHead h1 {
+  font-size: 26px;
+  margin: 0;
+}
+.privateText {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+/* ===== 히어로 카드 ===== */
+.hero {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 28px;
+  flex-wrap: wrap;
+}
+.heroLeft {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.avatar {
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 56px;
+  color: #94a3b8;
+  overflow: hidden;
+}
+.changeImgBtn {
+  font-size: 13px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 7px 12px;
+  background: #fff;
+  cursor: pointer;
+}
+.changeImgBtn:hover {
+  background: #f8fafc;
+}
+.heroMid {
+  flex: 1;
+  min-width: 260px;
+}
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.nameRow h2 {
+  font-size: 24px;
+  margin: 0;
+}
+.roleBadge {
+  font-size: 12px;
+  color: #2563eb;
+  background: #eff6ff;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-weight: 600;
+}
+.handle {
+  color: #64748b;
+  margin-top: 4px;
+}
+.bio {
+  margin: 12px 0;
+  color: #334155;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+.meta {
+  color: #64748b;
+  font-size: 14px;
+  margin-top: 6px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ===== 통계 ===== */
+.stats {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+.stat {
+  text-align: center;
+  min-width: 56px;
+}
+.statNum {
+  font-size: 22px;
+  font-weight: 700;
+  color: #2563eb;
+}
+.statLbl {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* ===== 탭 ===== */
+.tabs {
+  display: flex;
+  gap: 24px;
+  border-bottom: 1px solid #e5e7eb;
+  margin: 28px 0 20px;
+  overflow-x: auto;
+}
+.tab {
+  padding: 12px 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 15px;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.tabActive {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+  font-weight: 600;
+}
+
+/* ===== 2단 그리드 ===== */
+.grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.col {
+  display: grid;
+  gap: 24px;
+}
+
+/* ===== 카드 공통 ===== */
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 22px;
+}
+.cardTitle {
+  margin: 0 0 8px;
+  font-size: 17px;
+}
+
+/* ===== 기본 정보 행 ===== */
+.infoRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+.infoRow:last-child {
+  border-bottom: none;
+}
+.infoLabel {
+  width: 88px;
+  color: #64748b;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.infoValue {
+  flex: 1;
+  color: #0f172a;
+  min-width: 0;
+}
+.muted {
+  color: #94a3b8;
+}
+.editBtn {
+  font-size: 13px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 4px 12px;
+  background: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.editBtn:hover {
+  background: #f8fafc;
+}
+.inlineInput {
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  width: 100%;
+  font-family: inherit;
+  font-size: 14px;
+}
+.tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-size: 13px;
+  color: #2563eb;
+  background: #eff6ff;
+  border-radius: 6px;
+  padding: 3px 8px;
+}
+.editActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+.cancelButton,
+.saveButton {
+  padding: 9px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.cancelButton {
+  border: 1px solid #d1d5db;
+  background: #fff;
+}
+.saveButton {
+  border: none;
+  background: #2563eb;
+  color: #fff;
+}
+
+/* ===== 목록형 행(보안/계정) ===== */
+.rowLink {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid #eef0f3;
+  border-radius: 10px;
+  margin-top: 10px;
+  cursor: pointer;
+  background: #fff;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+}
+.rowLink:hover {
+  background: #f8fafc;
+}
+.rowIcon {
+  font-size: 18px;
+  width: 22px;
+  text-align: center;
+}
+.rowText strong {
+  display: block;
+  font-size: 15px;
+}
+.rowText p {
+  margin: 2px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+.chev {
+  margin-left: auto;
+  color: #94a3b8;
+  font-size: 18px;
+}
+.danger strong {
+  color: #dc2626;
+}
+
+/* ===== 구독 현황 ===== */
+.subHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.subCrown {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #f5f3ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.subBetween {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+  margin-top: 6px;
+}
+.subPrice {
+  color: #2563eb;
+  font-weight: 700;
+}
+.manageBtn {
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+}
+.manageBtn:hover {
+  background: #f8fafc;
+}
+
+@media (max-width: 880px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .hero {
+    justify-content: center;
+    text-align: center;
+  }
+}

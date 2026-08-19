@@ -1,0 +1,213 @@
+.page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.heading {
+  margin-bottom: 24px;
+}
+
+.heading h1 {
+  margin: 0 0 8px;
+  color: #111827;
+  font-size: 26px;
+}
+
+.heading p {
+  margin: 0;
+  color: #526176;
+  font-size: 14px;
+}
+
+.panel {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background-color: #ffffff;
+  padding: 16px 24px 24px;
+}
+
+/* 탭 버튼 스타일 */
+.tabGroup {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 12px;
+}
+
+.tabButton {
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  color: #526176;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tabActive {
+  border: none !important;
+  background-color: #2867e8 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+/* 🔍 검색 및 필터 바 */
+.controlsBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  font-size: 14px;
+  width: 280px;
+}
+
+.selectGroup {
+  display: flex;
+  gap: 8px;
+}
+
+.selectBox {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  font-size: 14px;
+  background-color: #ffffff;
+  cursor: pointer;
+}
+
+/* 상태 및 에러 메시지 */
+.statusText {
+  padding: 40px 0;
+  text-align: center;
+  color: #526176;
+}
+
+.errorMessage {
+  padding: 40px 0;
+  text-align: center;
+  color: #dc2626;
+}
+
+/* 테이블 스타일 */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed; /* 검색/필터 적용 시 열 너비 고정 */
+}
+
+.table th {
+  padding: 16px 8px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+  color: #526176;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.table td {
+  padding: 16px 8px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #111827;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+/* 긴 이메일/이름 말줄임표 처리 */
+.ellipsisCell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 뱃지 스타일 */
+.roleUser {
+  color: #526176;
+}
+
+.roleMentor {
+  color: #2867e8;
+  font-weight: 700;
+}
+
+.roleAdmin {
+  color: #7c3aed;
+  font-weight: 700;
+}
+
+.badgeActive {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background-color: #ecfdf5;
+  color: #059669;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badgeBlocked {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background-color: #fef2f2;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* 작업 버튼들 */
+.actionButtons {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.blockBtn,
+.unblockBtn,
+.deleteBtn,
+.approveBtn,
+.rejectBtn {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  white-space: nowrap;
+}
+
+.blockBtn {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.unblockBtn {
+  background-color: #e0e7ff;
+  color: #3730a3;
+}
+
+.deleteBtn {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+
+.approveBtn {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.rejectBtn {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}

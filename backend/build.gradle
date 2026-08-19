@@ -2,6 +2,9 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '4.1.0'
 	id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.jetbrains.kotlin.jvm'
+    id "org.jetbrains.kotlin.plugin.jpa" version '2.4.0'
+    id "org.jetbrains.kotlin.plugin.spring" version '2.4.0'
 }
 
 group = 'com.example'
@@ -18,10 +21,10 @@ repositories {
 }
 
 dependencies {
-
+	implementation 'com.cloudinary:cloudinary-http5:2.0.0'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
-	runtimeOnly   'io.jsonwebtoken:jjwt-impl:0.12.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
 	runtimeOnly   'io.jsonwebtoken:jjwt-jackson:0.12.5'
 	runtimeOnly 'org.postgresql:postgresql'
 	implementation 'org.springframework.boot:spring-boot-h2console'
@@ -46,6 +49,8 @@ dependencies {
 	testCompileOnly 'org.projectlombok:lombok'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testAnnotationProcessor 'org.projectlombok:lombok'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
 }
 
 tasks.named('test') {

@@ -53,9 +53,11 @@
   color: #dc2626;
 }
 
+/* 💡 table-layout: fixed를 적용하여 검색어 변경 시에도 열 너비 고정 */
 .table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .table th {
@@ -83,6 +85,13 @@
   color: #526176;
 }
 
+/* 💡 제목이 길 때 말줄임표(...) 처리 */
+.titleCell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .table a {
   color: #111827;
   text-decoration: none;
@@ -98,6 +107,16 @@
   border-radius: 4px;
   background-color: #eef2ff;
   color: #2867e8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.likeCountBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background-color: #fef2f2;
+  color: #ef4444;
   font-size: 12px;
   font-weight: 700;
 }

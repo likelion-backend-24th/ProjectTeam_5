@@ -1,56 +1,89 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
-
-if (!API_URL) {
-  throw new Error("NEXT_PUBLIC_API_URL이 설정되지 않았습니다.");
-}
-
-async function handleResponse(response, fallbackMessage) {
-  const contentType = response.headers.get("content-type");
-  const isJson = contentType?.includes("application/json");
-
-  const responseData = isJson
-    ? await response.json()
-    : await response.text();
-
-  if (!response.ok) {
-    const errorMessage =
-      typeof responseData === "object"
-        ? responseData.message || responseData.error || fallbackMessage
-        : responseData || fallbackMessage;
-
-    const error = new Error(errorMessage);
-    error.status = response.status;
-    error.data = responseData;
-
-    throw error;
-  }
-
-  return responseData;
-}
-
-export async function getQuestions(page = 0, size = 10) {
-  // sort=latest는 백엔드에서 403이 남 (실제 필드명을 기대하는 걸로 보임).
-  // 최신순 정렬은 createdAt 내림차순으로 대신 요청한다.
-  const response = await fetch(
-    `${API_URL}/api/questions?page=${page}&size=${size}&sort=createdAt,desc`,
-    { cache: "no-store" }
-  );
-
-  return handleResponse(response, "질문 목록을 불러오지 못했습니다.");
-}
+import { request } from "./client";
 
 export async function getQuestion(id) {
-  const response = await fetch(`${API_URL}/api/questions/${id}`, {
-    cache: "no-store",
+  return request(`/api/questions/${id}`, {
+    method: "GET",
+    fallbackMessage: "질문을 불러오지 못했습니다.",
   });
-
-  return handleResponse(response, "질문을 불러오지 못했습니다.");
 }
 
 export async function getAnswers(id) {
-  const response = await fetch(`${API_URL}/api/questions/${id}/answers`, {
-    cache: "no-store",
+  return request(`/api/questions/${id}/answers`, {
+    method: "GET",
+    fallbackMessage: "답변을 불러오지 못했습니다.",
   });
+}
 
-  return handleResponse(response, "답변을 불러오지 못했습니다.");
+// 수정된 부분: keyword, sort 파라미터 추가 및 쿼리스트링 조합 (mostAnswers 매핑 포함)
+export function getQuestions({ page = 0, size = 10, category = "전체", keyword = "", sort = "latest" }) {
+  const categoryQuery = category !== "전체" ? `&category=${encodeURIComponent(category)}` : "";
+  const keywordQuery = keyword && keyword.trim() !== "" ? `&keyword=${encodeURIComponent(keyword)}` : "";
+  
+  // 백엔드 정렬 조건 매핑
+  let sortParam = "createdAt,desc";
+  if (sort === "oldest") sortParam = "createdAt,asc";
+  if (sort === "mostLikes") sortParam = "likeCount,desc";
+  if (sort === "mostAnswers") sortParam = "answerCount,desc"; // 🚀 답변 많은순 매핑 추가됨
+
+  return request(
+    `/api/questions?page=${page}&size=${size}&sort=${sortParam}${categoryQuery}${keywordQuery}`,
+    {
+      method: "GET",
+      fallbackMessage: "질문 목록을 불러오지 못했습니다.",
+    }
+  );
+}
+
+export async function createAnswer(questionId, data) {
+  return request(`/api/questions/${questionId}/answers`, {
+    method: "POST",
+    body: data,
+    fallbackMessage: "답변 등록에 실패했습니다.",
+  });
+}
+
+export async function updateAnswer(answerId, data) {
+  return request(`/api/answers/${answerId}`, {
+    method: "PATCH",
+    body: data,
+    fallbackMessage: "답변 수정에 실패했습니다.",
+  });
+}
+
+export async function deleteAnswer(answerId) {
+  return request(`/api/answers/${answerId}`, {
+    method: "DELETE",
+    fallbackMessage: "답변 삭제에 실패했습니다.",
+  });
+}
+
+export async function createQuestion(title, content, category, attachmentIds = []) {
+  return request("/api/questions", {
+    method: "POST",
+    body: { title, content, category, attachmentIds },
+    fallbackMessage: "질문 등록에 실패했습니다.",
+  });
+}
+
+export async function updateQuestion(id, title, content, category, attachmentIds = []) {
+  return request(`/api/questions/${id}`, {
+    method: "PATCH",
+    body: { title, content, category, attachmentIds },
+    fallbackMessage: "질문 수정에 실패했습니다.",
+  });
+}
+
+export async function deleteQuestion(id) {
+  return request(`/api/questions/${id}`, {
+    method: "DELETE",
+    fallbackMessage: "질문 삭제에 실패했습니다.",
+  });
+}
+
+// 좋아요 토글
+export async function toggleLike(questionId) {
+  return request(`/api/questions/${questionId}/like`, {
+    method: "POST",
+    fallbackMessage: "좋아요 처리에 실패했습니다.",
+  });
 }

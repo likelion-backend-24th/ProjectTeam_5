@@ -46,13 +46,15 @@
   gap: 12px;
 }
 
-.ownerActions button {
+.ownerActions button,
+.ownerActions a {
   border: none;
   background: none;
   color: #2867e8;
   font-size: 13px;
   cursor: pointer;
   padding: 0;
+  text-decoration: none;
 }
 
 .panel h1 {
@@ -123,4 +125,58 @@
   color: #111827;
   line-height: 1.6;
   white-space: pre-wrap;
+}
+
+/* 좋아요 스타일 추가 */
+.likeSection {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+  padding-top: 32px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.likeButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #526176;
+  transition: transform 0.2s ease;
+}
+
+.likeButton:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.likeButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.likeIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: #f3f4f6;
+  font-size: 24px;
+  color: #9ca3af;
+  transition: all 0.2s ease;
+}
+
+.likeIconActive {
+  color: #ef4444;
+  background-color: #fef2f2;
+}
+
+.likeCount {
+  font-size: 15px;
+  font-weight: 700;
+  color: #374151;
 }

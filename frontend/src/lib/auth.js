@@ -1,82 +1,32 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
+import { request } from "./client";
 
-if (!API_URL) {
-  throw new Error("NEXT_PUBLIC_API_URL이 설정되지 않았습니다.");
+export function signup({ email, password, name }) {
+  return request("/api/auth/signup", {
+    method: "POST",
+    body: { email: email.trim(), password, name: name.trim() },
+    fallbackMessage: "회원가입에 실패했습니다.",
+  });
 }
 
-export async function signup(signupData) {
-  const response = await fetch(`${API_URL}/api/auth/signup`, {
+export function login({ email, password }) {
+  return request("/api/auth/login", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      email: signupData.email.trim(),
-      password: signupData.password,
-      name: signupData.name.trim(),
-    }),
+    body: { email: email.trim(), password },
+    fallbackMessage: "로그인에 실패했습니다.",
   });
-
-  const contentType = response.headers.get("content-type");
-  const isJson = contentType?.includes("application/json");
-
-  const responseData = isJson
-    ? await response.json()
-    : await response.text();
-
-  if (!response.ok) {
-    const errorMessage =
-      typeof responseData === "object"
-        ? responseData.message ||
-          responseData.error ||
-          "회원가입에 실패했습니다."
-        : responseData || "회원가입에 실패했습니다.";
-
-    const error = new Error(errorMessage);
-    error.status = response.status;
-    error.data = responseData;
-
-    throw error;
-  }
-
-  return responseData;
 }
 
-
-export async function login(loginDate) {
-  const response = await fetch(`${API_URL}/api/auth/login`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      email: loginDate.email.trim(),
-      password: loginDate.password,
-    }),
+// 토큰은 request 헬퍼가 localStorage에서 읽어 자동으로 붙인다.
+// (명시적 헤더로 넘기면 401 자동 refresh 재시도 때 옛 토큰이 재사용되어 갱신이 안 됨)
+export function getMe() {
+  return request("/api/users/me", {
+    fallbackMessage: "사용자 정보를 불러오지 못했습니다.",
   });
+}
 
-  const contentType = response.headers.get("content-type");
-  const isJson = contentType?.includes("application/json");
-
-  const responseData = isJson
-    ? await response.json()
-    : await response.text();
-
-  if (!response.ok) {
-    const errorMessage =
-      typeof responseData === "object"
-        ? responseData.message ||
-          responseData.error ||
-          "로그인에 실패했습니다."
-        : responseData || "로그인에 실패했습니다.";
-
-    const error = new Error(errorMessage);
-    error.status = response.status;
-    error.data = responseData;
-
-    throw error;
-  }
-
-  return responseData;
+export function logout() {
+  return request("/api/auth/logout", {
+    method: "POST",
+    fallbackMessage: "로그아웃에 실패했습니다.",
+  });
 }

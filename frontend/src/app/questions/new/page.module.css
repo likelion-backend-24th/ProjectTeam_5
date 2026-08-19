@@ -1,0 +1,309 @@
+.page {
+  min-height: calc(100vh - 74px);
+  padding: 48px 48px 42px;
+  background-color: #ffffff;
+  color: #111827;
+}
+
+.container {
+  width: 100%;
+  max-width: 1150px;
+  margin: 0 auto;
+}
+
+.title {
+  margin: 0 0 32px;
+  color: #111827;
+  font-size: 29px;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.7px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+}
+
+.formGroup {
+  margin-bottom: 26px;
+}
+
+.labelRow {
+  margin-bottom: 9px;
+}
+
+.labelRow label,
+.fileLabel {
+  color: #111827;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.inputWrapper,
+.textareaWrapper {
+  position: relative;
+}
+
+.inputWrapper input {
+  width: 100%;
+  height: 51px;
+  padding: 0 78px 0 14px;
+  border: 1px solid #d7e0ec;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #263247;
+  font-size: 16px;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.inputWrapper input::placeholder,
+.textareaWrapper textarea::placeholder {
+  color: #98a8be;
+}
+
+.inputWrapper input:focus,
+.textareaWrapper textarea:focus {
+  border-color: #2867e8;
+  box-shadow: 0 0 0 3px rgb(40 103 232 / 11%);
+}
+
+.characterCount {
+  position: absolute;
+  top: 50%;
+  right: 15px;
+  color: #a0a0a0;
+  font-size: 13px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.textareaWrapper textarea {
+  display: block;
+  width: 100%;
+  min-height: 250px;
+  padding: 14px 15px 42px;
+  resize: vertical;
+  border: 1px solid #d7e0ec;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #526176;
+  font-size: 16px;
+  line-height: 1.65;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.textareaCount {
+  position: absolute;
+  bottom: 12px;
+  left: 15px;
+  color: #a0a0a0;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.fileSection {
+  margin-bottom: 26px;
+}
+
+.fileLabel {
+  display: block;
+  margin-bottom: 10px;
+  color: #475569;
+  font-weight: 500;
+}
+
+.fileControls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
+.fileButton {
+  display: inline-flex;
+  align-items: center;
+  color: #2563eb;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.fileButton:hover {
+  text-decoration: underline;
+}
+
+.selectedFile {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #2563eb;
+  font-size: 15px;
+}
+
+.fileCheck {
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.removeFileButton {
+  margin-left: 6px;
+  padding: 2px 6px;
+  border: 0;
+  background-color: transparent;
+  color: #ef4444;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.removeFileButton:hover {
+  text-decoration: underline;
+}
+
+.fileDescription {
+  margin: 7px 0 0;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.policyNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  min-height: 51px;
+  padding: 13px 14px;
+  border: 1px solid #ff4d4f;
+  border-radius: 8px;
+  background-color: #fff7f7;
+  color: #ff3b3f;
+}
+
+.policyNotice > span {
+  flex-shrink: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.policyNotice p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.policyNotice strong {
+  font-weight: 700;
+}
+
+.errorMessage {
+  margin: 14px 0 0;
+  color: #dc2626;
+  font-size: 14px;
+}
+
+.actionButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 25px;
+}
+
+.cancelButton,
+.submitButton {
+  height: 48px;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.cancelButton {
+  min-width: 72px;
+  border: 1px solid #d7e0ec;
+  background-color: #ffffff;
+  color: #111827;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background-color: #f8fafc;
+}
+
+.submitButton {
+  min-width: 195px;
+  border: 1px solid #2867e8;
+  background-color: #2867e8;
+  color: #ffffff;
+}
+
+.submitButton:hover:not(:disabled) {
+  border-color: #1f5edb;
+  background-color: #1f5edb;
+}
+
+.cancelButton:disabled,
+.submitButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 32px 20px;
+  }
+
+  .title {
+    margin-bottom: 27px;
+    font-size: 25px;
+  }
+
+  .textareaWrapper textarea {
+    min-height: 280px;
+  }
+
+  .actionButtons {
+    flex-direction: column-reverse;
+  }
+
+  .cancelButton,
+  .submitButton {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .page {
+    padding: 26px 16px;
+  }
+
+  .title {
+    font-size: 23px;
+  }
+
+  .inputWrapper input {
+    padding-right: 65px;
+    font-size: 14px;
+  }
+
+  .textareaWrapper textarea {
+    min-height: 320px;
+    font-size: 14px;
+  }
+
+  .policyNotice p {
+    font-size: 13px;
+  }
+}
