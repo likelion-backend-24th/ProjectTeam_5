@@ -1,3 +1,5 @@
+/* page.module.css */
+
 .page {
   max-width: 1000px;
   margin: 0 auto;
@@ -109,6 +111,26 @@
   line-height: 1.7;
   color: #374151;
   white-space: pre-wrap;
+}
+
+/* 마크다운 내부 요소 스타일 보정 */
+.postContent p {
+  margin: 0 0 1em 0;
+}
+
+.postContent pre {
+  background-color: #f1f3f5;
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.postContent code {
+  font-family: monospace;
+  background-color: #f1f3f5;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 14px;
 }
 
 /* F-29: 구독 유도 모달 스타일 */

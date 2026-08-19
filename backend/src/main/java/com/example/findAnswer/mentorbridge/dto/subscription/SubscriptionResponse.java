@@ -10,6 +10,7 @@ public record SubscriptionResponse(
         Long mentorId,
         String mentorName,
         SubscriptionStatus status,
+        Integer amount, // 💡 [추가] 구독 금액
         LocalDateTime currentPeriodStart,
         LocalDateTime currentPeriodEnd
 ) {
@@ -19,6 +20,7 @@ public record SubscriptionResponse(
                 subscription.getMentorId(),
                 mentorName,
                 subscription.getStatus(),
+                subscription.getAmount(),
                 subscription.getCurrentPeriodStart(),
                 subscription.getCurrentPeriodEnd()
         );
