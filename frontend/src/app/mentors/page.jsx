@@ -110,8 +110,6 @@ function isMentorActive(mentor) {
     );
   }
 
-  // 현재 백엔드 응답에 활동 상태 필드가 없을 경우
-  // 멘토 목록 자체에 존재하는 멘토는 활동 중으로 취급한다.
   return true;
 }
 
@@ -149,6 +147,11 @@ function getReviewCount(mentor) {
   return Number.isFinite(count) ? count : 0;
 }
 
+function getSubscriberCount(mentor) {
+  const count = Number(mentor?.subscriberCount);
+  return Number.isFinite(count) ? count : 0;
+}
+
 function getCreatedTime(mentor) {
   const value =
     mentor?.createdAt ||
@@ -158,10 +161,6 @@ function getCreatedTime(mentor) {
 
   const time = new Date(value).getTime();
   return Number.isFinite(time) ? time : 0;
-}
-
-function getRecommendScore(mentor) {
-  return getRating(mentor) * 100 + getReviewCount(mentor);
 }
 
 function sortMentors(list, sort) {
@@ -178,7 +177,7 @@ function sortMentors(list, sort) {
     }
 
     return (
-      getRecommendScore(b) - getRecommendScore(a) ||
+      getSubscriberCount(b) - getSubscriberCount(a) ||
       getRating(b) - getRating(a) ||
       getReviewCount(b) - getReviewCount(a)
     );
@@ -190,23 +189,19 @@ export default function MentorListPage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // 검색
   const [searchInput, setSearchInput] = useState("");
   const [keyword, setKeyword] = useState("");
 
-  // 선택 중인 필터
   const [selectedCategory, setSelectedCategory] = useState("전체");
   const [selectedCareer, setSelectedCareer] = useState("전체");
   const [selectedStatus, setSelectedStatus] = useState("전체");
 
-  // 실제 적용된 필터
   const [appliedCategory, setAppliedCategory] = useState("전체");
   const [appliedCareer, setAppliedCareer] = useState("전체");
   const [appliedStatus, setAppliedStatus] = useState("전체");
 
   const [sort, setSort] = useState("recommend");
 
-  // 서버 페이징
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [totalElements, setTotalElements] = useState(0);
@@ -222,6 +217,7 @@ export default function MentorListPage() {
         keyword: keyword.trim(),
       });
 
+      // 에러의 원인이 되었던 부분을 빈 배열([])로 수정했습니다.
       setMentors(Array.isArray(data?.content) ? data.content : []);
       setTotalPages(Math.max(1, Number(data?.totalPages) || 1));
       setTotalElements(Number(data?.totalElements) || 0);
@@ -594,14 +590,9 @@ export default function MentorListPage() {
                   mentor.tags
                 ).slice(0, 4);
 
-                const rating =
-                  getRating(mentor);
-
-                const reviewCount =
-                  getReviewCount(mentor);
-
-                const active =
-                  isMentorActive(mentor);
+                const rating = getRating(mentor);
+                const reviewCount = getReviewCount(mentor);
+                const active = isMentorActive(mentor);
 
                 return (
                   <Link
@@ -619,20 +610,38 @@ export default function MentorListPage() {
                           styles.avatarWrapper
                         }
                       >
-                        <img
-                          src={
-                            mentor.profileImageUrl ||
-                            "/default-avatar.png"
-                          }
-                          alt={`${mentor.name || "멘토"} 프로필`}
-                          className={
-                            styles.avatar
-                          }
-                          onError={(event) => {
-                            event.currentTarget.src =
-                              "/default-avatar.png";
+                        {mentor.profileImageUrl && mentor.profileImageUrl.trim() !== "" ? (
+                          <img
+                            src={mentor.profileImageUrl}
+                            alt={`${mentor.name || "멘토"} 프로필`}
+                            className={styles.avatar}
+                            onError={(event) => {
+                              event.currentTarget.style.display = "none";
+                              const fallbackEl = event.currentTarget.nextElementSibling;
+                              if (fallbackEl) fallbackEl.style.display = "flex";
+                            }}
+                          />
+                        ) : null}
+
+                        <div 
+                          className={styles.avatarFallback} 
+                          style={{ 
+                            display: mentor.profileImageUrl ? "none" : "flex",
+                            width: "44px",
+                            height: "44px",
+                            borderRadius: "50%",
+                            background: "#f1f5f9",
+                            color: "#94a3b8",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "18px",
+                            position: "absolute",
+                            top: 0,
+                            left: 0
                           }}
-                        />
+                        >
+                          👤
+                        </div>
 
                         {active && (
                           <span
