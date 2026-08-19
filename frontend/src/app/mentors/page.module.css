@@ -4,7 +4,7 @@
 
 .container {
   width: 100%;
-  max-width: 1200px;
+  max-width: 1240px;
   min-height: 100vh;
   margin: 0 auto;
   padding: 40px 24px 60px;
@@ -24,8 +24,8 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 24px;
-  margin-bottom: 32px;
+  gap: 28px;
+  margin-bottom: 36px;
 }
 
 .headingBlock {
@@ -35,10 +35,10 @@
 .title {
   margin: 0 0 8px;
   color: #0f172a;
-  font-size: 30px;
-  line-height: 1.2;
+  font-size: 32px;
+  line-height: 1.25;
   font-weight: 800;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
 }
 
 .subtitle {
@@ -64,8 +64,8 @@
 }
 
 .searchBox:focus-within {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
 .searchIcon {
@@ -101,8 +101,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -123,10 +123,10 @@
 .sidebar {
   width: 240px;
   flex: 0 0 240px;
-  padding: 20px 16px;
+  padding: 20px 18px 18px;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  background: #f8fafc;
+  border-radius: 10px;
+  background: #ffffff;
 }
 
 .filterHeader {
@@ -135,9 +135,9 @@
   justify-content: space-between;
   gap: 8px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #f1f5f9;
   color: #0f172a;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
 }
 
@@ -154,16 +154,16 @@
 }
 
 .resetBtn:hover {
-  color: #0f172a;
+  color: #1e293b;
 }
 
 .filterGroup {
-  margin-top: 18px;
+  margin-top: 20px;
 }
 
 .groupTitle {
   margin-bottom: 10px;
-  color: #334155;
+  color: #1e293b;
   font-size: 13px;
   font-weight: 700;
 }
@@ -171,17 +171,18 @@
 .checkboxLabel {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 28px;
+  gap: 9px;
+  min-height: 30px;
   margin-bottom: 4px;
   color: #475569;
   font-size: 13px;
+  line-height: 1.4;
   cursor: pointer;
   user-select: none;
 }
 
 .checkboxLabel:hover {
-  color: #0f172a;
+  color: #1e293b;
 }
 
 .checkboxLabel input {
@@ -191,7 +192,7 @@
   margin: 0;
   flex: 0 0 15px;
   border: 1px solid #cbd5e1;
-  border-radius: 4px;
+  border-radius: 3px;
   background: #ffffff;
   cursor: pointer;
 }
@@ -242,7 +243,7 @@
 
 .totalCount strong {
   color: #0f172a;
-  font-weight: 700;
+  font-weight: 750;
 }
 
 .sortSelect {
@@ -259,7 +260,7 @@
 }
 
 .sortSelect:focus {
-  border-color: #2563eb;
+  border-color: #3b82f6;
 }
 
 /* 멘토 카드 (가독성 최적화 및 3열 배치로 변경해 답답함 해소) */
@@ -271,8 +272,8 @@
 
 .mentorCard {
   min-width: 0;
-  min-height: 260px;
-  padding: 18px;
+  min-height: 250px;
+  padding: 18px 16px 16px;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   background: #ffffff;
@@ -289,32 +290,36 @@
 .mentorCard:hover {
   transform: translateY(-3px);
   border-color: #cbd5e1;
-  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.mentorCard:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.18);
+  outline-offset: 2px;
 }
 
 .cardHeader {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
+  min-height: 52px;
   margin-bottom: 12px;
 }
 
 .avatarWrapper {
   position: relative;
-  width: 52px;
-  height: 52px;
-  flex: 0 0 52px;
-  border-radius: 50%;
-  overflow: hidden;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  width: 50px;
+  height: 50px;
+  flex: 0 0 50px;
 }
 
 .avatar {
   display: block;
-  width: 100%;
-  height: 100%;
+  width: 50px;
+  height: 50px;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
   object-fit: cover;
 }
 
@@ -369,22 +374,23 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 20px;
+  min-height: 20px;
   padding: 0 8px;
   border-radius: 4px;
   background: #eff6ff;
   color: #2563eb;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .mentorName {
   overflow: hidden;
   margin: 0 0 6px;
   color: #0f172a;
-  font-size: 16px;
-  line-height: 1.3;
-  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.35;
+  font-weight: 750;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -392,10 +398,10 @@
 .mentorBio {
   display: -webkit-box;
   height: 40px;
-  margin: 0 0 10px;
+  margin: 0 0 12px;
   overflow: hidden;
-  color: #475569;
-  font-size: 13px;
+  color: #64748b;
+  font-size: 12px;
   line-height: 1.5;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -416,14 +422,14 @@
   flex-wrap: wrap;
   align-content: flex-start;
   gap: 6px;
-  min-height: 26px;
+  min-height: 24px;
   margin-bottom: 14px;
 }
 
 .tag {
   max-width: 100%;
   overflow: hidden;
-  padding: 3px 8px;
+  padding: 3px 7px;
   border-radius: 4px;
   background: #f1f5f9;
   color: #475569;
@@ -435,7 +441,7 @@
 
 .noTag {
   color: #94a3b8;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .cardFooter {
@@ -443,8 +449,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  min-height: 28px;
   margin-top: auto;
-  padding-top: 12px;
+  padding-top: 10px;
   border-top: 1px solid #f1f5f9;
 }
 
@@ -460,20 +467,22 @@
 .star {
   color: #f59e0b;
   font-size: 13px;
+  line-height: 1;
 }
 
 .rating {
   color: #0f172a;
-  font-weight: 700;
+  font-weight: 750;
 }
 
 .reviewCount {
-  color: #94a3b8;
+  color: #64748b;
 }
 
-.subscriberIcon {
-  color: #3b82f6;
-  font-size: 12px;
+.chatIcon {
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1;
 }
 
 /* 상태 */
@@ -500,7 +509,7 @@
   background: #f1f5f9;
   color: #64748b;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .emptyState strong,
@@ -531,9 +540,9 @@
 
 /* 스켈레톤 */
 .skeletonCard {
-  min-height: 260px;
-  padding: 18px;
-  border: 1px solid #e2e8f0;
+  min-height: 250px;
+  padding: 18px 16px 16px;
+  border: 1px solid #eef2f7;
   border-radius: 12px;
   background: #ffffff;
 }
@@ -542,18 +551,35 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
+}
+
+.skeletonAvatar,
+.skeletonBadge,
+.skeletonLine,
+.skeletonLineWide,
+.skeletonFooter,
+.skeletonTags span {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    #f1f5f9 25%,
+    #e8eef6 50%,
+    #f1f5f9 75%
+  );
+  background-size: 200% 100%;
+  animation: skeletonLoading 1.2s infinite;
 }
 
 .skeletonAvatar {
-  width: 52px;
-  height: 52px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
 }
 
 .skeletonBadge {
   width: 50px;
-  height: 20px;
+  height: 18px;
   border-radius: 4px;
 }
 
@@ -566,8 +592,8 @@
 
 .skeletonLine {
   width: 90%;
-  height: 12px;
-  margin-bottom: 8px;
+  height: 11px;
+  margin-bottom: 6px;
   border-radius: 4px;
 }
 
@@ -578,15 +604,15 @@
 }
 
 .skeletonTags span {
-  width: 45px;
-  height: 18px;
+  width: 44px;
+  height: 16px;
   border-radius: 4px;
 }
 
 .skeletonFooter {
   width: 100%;
-  height: 24px;
-  margin-top: 24px;
+  height: 28px;
+  margin-top: 28px;
   border-radius: 4px;
 }
 
@@ -674,7 +700,7 @@
 
 @media (max-width: 768px) {
   .container {
-    padding: 24px 16px 40px;
+    padding: 28px 16px 48px;
   }
 
   .topHeader {
@@ -694,9 +720,36 @@
 
   .sidebar {
     width: 100%;
+    flex-basis: auto;
+  }
+
+  .filterGroup {
+    margin-top: 16px;
+  }
+
+  .mentorGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .container {
+    padding: 20px 12px 32px;
+  }
+
+  .title {
+    font-size: 26px;
+  }
+
+  .subtitle {
+    font-size: 14px;
   }
 
   .mentorGrid {
     grid-template-columns: 1fr;
+  }
+
+  .mentorCard {
+    min-height: 220px;
   }
 }

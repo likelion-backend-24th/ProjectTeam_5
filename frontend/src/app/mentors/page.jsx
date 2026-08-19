@@ -2,11 +2,18 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
-import { FaUserLarge } from "react-icons/fa6";
 import { getMentors } from "@/lib/mentors";
 import styles from "./page.module.css";
 
-const PAGE_SIZE = 16;
+const PAGE_SIZE = 8;
+
+// 인라인 SVG 데이터 URI — 정적 파일(/default-avatar.png)에 의존하지 않아 404가 날 수 없다.
+const DEFAULT_AVATAR = `data:image/svg+xml,${encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="50" fill="#e5e7eb" />
+  <circle cx="50" cy="38" r="18" fill="#9ca3af" />
+  <path d="M50 62c-19 0-34 12-34 27v6a5 5 0 0 0 5 5h58a5 5 0 0 0 5-5v-6c0-15-15-27-34-27z" fill="#9ca3af" />
+</svg>`)}`;
 
 const CATEGORY_OPTIONS = [
   "전체",
@@ -111,45 +118,26 @@ function isMentorActive(mentor) {
     );
   }
 
+  // 현재 백엔드 응답에 활동 상태 필드가 없을 경우
+  // 멘토 목록 자체에 존재하는 멘토는 활동 중으로 취급한다.
   return true;
 }
 
-// 상담 가능 시간 판별 로직
 function isConsultationAvailable(mentor) {
   if (typeof mentor?.consultationAvailable === "boolean") {
     return mentor.consultationAvailable;
   }
+
   if (typeof mentor?.isAvailable === "boolean") {
     return mentor.isAvailable;
   }
+
   if (typeof mentor?.available === "boolean") {
     return mentor.available;
   }
 
-  const schedule = String(mentor?.schedule || "").trim().toLowerCase();
-  if (!schedule) return false;
-
-  const now = new Date();
-  const dayIndex = now.getDay();
-  const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
-  const currentDayStr = dayNames[dayIndex];
-
-  const hasWeekend = schedule.includes("토") || schedule.includes("일") || schedule.includes("주말");
-  const hasWeekday = schedule.includes("월") || schedule.includes("화") || schedule.includes("수") || schedule.includes("목") || schedule.includes("금") || schedule.includes("평일");
-
-  if ((currentDayStr === "토" || currentDayStr === "일") && !hasWeekend && hasWeekday) {
-    return false;
-  }
-  if (currentDayStr !== "토" && currentDayStr !== "일" && hasWeekend && !hasWeekday) {
-    return false;
-  }
-
-  const containsSpecificDay = ["월", "화", "수", "목", "금", "토", "일"].some(d => schedule.includes(d));
-  if (containsSpecificDay && !schedule.includes(currentDayStr)) {
-    return false;
-  }
-
-  return true;
+  const schedule = String(mentor?.schedule || "").trim();
+  return Boolean(schedule);
 }
 
 function matchesStatus(mentor, status) {
@@ -169,11 +157,6 @@ function getReviewCount(mentor) {
   return Number.isFinite(count) ? count : 0;
 }
 
-function getSubscriberCount(mentor) {
-  const count = Number(mentor?.subscriberCount);
-  return Number.isFinite(count) ? count : 0;
-}
-
 function getCreatedTime(mentor) {
   const value =
     mentor?.createdAt ||
@@ -185,9 +168,12 @@ function getCreatedTime(mentor) {
   return Number.isFinite(time) ? time : 0;
 }
 
+function getRecommendScore(mentor) {
+  return getRating(mentor) * 100 + getReviewCount(mentor);
+}
+
 function sortMentors(list, sort) {
   return [...list].sort((a, b) => {
-    // 1. 평점순: 평점 내림차순, 리뷰 수 내림차순
     if (sort === "rating") {
       return (
         getRating(b) - getRating(a) ||
@@ -195,14 +181,12 @@ function sortMentors(list, sort) {
       );
     }
 
-    // 2. 최신순: 최신 게시글(작성일) 기준 내림차순
     if (sort === "latest") {
       return getCreatedTime(b) - getCreatedTime(a);
     }
 
-    // 3. 추천순: 구독자수 내림차순 (같을 경우 평점/리뷰수 순)
     return (
-      getSubscriberCount(b) - getSubscriberCount(a) ||
+      getRecommendScore(b) - getRecommendScore(a) ||
       getRating(b) - getRating(a) ||
       getReviewCount(b) - getReviewCount(a)
     );
@@ -214,19 +198,23 @@ export default function MentorListPage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
+  // 검색
   const [searchInput, setSearchInput] = useState("");
   const [keyword, setKeyword] = useState("");
 
+  // 선택 중인 필터
   const [selectedCategory, setSelectedCategory] = useState("전체");
   const [selectedCareer, setSelectedCareer] = useState("전체");
   const [selectedStatus, setSelectedStatus] = useState("전체");
 
+  // 실제 적용된 필터
   const [appliedCategory, setAppliedCategory] = useState("전체");
   const [appliedCareer, setAppliedCareer] = useState("전체");
   const [appliedStatus, setAppliedStatus] = useState("전체");
 
   const [sort, setSort] = useState("recommend");
 
+  // 서버 페이징
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [totalElements, setTotalElements] = useState(0);
@@ -614,13 +602,14 @@ export default function MentorListPage() {
                   mentor.tags
                 ).slice(0, 4);
 
-                const rating = getRating(mentor);
-                const reviewCount = getReviewCount(mentor);
-                const active = isMentorActive(mentor);
-                
-                const consultAvailable = isConsultationAvailable(mentor);
-                const subscriberCount = getSubscriberCount(mentor);
-                const careerText = mentor.career || "경력 정보 없음";
+                const rating =
+                  getRating(mentor);
+
+                const reviewCount =
+                  getReviewCount(mentor);
+
+                const active =
+                  isMentorActive(mentor);
 
                 return (
                   <Link
@@ -638,51 +627,43 @@ export default function MentorListPage() {
                           styles.avatarWrapper
                         }
                       >
-                        {mentor.profileImageUrl && mentor.profileImageUrl.trim() !== "" ? (
-                          <img
-                            src={mentor.profileImageUrl}
-                            alt={`${mentor.name || "멘토"} 프로필`}
-                            className={styles.avatar}
-                            onError={(event) => {
-                              event.currentTarget.style.display = "none";
-                              const fallbackEl = event.currentTarget.nextElementSibling;
-                              if (fallbackEl) fallbackEl.style.display = "flex";
-                            }}
-                          />
-                        ) : null}
-
-                        <div 
-                          className={styles.avatarFallback} 
-                          style={{ display: mentor.profileImageUrl ? "none" : "flex" }}
-                        >
-                          <FaUserLarge />
-                        </div>
+                        <img
+                          src={
+                            mentor.profileImageUrl ||
+                            DEFAULT_AVATAR
+                          }
+                          alt={`${mentor.name || "멘토"} 프로필`}
+                          className={
+                            styles.avatar
+                          }
+                          onError={(event) => {
+                            const img = event.currentTarget;
+                            // 이미 대체 이미지로 바꾼 뒤엔 다시 시도하지 않는다 — 안 그러면
+                            // (깨진 URL → onError → 같은 src 재할당 → 재요청 → 다시 onError) 무한 루프에 빠진다.
+                            if (img.dataset.fallbackApplied) return;
+                            img.dataset.fallbackApplied = "true";
+                            img.src = DEFAULT_AVATAR;
+                          }}
+                        />
 
                         {active && (
                           <span
-                            className={`${styles.onlineBadge} ${
-                              !consultAvailable ? styles.orangeBadge : ""
-                            }`}
-                            title={consultAvailable ? "상담 가능" : "상담 가능 시간 아님"}
-                            aria-label={consultAvailable ? "상담 가능" : "상담 가능 시간 아님"}
+                            className={
+                              styles.onlineBadge
+                            }
+                            title="활동 중"
+                            aria-label="활동 중"
                           />
                         )}
                       </div>
 
-                      <div className={styles.headerBadges}>
-                        {consultAvailable && (
-                          <span className={styles.consultBadge}>
-                            상담가능
-                          </span>
-                        )}
-                        <span
-                          className={
-                            styles.mentorBadge
-                          }
-                        >
-                          MENTOR
-                        </span>
-                      </div>
+                      <span
+                        className={
+                          styles.mentorBadge
+                        }
+                      >
+                        MENTOR
+                      </span>
                     </div>
 
                     <h2
@@ -702,10 +683,6 @@ export default function MentorListPage() {
                       {mentor.bio ||
                         "소개글이 없습니다."}
                     </p>
-
-                    <div className={styles.careerInfoText}>
-                      경력: {careerText}
-                    </div>
 
                     <div
                       className={
@@ -774,20 +751,20 @@ export default function MentorListPage() {
 
                       <div
                         className={
-                          styles.subscriberInfo
+                          styles.chatInfo
                         }
-                        title="구독자 수"
+                        title="상담/후기"
                       >
                         <span
                           className={
-                            styles.subscriberIcon
+                            styles.chatIcon
                           }
                           aria-hidden="true"
                         >
-                          ♙
+                          ♡
                         </span>
                         <span>
-                          {subscriberCount} 구독
+                          {reviewCount}
                         </span>
                       </div>
                     </div>

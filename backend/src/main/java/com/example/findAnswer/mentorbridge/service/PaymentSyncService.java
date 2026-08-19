@@ -1,0 +1,93 @@
+package com.example.findAnswer.mentorbridge.service;
+
+import com.example.findAnswer.mentorbridge.client.portone.PortOnePaymentClient;
+import com.example.findAnswer.mentorbridge.client.portone.PortOnePaymentSnapshot;
+import com.example.findAnswer.mentorbridge.constants.ErrorCode;
+import com.example.findAnswer.mentorbridge.constants.PaymentStatus;
+import com.example.findAnswer.mentorbridge.constants.SubscriptionStatus;
+import com.example.findAnswer.mentorbridge.dto.payment.PaymentCompleteResponse;
+import com.example.findAnswer.mentorbridge.entity.Payment;
+import com.example.findAnswer.mentorbridge.entity.PaymentTransaction;
+import com.example.findAnswer.mentorbridge.entity.Subscription;
+import com.example.findAnswer.mentorbridge.exception.CustomException;
+import com.example.findAnswer.mentorbridge.repository.PaymentRepository;
+import com.example.findAnswer.mentorbridge.repository.PaymentTransactionRepository;
+import com.example.findAnswer.mentorbridge.repository.SubscriptionRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class PaymentSyncService {
+
+    private final PaymentRepository paymentRepository;
+    private final PaymentTransactionRepository paymentTransactionRepository;
+    private final SubscriptionRepository subscriptionRepository;
+    private final PortOnePaymentClient  portOnePaymentClient;
+
+    @Transactional
+    public PaymentCompleteResponse complete(String paymentId, Long userId){
+        Payment payment = paymentRepository.findByPaymentId(paymentId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PAYMENT_NOT_FOUND));
+
+        Subscription subscription = subscriptionRepository.findById(payment.getSubscriptionId())
+                .orElseThrow(() -> new CustomException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
+
+        if(!subscription.getUserId().equals(userId)){
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+
+        if(payment.getStatus() == PaymentStatus.PAID) {
+            return PaymentCompleteResponse.from(payment, subscription);
+        }
+
+        PortOnePaymentSnapshot snapshot = portOnePaymentClient.getPayment(paymentId);
+
+        boolean verified = payment.getStoreId().equals(snapshot.storeId())
+                && payment.getChannelKey().equals(snapshot.channelKey())
+                && payment.getCurrency().equals(snapshot.currency())
+                && payment.getAmount().equals(snapshot.amount());
+
+        recordTransaction(payment, snapshot, verified);
+
+        if (!verified || !"PAID".equals(snapshot.status())) {
+            payment.markFailed();
+            throw new CustomException(ErrorCode.PAYMENT_VERIFICATION_FAILED);
+        }
+
+        payment.markPaidAt(LocalDateTime.now());
+
+        // 최초 결제일 때만 구독을 활성화한다. 이미 ACTIVE면 다시 기간을 늘리지 않는다(멱등성).
+        if (subscription.getStatus() == SubscriptionStatus.PENDING) {
+            subscription.activateAfterFirstPayment(LocalDateTime.now().plusMonths(1));
+        }
+
+        return PaymentCompleteResponse.from(payment, subscription);
+
+    }
+
+
+    private void recordTransaction(Payment payment, PortOnePaymentSnapshot remote, boolean verified) {
+        if (remote.transactionId() == null
+                || paymentTransactionRepository.findByTransactionId(remote.transactionId()).isPresent()) {
+            return;
+        }
+
+        PaymentStatus txStatus = (verified && "PAID".equals(remote.status()))
+                ? PaymentStatus.PAID
+                : PaymentStatus.FAILED;
+
+        paymentTransactionRepository.save(
+                PaymentTransaction.builder()
+                        .payment(payment)
+                        .transactionId(remote.transactionId())
+                        .paymentStatus(txStatus)
+                        .approvedAt(LocalDateTime.now())
+                        .build()
+        );
+    }
+}
