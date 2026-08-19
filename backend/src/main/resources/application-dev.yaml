@@ -78,7 +78,8 @@ cloudinary:
 
 portone:
   store-id: ${PORTONE_STORE_ID:store-test-0000}
-  channel-key: ${PORTONE_CHANNEL_KEY:channel-key-test-0000}
+  channel-key-payment: ${PORTONE_CHANNEL_KEY_PAYMENT:channel-key-test-0000}
+  channel-key-billing: ${PORTONE_CHANNEL_KEY_BILLING:channel-key-test-0000}
   api-secret: ${PORTONE_API_SECRET:portone-test-api-secret}
   api-base-url: ${PORTONE_API_BASE_URL:https://api.portone.io}
   payment-id-prefix: ${PORTONE_PAYMENT_ID_PREFIX:MB}
