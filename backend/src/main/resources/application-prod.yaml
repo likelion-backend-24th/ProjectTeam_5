@@ -66,14 +66,14 @@ kakao:
   admin-key: ${KAKAO_ADMIN_KEY:kakao_admin_key}
 
 cloudinary:
-  url: ${CLOUDINARY_URL:cloudinary://895865932964719:3Wy04vCM7WG3YSabRhI_s8d5G34@xml84nff}          # cloudinary://key:secret@cloudname
+  url: ${CLOUDINARY_URL:cloudinary://key:secret@cloudname}          # cloudinary://key:secret@cloudname
   folder: findanswer/posts
 
 
 portone:
-  store-id: ${PORTONE_STORE_ID:store-test-0000}
-  channel-key-payment: ${PORTONE_CHANNEL_KEY_PAYMENT:channel-key-test-0000}
-  channel-key-billing: ${PORTONE_CHANNEL_KEY_BILLING:channel-key-test-0000}
-  api-secret: ${PORTONE_API_SECRET:portone-test-api-secret}
+  store-id: ${PORTONE_STORE_ID}
+  channel-key-payment: ${PORTONE_CHANNEL_KEY_PAYMENT}
+  channel-key-billing: ${PORTONE_CHANNEL_KEY_BILLING}
+  api-secret: ${PORTONE_API_SECRET}
   api-base-url: ${PORTONE_API_BASE_URL:https://api.portone.io}
   payment-id-prefix: ${PORTONE_PAYMENT_ID_PREFIX:MB}
