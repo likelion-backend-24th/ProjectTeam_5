@@ -494,7 +494,7 @@ export default function MentorProfilePage() {
 
   const tagsArray = mentorInfo.tags ? mentorInfo.tags.split(",").map((t) => t.trim()).filter(Boolean) : [];
   const isAccessValid = isSubscribed || (subscriptionStatus === 'CANCEL_RESERVED' && (!currentPeriodEnd || new Date(currentPeriodEnd) > new Date()));
-  const currentPrice = mentorInfo.subscriptionPrice ? Number(mentorInfo.subscriptionPrice).toLocaleString() : "9,900";
+  const currentPrice = selectedPlan ? Number(selectedPlan.price).toLocaleString() : "-";
  const isAvailableNow = checkIsAvailable(mentorInfo.schedule);
   const statusColor = isAvailableNow ? "#22c55e" : "#94a3b8";
 
