@@ -1,0 +1,484 @@
+/* frontend/src/app/users/[id]/page.module.css */
+
+.page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+}
+
+.topNav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.backButton {
+    color: #2867e8;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.publicBadge {
+    color: #64748b;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* 프로필 상단 카드 */
+.profileCard {
+    display: flex;
+    background-color: #ffffff;
+    border-radius: 16px;
+    padding: 40px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 40px;
+}
+
+.profileLeft {
+    display: flex;
+    gap: 30px;
+    flex: 1;
+    min-width: 300px;
+}
+
+.avatar {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    background-color: #f1f5f9;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.info h1 {
+    font-size: 26px;
+    font-weight: 800;
+    color: #111827;
+    margin: 0 0 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.mentorBadge {
+    font-size: 13px;
+    color: #2867e8;
+    background-color: #eff6ff;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 700;
+}
+
+.handle {
+    color: #64748b;
+    font-size: 15px;
+    margin-bottom: 16px;
+    display: block;
+}
+
+.bio {
+    color: #334155;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.profileRight {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    border-left: 1px solid #e2e8f0;
+    padding-left: 40px;
+}
+
+.statItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.statLabel {
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.statValue {
+    font-size: 26px;
+    font-weight: 800;
+    color: #111827;
+}
+
+/* 탭 메뉴 */
+.tabs {
+    display: flex;
+    gap: 32px;
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 32px;
+    padding: 0 16px;
+}
+
+.tab {
+    padding: 16px 4px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #64748b;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tabActive {
+    color: #2867e8;
+    border-bottom-color: #2867e8;
+}
+
+/* 메인 레이아웃 (좌측 피드, 우측 소개) */
+.contentLayout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 32px;
+}
+
+.feedHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    color: #526176;
+    font-size: 15px;
+}
+
+.sortSelect {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+    font-size: 14px;
+    outline: none;
+}
+
+/* 질문 카드 스타일 */
+.questionCard {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    text-decoration: none;
+}
+
+.questionCard:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
+}
+
+.qCategory {
+    align-self: flex-start;
+    font-size: 13px;
+    color: #2867e8;
+    background-color: #eff6ff;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+.qTitle {
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 16px 0;
+    line-height: 1.4;
+}
+
+.qMeta {
+    font-size: 14px;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.emptyState {
+    text-align: center;
+    padding: 60px 0;
+    color: #64748b;
+    background: #f8fafc;
+    border-radius: 12px;
+}
+
+/* 우측 소개 사이드바 */
+.sidebar {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 28px;
+    height: fit-content;
+}
+
+.sidebar h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sidebar p {
+    font-size: 14px;
+    color: #475569;
+    line-height: 1.6;
+    margin: 0 0 24px 0;
+}
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 32px;
+}
+
+.tag {
+    font-size: 13px;
+    color: #2867e8;
+    background-color: #eff6ff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.locationTitle {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.location {
+    font-size: 14px;
+    color: #111827;
+}
+
+@media (max-width: 900px) {
+    .contentLayout {
+        grid-template-columns: 1fr;
+    }
+    .profileRight {
+        border-left: none;
+        padding-left: 0;
+        border-top: 1px solid #e2e8f0;
+        padding-top: 30px;
+        width: 100%;
+        justify-content: space-around;
+    }
+}
+
+/* --- 새로 추가할 내용 --- */
+.navRight {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.editButton {
+    background-color: #2867e8;
+    color: #fff;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.editButton:hover {
+    background-color: #1d4ed8;
+}
+
+.userBadge {
+    font-size: 13px;
+    color: #475569;
+    background-color: #f1f5f9;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 700;
+}
+
+/* 이미지 변경 오버레이 */
+.avatarWrapper {
+    position: relative;
+    width: 130px;
+    height: 130px;
+    cursor: pointer;
+    overflow: hidden;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.avatarOverlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.avatarWrapper:hover .avatarOverlay {
+    opacity: 1;
+}
+
+/* 폼 입력 스타일 */
+.editInput {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    font-family: inherit;
+    margin-top: 8px;
+}
+
+.editInput:focus {
+    border-color: #2867e8;
+}
+
+.editTextarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    font-family: inherit;
+    resize: vertical;
+    margin-top: 8px;
+}
+
+.editTextarea:focus {
+    border-color: #2867e8;
+}
+
+.introContent {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 28px;
+}
+
+.introContent h3 {
+    margin: 0 0 16px;
+    color: #111827;
+    font-size: 18px;
+}
+
+/* 우측 사이드바 저장 버튼들 */
+.editActions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.saveBtn {
+    background-color: #2867e8;
+    color: #ffffff;
+    border: none;
+    padding: 12px;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.cancelBtn {
+    background-color: #ffffff;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    padding: 12px;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+
+.actionButtons {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.followBtn {
+    background-color: #2867e8;
+    color: #fff;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.followBtn:hover {
+    background-color: #1d4ed8;
+}
+
+.followingBtn {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.followingBtn:hover {
+    background-color: #e2e8f0;
+}
+
+.messageBtn {
+    background-color: #ffffff;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.messageBtn:hover {
+    background-color: #f8fafc;
+}
+
+.statValueActive {
+    font-size: 26px;
+    font-weight: 800;
+    color: #2867e8;
+}
