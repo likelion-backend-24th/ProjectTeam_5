@@ -3,9 +3,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { requestPayment } from "@portone/browser-sdk/v2";
 import { useAuth } from "@/app/contexts/AuthContext";
 import styles from "./page.module.css";
 import { uploadImage, validateImage } from "@/lib/attachments";
+import { getMentorPlans } from "@/lib/mentorPlans";
+import { prepareSubscription, completePayment } from "@/lib/subscriptions";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 const MAX_BIO_LENGTH = 500;
@@ -74,6 +77,11 @@ export default function MentorProfilePage() {
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [currentPeriodEnd, setCurrentPeriodEnd] = useState(null);
 
+  // 구독 요금제 캐러셀 + 결제 진행 상태
+  const [plans, setPlans] = useState([]);
+  const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
+  const [subscribing, setSubscribing] = useState(false);
+
   // 구독 유도 모달 상태 추가
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
 
@@ -89,7 +97,6 @@ export default function MentorProfilePage() {
     education: "",
     schedule: "",
     subscriptionPrice: 9900,
-    links: "", // 💡 링크 필드 추가
   });
 
   const [isWritingPost, setIsWritingPost] = useState(false);
@@ -198,7 +205,6 @@ export default function MentorProfilePage() {
             education: profileData.education || "",
             schedule: profileData.schedule || "월(10:00 - 17:00), 수(10:00 - 17:00), 금(10:00 - 17:00)",
             subscriptionPrice: profileData.subscriptionPrice || 9900,
-            links: profileData.links || "", // 💡 링크 데이터 반영
           });
           setIsOwner(Boolean(isLoggedIn && currentUserId && profileData.mentorId && String(profileData.mentorId) === String(currentUserId)));
         }
@@ -207,6 +213,14 @@ export default function MentorProfilePage() {
         if (articlesRes.ok) {
           const articlesData = await articlesRes.json();
           setArticles(articlesData);
+        }
+
+        try {
+          const planData = await getMentorPlans(mentorId);
+          setPlans(Array.isArray(planData) ? planData : []);
+          setSelectedPlanIndex(0);
+        } catch (planErr) {
+          console.error("요금제 목록 조회 실패:", planErr);
         }
 
         if (isLoggedIn && currentUserId) {
@@ -250,44 +264,73 @@ export default function MentorProfilePage() {
     fetchData();
   }, [mentorId, isLoggedIn, authUser, currentUserId]);
 
+  const selectedPlan = plans[selectedPlanIndex] || null;
+
+  const showPrevPlan = () => {
+    setSelectedPlanIndex((i) => (plans.length === 0 ? 0 : (i - 1 + plans.length) % plans.length));
+  };
+
+  const showNextPlan = () => {
+    setSelectedPlanIndex((i) => (plans.length === 0 ? 0 : (i + 1) % plans.length));
+  };
+
+  // 구독하기: 결제 준비(prepare) → PortOne 결제창 → 서버 검증(complete) 3단계.
+  // 프론트 결제 결과는 신호일 뿐이고, complete가 성공해야만 구독이 ACTIVE로 반영된다.
   const handleSubscribe = async () => {
     if (!isLoggedIn) {
       alert("로그인이 필요한 서비스입니다.");
       return;
     }
+    if (!selectedPlan) {
+      alert("구독할 요금제를 선택해주세요.");
+      return;
+    }
+    if (subscribing) return;
+
+    setSubscribing(true);
     try {
-      const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
-      const res = await fetch(`${BACKEND_URL}/api/v1/subscriptions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-USER-ID": String(currentUserId),
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
-        body: JSON.stringify({ mentorId: Number(mentorId) }),
+      const prepareRes = await prepareSubscription(mentorId, selectedPlan.id);
+
+      const paymentResult = await requestPayment({
+        storeId: prepareRes.storeId,
+        channelKey: prepareRes.channelKey,
+        paymentId: prepareRes.paymentId,
+        orderName: prepareRes.orderName,
+        totalAmount: prepareRes.totalAmount,
+        currency: prepareRes.currency,
+        payMethod: "CARD",
       });
 
-      if (res.ok) {
-        const data = await res.json();
+      if (paymentResult?.code) {
+        // 사용자가 결제창을 닫았거나 PG 승인이 거부된 경우 — 서버 상태는 그대로 READY/PENDING으로 남는다.
+        alert(paymentResult.message || "결제가 취소되었습니다.");
+        return;
+      }
+
+      const completeRes = await completePayment(paymentResult.paymentId);
+
+      if (completeRes.subscriptionStatus === "ACTIVE") {
         setIsSubscribed(true);
-        setSubscriptionId(data.subscriptionId);
-        setSubscriptionStatus('ACTIVE');
-        setCurrentPeriodEnd(data.currentPeriodEnd || data.current_period_end);
-        
-        setMentorInfo(prev => ({
+        setSubscriptionId(completeRes.subscriptionId);
+        setSubscriptionStatus("ACTIVE");
+        setCurrentPeriodEnd(completeRes.currentPeriodEnd);
+
+        // 구독 성공 시 구독자 수 +1 실시간 반영
+        setMentorInfo((prev) => ({
           ...prev,
-          subscriberCount: (prev.subscriberCount || 0) + 1
+          subscriberCount: (prev.subscriberCount || 0) + 1,
         }));
 
         setShowSubscribeModal(false);
         alert("멘토 구독이 완료되었습니다!");
       } else {
-        const err = await res.json().catch(() => ({}));
-        alert(err.message || "구독에 실패했습니다.");
+        alert("결제 검증에 실패했습니다. 잠시 후 다시 시도해주세요.");
       }
     } catch (e) {
       console.error(e);
-      alert("서버 오류가 발생했습니다.");
+      alert(e.message || "구독 결제 중 오류가 발생했습니다.");
+    } finally {
+      setSubscribing(false);
     }
   };
 
@@ -361,7 +404,6 @@ export default function MentorProfilePage() {
       education: editForm.education.trim(),
       schedule: editForm.schedule.trim(),
       subscriptionPrice: price,
-      links: editForm.links.trim(), // 💡 링크 데이터 정제
     };
 
     try {
@@ -389,14 +431,13 @@ export default function MentorProfilePage() {
         alert(error.message || "프로필 수정에 실패했습니다.");
       }
     } catch (error) {
-      console.error(error);
     } finally {
       setSavingProfile(false);
     }
   };
 
   const startProfileEdit = () => {
-    const snapshot = { ...editForm, tags: editForm.tags || "", schedule: editForm.schedule || "", links: editForm.links || "" };
+    const snapshot = { ...editForm, tags: editForm.tags || "", schedule: editForm.schedule || "" };
     setProfileSnapshot(snapshot);
     setIsEditing(true);
   };
@@ -460,7 +501,7 @@ export default function MentorProfilePage() {
 
   const tagsArray = mentorInfo.tags ? mentorInfo.tags.split(",").map((t) => t.trim()).filter(Boolean) : [];
   const isAccessValid = isSubscribed || (subscriptionStatus === 'CANCEL_RESERVED' && (!currentPeriodEnd || new Date(currentPeriodEnd) > new Date()));
-  const currentPrice = mentorInfo.subscriptionPrice ? Number(mentorInfo.subscriptionPrice).toLocaleString() : "9,900";
+  const currentPrice = selectedPlan ? Number(selectedPlan.price).toLocaleString() : "-";
   const isAvailableNow = checkIsAvailable(mentorInfo.schedule);
   const statusColor = isAvailableNow ? "#22c55e" : "#f97316";
 
@@ -740,15 +781,72 @@ export default function MentorProfilePage() {
             <div className={styles.sidebarCard}>
               <div className={styles.sidebarTitleRow}>
                 <h3>구독 혜택</h3>
-                <span className={styles.sidebarPrice}>월 {currentPrice}원</span>
+                {selectedPlan && <span className={styles.sidebarPrice}>월 {currentPrice}원</span>}
               </div>
+
+              {plans.length === 0 ? (
+                <p style={{ fontSize: 12, color: "#7b8799", margin: "0 0 15px" }}>
+                  아직 등록된 요금제가 없습니다.
+                </p>
+              ) : (
+                <>
+                  <div className={styles.planSwitcher}>
+                    <button
+                      type="button"
+                      className={styles.planArrow}
+                      onClick={showPrevPlan}
+                      disabled={plans.length <= 1}
+                      aria-label="이전 요금제"
+                    >
+                      ‹
+                    </button>
+                    <div className={styles.planCard}>
+                      <strong className={styles.planName}>{selectedPlan.planName}</strong>
+                      <p className={styles.planDescription}>
+                        {selectedPlan.description || "설명이 등록되지 않았습니다."}
+                      </p>
+                      <span className={styles.planCycle}>{selectedPlan.billingCycle}개월마다 결제</span>
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.planArrow}
+                      onClick={showNextPlan}
+                      disabled={plans.length <= 1}
+                      aria-label="다음 요금제"
+                    >
+                      ›
+                    </button>
+                  </div>
+
+                  {plans.length > 1 && (
+                    <div className={styles.planDots}>
+                      {plans.map((p, i) => (
+                        <button
+                          type="button"
+                          key={p.id}
+                          className={`${styles.planDot} ${i === selectedPlanIndex ? styles.planDotActive : ""}`}
+                          onClick={() => setSelectedPlanIndex(i)}
+                          aria-label={`${p.planName} 선택`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+
               <ul className={styles.benefitList}>
                 <li><span>✓</span><div><strong>전체 피드 열람</strong><small>모든 게시글 무제한 열람</small></div></li>
                 <li><span>✓</span><div><strong>구독자 전용 콘텐츠</strong><small>실무 노하우와 심층 인사이트</small></div></li>
                 <li><span>✓</span><div><strong>자료 다운로드</strong><small>템플릿, 체크리스트, 가이드 제공</small></div></li>
                 <li><span>✓</span><div><strong>댓글 참여 및 질문</strong><small>멘토에게 직접 질문하고 답변 받기</small></div></li>
               </ul>
-              <button className={styles.sidebarSubscribeBtn} onClick={handleSubscribe}>구독하고 전체 보기</button>
+              <button
+                className={styles.sidebarSubscribeBtn}
+                onClick={handleSubscribe}
+                disabled={!selectedPlan || subscribing}
+              >
+                {subscribing ? "결제 진행 중..." : "구독하고 전체 보기"}
+              </button>
             </div>
           )}
 
@@ -770,30 +868,6 @@ export default function MentorProfilePage() {
               <li>
                 <strong>학력</strong>
                 {isEditing ? <input type="text" name="education" value={editForm.education} onChange={handleInputChange} className={styles.editInput} /> : <span>{mentorInfo.education || "홍익대학교 디자인과"}</span>}
-              </li>
-              {/* 💡 깃허브, 노션 등 관련 링크 항목 추가 */}
-              <li>
-                <strong>관련 링크</strong>
-                {isEditing ? (
-                  <input 
-                    type="text" 
-                    name="links" 
-                    value={editForm.links} 
-                    onChange={handleInputChange} 
-                    className={styles.editInput} 
-                    placeholder="깃허브, 노션 등 링크 입력 (예: https://...)" 
-                  />
-                ) : (
-                  <span>
-                    {mentorInfo.links ? (
-                      <a href={mentorInfo.links} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' }}>
-                        {mentorInfo.links}
-                      </a>
-                    ) : (
-                      "등록된 링크가 없습니다."
-                    )}
-                  </span>
-                )}
               </li>
               {isEditing && (
                 <li>
@@ -911,8 +985,8 @@ export default function MentorProfilePage() {
             </div>
 
             <div className={styles.modalActionBtns}>
-              <button className={styles.modalSubBtn} onClick={handleSubscribe}>
-                월 {currentPrice}원으로 구독하기
+              <button className={styles.modalSubBtn} onClick={handleSubscribe} disabled={!selectedPlan || subscribing}>
+                {subscribing ? "결제 진행 중..." : `월 ${currentPrice}원으로 구독하기`}
               </button>
               <button className={styles.modalCloseBtn} onClick={() => setShowSubscribeModal(false)}>
                 닫기

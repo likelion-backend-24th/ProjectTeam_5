@@ -113,4 +113,12 @@ public class Subscription {
         this.status = SubscriptionStatus.PAST_DUE;
         this.updatedAt = LocalDateTime.now();
     }
+
+    //만료된 구독 다시 결제할 때 pending으로 만듬
+    public void reserverForPayment(Long mentorPlanId, Integer amount) {
+        this.status = SubscriptionStatus.PENDING;
+        this.planId = mentorPlanId;
+        this.amount = amount;
+        this.updatedAt = LocalDateTime.now();
+    }
 }
