@@ -242,6 +242,7 @@ export default function MentorListPage() {
         keyword: keyword.trim(),
       });
 
+      // 에러의 원인이 되었던 부분을 빈 배열([])로 수정했습니다.
       setMentors(Array.isArray(data?.content) ? data.content : []);
       setTotalPages(Math.max(1, Number(data?.totalPages) || 1));
       setTotalElements(Number(data?.totalElements) || 0);
@@ -617,10 +618,6 @@ export default function MentorListPage() {
                 const rating = getRating(mentor);
                 const reviewCount = getReviewCount(mentor);
                 const active = isMentorActive(mentor);
-                
-                const consultAvailable = isConsultationAvailable(mentor);
-                const subscriberCount = getSubscriberCount(mentor);
-                const careerText = mentor.career || "경력 정보 없음";
 
                 return (
                   <Link
@@ -653,9 +650,22 @@ export default function MentorListPage() {
 
                         <div 
                           className={styles.avatarFallback} 
-                          style={{ display: mentor.profileImageUrl ? "none" : "flex" }}
+                          style={{ 
+                            display: mentor.profileImageUrl ? "none" : "flex",
+                            width: "44px",
+                            height: "44px",
+                            borderRadius: "50%",
+                            background: "#f1f5f9",
+                            color: "#94a3b8",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "18px",
+                            position: "absolute",
+                            top: 0,
+                            left: 0
+                          }}
                         >
-                          <FaUserLarge />
+                          👤
                         </div>
 
                         {active && (
