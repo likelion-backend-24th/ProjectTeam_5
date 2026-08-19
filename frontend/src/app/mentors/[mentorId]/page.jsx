@@ -96,7 +96,6 @@ export default function MentorProfilePage() {
     tags: "",
     education: "",
     schedule: "",
-    subscriptionPrice: 9900,
   });
 
   const [isWritingPost, setIsWritingPost] = useState(false);
@@ -204,7 +203,6 @@ export default function MentorProfilePage() {
             tags: profileData.tags || "",
             education: profileData.education || "",
             schedule: profileData.schedule || "월(10:00 - 17:00), 수(10:00 - 17:00), 금(10:00 - 17:00)",
-            subscriptionPrice: profileData.subscriptionPrice || 9900,
           });
           setIsOwner(Boolean(isLoggedIn && currentUserId && profileData.mentorId && String(profileData.mentorId) === String(currentUserId)));
         }
@@ -373,10 +371,7 @@ export default function MentorProfilePage() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setEditForm((prev) => ({
-      ...prev,
-      [name]: name === "subscriptionPrice" ? (value === "" ? "" : Number(value)) : value,
-    }));
+    setEditForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handlePostInputChange = (e) => {
@@ -385,7 +380,6 @@ export default function MentorProfilePage() {
   };
 
   const handleSaveProfile = async () => {
-    const price = Number(editForm.subscriptionPrice);
     if (!editForm.bio.trim()) {
       alert("소개글을 입력해주세요.");
       return;
@@ -403,7 +397,6 @@ export default function MentorProfilePage() {
       tags: editForm.tags.split(",").map((tag) => tag.trim()).filter(Boolean).join(", "),
       education: editForm.education.trim(),
       schedule: editForm.schedule.trim(),
-      subscriptionPrice: price,
     };
 
     try {
@@ -871,8 +864,17 @@ export default function MentorProfilePage() {
               </li>
               {isEditing && (
                 <li>
-                  <strong>구독 월 이용료</strong>
-                  <input type="number" name="subscriptionPrice" value={editForm.subscriptionPrice} onChange={handleInputChange} className={styles.editInput} step="1000" min="0" />
+                  <strong>구독 요금제</strong>
+                  {plans.length === 0 ? (
+                    <span style={{ fontSize: 11, color: "#7b8799" }}>등록된 요금제가 없습니다.</span>
+                  ) : (
+                    <span style={{ fontSize: 11, color: "#526074" }}>
+                      {plans.map((p) => `${p.planName} 월 ${Number(p.price).toLocaleString()}원`).join(", ")}
+                    </span>
+                  )}
+                  <a href="/profile" style={{ display: "block", marginTop: 4, fontSize: 10, color: "#1261f5" }}>
+                    요금제 등록·수정은 내 프로필 &gt; 구독 플랜 관리에서 →
+                  </a>
                 </li>
               )}
             </ul>
