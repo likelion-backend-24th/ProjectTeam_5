@@ -1,237 +1,624 @@
-/* page.module.css */
-
+/* ==================================================
+   전체
+================================================== */
 .container {
-  max-width: 1200px;
+  width: 100%;
+  max-width: 1320px;
   margin: 0 auto;
-  padding: 24px 16px;
-  background-color: #f8f9fa;
-  color: #333;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  padding: 28px 32px 40px;
+  box-sizing: border-box;
+  background: #f7f9fc;
+  color: #172033;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
 }
 
 .loading, .error {
-  text-align: center;
+  width: 100%;
   padding: 100px 0;
+  text-align: center;
   font-size: 16px;
-  color: #666;
+  color: #667085;
 }
 
-/* --- [상단 프로필 배너] --- */
 .profileBanner {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 28px 32px;
+  width: 100%;
+  min-height: 154px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  margin-bottom: 20px;
+  justify-content: space-between;
+  box-sizing: border-box;
+  padding: 24px 28px;
+  background: #ffffff;
+  border: 1px solid #e3e8f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(16, 24, 40, 0.04);
+  margin-bottom: 16px;
 }
 
 .heroLeft {
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 22px;
   flex: 1;
 }
 
-.heroText {
-  flex: 1;
+.avatarWrapper {
+  position: relative;
+  flex-shrink: 0;
 }
 
 .avatar {
-  width: 90px;
-  height: 90px;
+  width: 92px;
+  height: 92px;
+  display: block;
   border-radius: 50%;
   object-fit: cover;
+  border: 1px solid #e5e7eb;
+}
+
+.onlineDot {
+  position: absolute;
+  right: 2px;
+  bottom: 4px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+.heroText {
+  min-width: 0;
+  flex: 1;
 }
 
 .mentorName {
-  font-size: 22px;
+  margin: 0 0 5px;
+  font-size: 21px;
+  line-height: 1.3;
   font-weight: 700;
-  margin: 0 0 6px 0;
+  color: #111827;
 }
 
 .mentorBio {
-  font-size: 14px;
-  color: #666;
-  margin: 0 0 12px 0;
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tagGroup {
   display: flex;
-  gap: 6px;
-  margin-bottom: 12px;
   flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
 }
 
 .tag {
-  background: #f1f3f5;
-  color: #495057;
-  font-size: 12px;
-  padding: 4px 10px;
-  border-radius: 6px;
+  padding: 4px 9px;
+  border-radius: 5px;
+  background: #f1f4f8;
+  color: #526074;
+  font-size: 10px;
+  font-weight: 500;
 }
 
 .statsRow {
   display: flex;
+  align-items: center;
   gap: 16px;
-  font-size: 13px;
-  color: #666;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.star {
+  color: #f59e0b;
+  font-size: 14px;
+}
+
+.heroRight {
+  display: flex;
+  align-items: stretch;
+  margin-left: 25px;
 }
 
 .heroStats {
   display: flex;
-  align-items: center;
-  gap: 32px;
+  align-items: stretch;
 }
 
 .statBox {
+  min-width: 105px;
+  padding: 0 18px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  border-left: 1px solid #edf0f5;
+}
+
+.statIcon {
+  margin-bottom: 4px;
+  font-size: 16px;
+  color: #1261f5;
 }
 
 .statLabel {
-  font-size: 12px;
-  color: #868e96;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
+  font-size: 10px;
+  color: #64748b;
 }
 
 .statValue {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
-  color: #212529;
+  color: #172033;
+}
+
+.statValueSmall {
+  font-size: 13px;
+  font-weight: 700;
+  color: #172033;
+}
+
+.statSub {
+  margin-top: 2px;
+  font-size: 9px;
+  color: #94a3b8;
+  white-space: nowrap;
 }
 
 .actionBtns {
+  width: 145px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  width: 130px;
+  justify-content: center;
+  gap: 7px;
+  margin-left: 10px;
 }
 
 .subBtn, .consultBtn, .editBtn, .saveBtn, .cancelBtn {
-  padding: 10px;
-  border-radius: 8px;
+  width: 100%;
+  min-height: 38px;
+  padding: 9px 14px;
+  box-sizing: border-box;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  border: none;
-  transition: opacity 0.2s;
+  transition: background 0.2s, transform 0.15s, opacity 0.2s;
 }
 
-.subBtn { background: #000; color: #fff; }
-.consultBtn { background: #f1f3f5; color: #495057; }
-.editBtn { background: #f1f3f5; color: #495057; }
-.saveBtn { background: #1c64f2; color: #fff; }
-.cancelBtn { background: #e9ecef; color: #495057; }
+.subBtn { background: #1261f5; color: #fff; }
+.subBtn:hover { background: #0754e8; }
+.consultBtn { background: #fff; color: #1261f5; border-color: #d9e3f1; }
+.consultBtn:hover { background: #f5f8ff; }
+.editBtn { background: #f1f4f8; color: #475569; }
+.editBtn:hover { background: #e8edf3; }
+.saveBtn { background: #1261f5; color: #fff; border: none; }
+.cancelBtn { background: #eef1f5; color: #475569; }
 
-/* --- [탭 네비게이션] --- */
 .tabNav {
   display: flex;
-  gap: 24px;
-  border-bottom: 2px solid #e9ecef;
-  margin-bottom: 24px;
+  gap: 28px;
+  height: 43px;
+  border-bottom: 1px solid #e2e7ef;
+  margin-bottom: 14px;
 }
 
 .tabNav button {
+  position: relative;
+  height: 43px;
+  padding: 0 3px;
   background: none;
   border: none;
-  padding: 12px 4px;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 600;
-  color: #868e96;
+  color: #7b8799;
   cursor: pointer;
-  position: relative;
 }
 
-.tabNav button.activeTab { color: #1c64f2; }
+.tabNav button.activeTab { color: #1261f5; }
 .tabNav button.activeTab::after {
   content: "";
   position: absolute;
-  bottom: -2px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background-color: #1c64f2;
+  left: 0; right: 0; bottom: -1px;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: #1261f5;
 }
 
-/* --- [메인 레이아웃] --- */
 .mainGrid {
   display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 20px;
+  align-items: start;
 }
 
-/* 필터 바 */
-.filterBar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
+.feedColumn { min-width: 0; }
+.writePostBar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
 
-.filterGroup { display: flex; gap: 8px; }
-.filterGroup button {
-  background: #fff;
-  border: 1px solid #dee2e6;
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 13px;
-  color: #495057;
-  cursor: pointer;
-}
-.filterGroup button.activeFilter { background: #1c64f2; color: #fff; border-color: #1c64f2; }
-.searchInput { padding: 8px 16px; border-radius: 20px; border: 1px solid #dee2e6; font-size: 13px; width: 180px; }
-
-/* 아티클 카드 리스트 */
-.articleList { display: flex; flex-direction: column; gap: 16px; }
-.articleCard {
-  background: #ffffff;
-  border-radius: 12px;
+.postForm {
   padding: 20px;
-  display: block;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
-  text-decoration: none;
-  color: inherit;
-  transition: transform 0.2s;
+  margin-bottom: 15px;
+  background: #fff;
+  border: 1px solid #e1e7ef;
+  border-radius: 10px;
 }
-.articleCard:hover { transform: translateY(-2px); }
 
-.articleBody { flex: 1; }
-.date { color: #adb5bd; font-size: 12px; }
-.articleTitle { font-size: 18px; font-weight: 700; margin: 8px 0; }
+.postForm h3 { margin: 0 0 15px; font-size: 16px; }
+.formGroup { margin-bottom: 14px; }
+.formLabelRow { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 12px; font-weight: 600; }
+.formInput, .formTextarea { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #d8e0eb; border-radius: 6px; background: #fff; font-size: 12px; outline: none; }
+.formInput:focus, .formTextarea:focus { border-color: #1261f5; }
+.formTextarea { min-height: 140px; resize: vertical; line-height: 1.6; }
+.codeButton { padding: 4px 8px; background: #f2f4f7; border: 1px solid #e0e5eb; border-radius: 5px; cursor: pointer; font-size: 10px; }
+.fileLabel { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; }
+.fileLabel span { margin-left: 5px; font-size: 10px; font-weight: 400; color: #94a3b8; }
+.filePreviewList { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 10px 0 0; list-style: none; }
+.filePreview { position: relative; width: 80px; height: 80px; }
+.filePreview img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
+.filePreview button { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; border: none; border-radius: 50%; background: rgba(0, 0, 0, 0.55); color: #fff; cursor: pointer; }
+.formError { margin: 0 0 10px; font-size: 12px; color: #ef4444; }
 
-/* 마크다운 적용된 본문 스타일 */
-.articleDesc {
-  font-size: 14px;
-  color: #555;
-  line-height: 1.6;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  word-break: break-all;
+.filterBar { min-height: 42px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.filterGroup { display: flex; gap: 6px; }
+.filterGroup button { height: 34px; padding: 0 14px; background: #fff; border: 1px solid #e1e7ef; border-radius: 7px; font-size: 11px; color: #526074; cursor: pointer; }
+.filterGroup button.activeFilter { background: #1261f5; border-color: #1261f5; color: #fff; }
+.searchWrapper { position: relative; }
+.searchInput { width: 250px; height: 34px; box-sizing: border-box; padding: 0 36px 0 13px; border: 1px solid #e1e7ef; border-radius: 7px; background: #fff; font-size: 11px; outline: none; }
+.searchInput:focus { border-color: #1261f5; }
+.searchWrapper > span { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 12px; color: #7b8799; }
+
+/* 게시글 목록 스타일 */
+.articleArea { position: relative; width: 100%; }
+.articleList { display: flex; flex-direction: column; gap: 16px; }
+.articleCardWrapper { width: 100%; }
+
+.articleCard { 
+  width: 100% !important; 
+  box-sizing: border-box !important; 
+  display: flex !important; 
+  flex-direction: column !important; 
+  padding: 22px 24px !important; 
+  background: #ffffff !important; 
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 12px !important; 
+  text-decoration: none !important; 
+  color: inherit !important; 
+  position: relative !important;
+  overflow: hidden !important;
+  box-shadow: 0 3px 6px rgba(15, 23, 42, 0.04) !important; 
+  transition: all 0.2s ease !important; 
 }
-.articleDesc p { margin: 0; }
-.articleDesc code { background: #f1f3f5; padding: 2px 4px; border-radius: 4px; font-size: 12px; }
 
-/* --- [우측 사이드바] --- */
-.sidebar { display: flex; flex-direction: column; gap: 16px; }
-.sidebarCard { background: #ffffff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02); }
-.sidebarCard h3 { font-size: 15px; font-weight: 700; margin: 0 0 16px 0; border-bottom: 1px solid #f1f3f5; padding-bottom: 8px; }
+.articleCard::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+  background: #1261f5;
+  opacity: 0.9;
+}
 
-.infoList, .scheduleList { list-style: none; padding: 0; margin: 0; font-size: 13px; }
-.infoList li { margin-bottom: 12px; color: #495057; }
-.infoList li strong { display: block; color: #868e96; font-size: 11px; margin-bottom: 2px; }
+.articleCard:hover { 
+  transform: translateY(-2px); 
+  border-color: #1261f5 !important; 
+  box-shadow: 0 8px 20px rgba(18, 97, 245, 0.1) !important; 
+}
 
-/* 수정 모드 */
-.editInput, .editBioInput {
+/* 구독자 전용 잠긴 게시글 카드 스타일 */
+.articleCardLocked {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #1c64f2;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  gap: 16px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.articleCardLocked:hover {
+  background: #f1f5f9;
+  border-color: #1261f5;
+}
+
+.lockNoticeInner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.articleBody { width: 100%; display: flex; flex-direction: column; }
+.articleTop { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.date { font-size: 11px; color: #64748b; font-weight: 500; }
+.articleTitle { 
+  margin: 0 0 16px; 
+  overflow: hidden; 
+  font-size: 16px; 
+  line-height: 1.5; 
+  font-weight: 700; 
+  color: #111827; 
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  text-overflow: ellipsis; 
+}
+
+.articleBottom { display: flex; align-items: center; justify-content: flex-end; padding-top: 12px; border-top: 1px solid #f1f5f9; }
+.articleCategory { padding: 3px 8px; border: 1px solid #dce8fb; border-radius: 5px; background: #f5f8ff; color: #2563eb; font-size: 10px; font-weight: 600; }
+.articleStats { display: flex; align-items: center; gap: 16px; font-size: 12px; color: #64748b; font-weight: 500; }
+.articleStats span { display: flex; align-items: center; gap: 4px; }
+.bookmark { font-size: 14px; color: #94a3b8; cursor: pointer; transition: color 0.15s; }
+.bookmark:hover { color: #e11d48; }
+
+.empty { padding: 70px 20px; background: #fff; border: 1px solid #e5eaf2; border-radius: 10px; text-align: center; color: #94a3b8; font-size: 13px; }
+
+.sidebar { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.sidebarCard { padding: 17px; box-sizing: border-box; background: #fff; border: 1px solid #e3e8f0; border-radius: 10px; box-shadow: 0 1px 4px rgba(15, 23, 42, 0.025); }
+.sidebarCard h3 { margin: 0; font-size: 14px; font-weight: 700; color: #172033; }
+.sidebarTitleRow { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #edf0f5; }
+.sidebarPrice { font-size: 11px; font-weight: 700; color: #1261f5; }
+
+.benefitList { list-style: none; padding: 0; margin: 0 0 15px; }
+.benefitList li { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 12px; }
+.benefitList li > span { color: #1261f5; font-weight: 700; font-size: 12px; }
+.benefitList strong { display: block; margin-bottom: 2px; font-size: 11px; color: #172033; }
+.benefitList small { display: block; font-size: 9px; line-height: 1.4; color: #7b8799; }
+.sidebarSubscribeBtn { width: 100%; height: 36px; border: none; border-radius: 6px; background: #1261f5; color: #fff; font-size: 11px; font-weight: 700; cursor: pointer; }
+
+.infoList { list-style: none; padding: 0; margin: 15px 0 0; }
+.infoList li { margin-bottom: 13px; font-size: 11px; color: #526074; }
+.infoList li:last-child { margin-bottom: 0; }
+.infoList strong { display: block; margin-bottom: 3px; font-size: 9px; font-weight: 600; color: #94a3b8; }
+.infoList span { line-height: 1.5; }
+
+.scheduleHeader { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #edf0f5; }
+.available { font-size: 9px; font-weight: 600; }
+.scheduleNotice { margin: 12px 0 0; font-size: 9px; line-height: 1.5; color: #94a3b8; }
+
+/* ==================================================
+   상담 가능 시간 상세 스타일 (보완됨)
+================================================== */
+.scheduleViewBox {
+  width: 100%;
+}
+
+.scheduleList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scheduleRowItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 6px;
+  font-size: 11px;
+}
+
+.scheduleDay {
+  font-weight: 600;
+  color: #334155;
+}
+
+.scheduleTime {
+  color: #64748b;
+}
+
+.scheduleText {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+/* 요일 선택 및 시간 입력 설정 영역 (편집 모드) */
+.scheduleEditContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.editSubLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.dayPillGroup {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.dayPill {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #d8e0eb;
+  background: #f8fafc;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.dayPillActive {
+  background: #1261f5;
+  border-color: #1261f5;
+  color: #fff;
+}
+
+.dayTimeConfigList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.dayTimeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  padding: 6px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 11px;
+}
+
+.dayBadge {
+  font-weight: 700;
+  color: #1261f5;
+  min-width: 36px;
+}
+
+.timeInputWrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.roundedTimeInput {
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid #d8e0eb;
+  border-radius: 4px;
+  font-size: 10px;
+  background: #fff;
+  color: #172033;
+  outline: none;
+}
+
+.roundedTimeInput:focus {
+  border-color: #1261f5;
+}
+
+.timeWave {
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.editWrapper { width: 100%; }
+.editInput, .editBioInput { width: 100%; box-sizing: border-box; border: 1px solid #d8e0eb; border-radius: 6px; background: #fff; color: #172033; font-size: 11px; outline: none; }
+.editInput { min-height: 34px; padding: 8px 10px; }
+.editBioInput { min-height: 90px; padding: 10px; resize: vertical; line-height: 1.5; }
+
+/* ==================================================
+   구독 유도 모달 스타일
+================================================== */
+.modalOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modalContent {
+  width: 100%;
+  max-width: 380px;
+  background: #ffffff;
+  padding: 30px 24px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  text-align: center;
   box-sizing: border-box;
 }
-.editBioInput { min-height: 100px; resize: vertical; }
-.charCount { font-size: 12px; color: #666; text-align: right; }
+
+.modalLockIcon {
+  font-size: 32px;
+  margin-bottom: 12px;
+  display: inline-block;
+}
+
+.modalContent h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.modalContent p {
+  margin: 0 0 20px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+.modalPriceBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  font-size: 12px;
+  color: #334155;
+}
+
+.modalPriceBox strong {
+  font-size: 15px;
+  color: #1261f5;
+}
+
+.modalActionBtns {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modalSubBtn {
+  width: 100%;
+  height: 42px;
+  background: #1261f5;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.modalSubBtn:hover {
+  background: #0754e8;
+}
+
+.modalCloseBtn {
+  width: 100%;
+  height: 38px;
+  background: transparent;
+  color: #64748b;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.modalCloseBtn:hover {
+  color: #0f172a;
+}
