@@ -95,7 +95,7 @@ public class User extends BaseTimeEntity {
     }
 
     //멘토 프로필 업데이트
-    public void updateMentorProfile(String bio, String company, String career, String tags, String education, String schedule, Integer subscriptionPrice) {
+    public void updateMentorProfile(String bio, String company, String career, String tags, String education, String schedule) {
         this.bio = bio;
         this.company = company;
         this.career = career;

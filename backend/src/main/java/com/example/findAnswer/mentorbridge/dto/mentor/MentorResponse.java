@@ -14,12 +14,11 @@ public record MentorResponse(
         String company,
         String career,
         String education,
-        String schedule,
-        Integer subscriptionPrice
+        String schedule
 ) {
     // 기존 목록 조회용 생성자 (13개의 필드 순서에 맞게 기본값 설정)
     public MentorResponse(Long mentorId, String name, String profileImageUrl, String bio, String tags, Double rating, Integer reviewCount) {
-        this(mentorId, name, profileImageUrl, bio, tags, rating, reviewCount, 0, null, null, null, null, 9900);
+        this(mentorId, name, profileImageUrl, bio, tags, rating, reviewCount, 0, null, null, null, null);
     }
 
     // User 엔티티와 구독자 수를 받아 DTO로 변환하는 메서드
@@ -36,8 +35,8 @@ public record MentorResponse(
                 user.getCompany(),
                 user.getCareer(),
                 user.getEducation(),
-                user.getSchedule(),
-                user.getSubscriptionPrice() != null ? user.getSubscriptionPrice() : 9900
+                user.getSchedule()
+                //user.getSubscriptionPrice() != null ? user.getSubscriptionPrice() : 9900
         );
     }
 }
