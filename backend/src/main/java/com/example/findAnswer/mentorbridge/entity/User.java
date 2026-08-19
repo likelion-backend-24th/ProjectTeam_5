@@ -11,11 +11,10 @@ import java.util.List;
 @Table(name = "users")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class User extends BaseTimeEntity{
+public class User extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-
     private Long id;
 
     @Column(nullable = true, unique = true, length = 100)
@@ -30,7 +29,6 @@ public class User extends BaseTimeEntity{
     @Column(length = 100)
     private String interests;
 
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private Role role;
@@ -38,16 +36,51 @@ public class User extends BaseTimeEntity{
     @Column(nullable = false)
     private boolean blocked = false;
 
+    // 멘토 프로필 관련 필드들
+    @Column(name = "profile_image_url")
+    private String profileImageUrl;
+
+    @Column(length = 1000)
+    private String bio;
+
+    @Column(length = 255)
+    private String company;
+
+    @Column(length = 255)
+    private String career;
+
+    @Column(length = 255)
+    private String tags;
+
+    @Column(length = 255)
+    private String education;
+
+    @Column(length = 255)
+    private String schedule;
+
+    // 💡 [추가] 멘토 구독 월 이용료 필드
+    @Column(name = "subscription_price")
+    private Integer subscriptionPrice = 9900;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<MentorApplication> mentorApplications = new ArrayList<>();
 
-    public void updateProfile(String name, String interests) {this.name = name; this.interests = interests;}
+    public void updateProfile(String name, String interests) {
+        this.name = name;
+        this.interests = interests;
+    }
 
-    public void updatePassword(String encodedPassword) {this.password = encodedPassword;}
+    public void updatePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
 
-    public void updateEmail(String email) {this.email = email;}
+    public void updateEmail(String email) {
+        this.email = email;
+    }
 
-    public void promoteToMentor() {this.role = Role.MENTOR;}
+    public void promoteToMentor() {
+        this.role = Role.MENTOR;
+    }
 
     public User(String email, String password, String name, Role role) {
         this.email = email;
@@ -56,7 +89,7 @@ public class User extends BaseTimeEntity{
         this.role = role;
     }
 
-    public static User ofOAuth(String email, String name, Role role){
+    public static User ofOAuth(String email, String name, Role role) {
         return new User(email, null, name, role);
     }
 
@@ -70,5 +103,16 @@ public class User extends BaseTimeEntity{
 
     public boolean isBlocked() {
         return this.blocked;
+    }
+
+    // 💡 [수정] 멘토 프로필 전체 수정 메서드 (subscriptionPrice 추가)
+    public void updateMentorProfile(String bio, String company, String career, String tags, String education, String schedule, Integer subscriptionPrice) {
+        this.bio = bio;
+        this.company = company;
+        this.career = career;
+        this.tags = tags;
+        this.education = education;
+        this.schedule = schedule;
+        this.subscriptionPrice = (subscriptionPrice != null) ? subscriptionPrice : 9900;
     }
 }

@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "mentor_post")
@@ -27,6 +29,12 @@ public class MentorPost {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
+    // 💡 [추가] 첨부파일 ID 목록 관리 (별도 테이블 매핑 또는 단순 컬렉션)
+    @ElementCollection
+    @CollectionTable(name = "mentor_post_attachments", joinColumns = @JoinColumn(name = "post_id"))
+    @Column(name = "attachment_id")
+    private List<Long> attachmentIds = new ArrayList<>();
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -34,17 +42,21 @@ public class MentorPost {
     private LocalDateTime updatedAt;
 
     @Builder
-    public MentorPost(Long mentorId, String title, String content) {
+    public MentorPost(Long mentorId, String title, String content, List<Long> attachmentIds) {
         this.mentorId = mentorId;
         this.title = title;
         this.content = content;
+        this.attachmentIds = attachmentIds != null ? attachmentIds : new ArrayList<>();
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void update(String title, String content) {
+    public void update(String title, String content, List<Long> attachmentIds) {
         this.title = title;
         this.content = content;
+        if (attachmentIds != null) {
+            this.attachmentIds = attachmentIds;
+        }
         this.updatedAt = LocalDateTime.now();
     }
 }

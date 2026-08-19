@@ -46,6 +46,11 @@ public class SubscriptionCheckAspect {
 
         Long mentorId = Long.parseLong(mentorIdStr);
 
+        // 💡 [핵심 추가] 요청한 유저(userId)가 해당 멘토(mentorId) 본인이라면 구독 검사 면제!
+        if (userId.equals(mentorId)) {
+            return; // 403 에러를 띄우지 않고 그대로 통과시킵니다.
+        }
+
         SubscriptionCheckResponse check = subscriptionService.checkAccessPermission(userId, mentorId);
 
         if (!check.accessAllowed()) {

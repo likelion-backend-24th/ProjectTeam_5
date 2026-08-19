@@ -34,6 +34,10 @@ public class Subscription {
     @Column(nullable = false)
     private SubscriptionStatus status;
 
+    // 💡 [추가] 멘토가 지정한 당시의 구독 금액 저장
+    @Column(name = "amount", nullable = false)
+    private Integer amount;
+
     @Column(name = "current_period_start", nullable = false)
     private LocalDateTime currentPeriodStart;
 
@@ -47,11 +51,12 @@ public class Subscription {
     private LocalDateTime updatedAt;
 
     @Builder
-    public Subscription(Long userId, Long mentorId, SubscriptionStatus status,
+    public Subscription(Long userId, Long mentorId, SubscriptionStatus status, Integer amount,
                         LocalDateTime currentPeriodStart, LocalDateTime currentPeriodEnd) {
         this.userId = userId;
         this.mentorId = mentorId;
         this.status = status;
+        this.amount = amount != null ? amount : 9900; // 기본값 방어
         this.currentPeriodStart = currentPeriodStart;
         this.currentPeriodEnd = currentPeriodEnd;
         this.createdAt = LocalDateTime.now();
@@ -64,9 +69,10 @@ public class Subscription {
         this.updatedAt = LocalDateTime.now();
     }
 
-    // 💡 [추가] 만료(EXPIRED) 후 재구독 시 상태 및 기간을 갱신하는 메서드
-    public void reactivate(LocalDateTime start, LocalDateTime end) {
+    // 만료(EXPIRED) 후 재구독 시 상태, 금액, 기간을 갱신하는 메서드
+    public void reactivate(LocalDateTime start, LocalDateTime end, Integer amount) {
         this.status = SubscriptionStatus.ACTIVE;
+        this.amount = amount;
         this.currentPeriodStart = start;
         this.currentPeriodEnd = end;
         this.updatedAt = LocalDateTime.now();
