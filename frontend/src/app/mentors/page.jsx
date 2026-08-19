@@ -660,7 +660,7 @@ export default function MentorListPage() {
                             img.dataset.fallbackApplied = "true";
                             img.src = DEFAULT_AVATAR;
                           }}
-                        >
+                        />
                           👤
                         </div>
 
