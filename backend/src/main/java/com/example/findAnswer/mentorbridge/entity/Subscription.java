@@ -44,6 +44,15 @@ public class Subscription {
     @Column(name = "current_period_end", nullable = false)
     private LocalDateTime currentPeriodEnd;
 
+    @Column(name = "plan_id")
+    private Long planId;              // MentorPlan 참조. 우선 nullable
+
+    @Column(name = "payment_method_id")
+    private Long paymentMethodId;     // PaymentMethod 참조. 정기결제 시 이 결제수단으로 청구
+
+    @Column(name = "next_billing_at")
+    private LocalDateTime nextBillingAt; // 조회용 요약값
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -51,14 +60,20 @@ public class Subscription {
     private LocalDateTime updatedAt;
 
     @Builder
-    public Subscription(Long userId, Long mentorId, SubscriptionStatus status, Integer amount,
-                        LocalDateTime currentPeriodStart, LocalDateTime currentPeriodEnd) {
+    public Subscription(Long userId, Long mentorId, Long planId, Long paymentMethodId,
+                        Integer amount,
+                        SubscriptionStatus status,
+                        LocalDateTime currentPeriodStart, LocalDateTime currentPeriodEnd,
+                        LocalDateTime nextBillingAt) {
         this.userId = userId;
         this.mentorId = mentorId;
+        this.planId = planId;
+        this.paymentMethodId = paymentMethodId;
+        this.amount = amount;
         this.status = status;
-        this.amount = amount != null ? amount : 9900; // 기본값 방어
         this.currentPeriodStart = currentPeriodStart;
         this.currentPeriodEnd = currentPeriodEnd;
+        this.nextBillingAt = nextBillingAt;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
@@ -82,5 +97,20 @@ public class Subscription {
     public boolean hasActivePermission(LocalDateTime now) {
         boolean isValidStatus = (this.status == SubscriptionStatus.ACTIVE || this.status == SubscriptionStatus.CANCEL_RESERVED);
         return isValidStatus && this.currentPeriodEnd.isAfter(now);
+    }
+
+
+    // 최초 결제 검증 성공 시 PENDING → ACTIVE
+    public void activateAfterFirstPayment(LocalDateTime periodEnd) {
+        this.status = SubscriptionStatus.ACTIVE;
+        this.currentPeriodEnd = periodEnd;
+        this.nextBillingAt = periodEnd;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    // 회차 결제 실패 시
+    public void markPastDue() {
+        this.status = SubscriptionStatus.PAST_DUE;
+        this.updatedAt = LocalDateTime.now();
     }
 }

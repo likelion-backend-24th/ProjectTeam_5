@@ -30,4 +30,13 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
             "AND status IN ('ACTIVE', 'CANCEL_RESERVED')",
             nativeQuery = true)
     int updateExpiredSubscriptions(@Param("now") LocalDateTime now);
+
+
+    // 활성 상태인 구독자 수 조회
+    long countByMentorIdAndStatusInAndCurrentPeriodEndAfter(
+            Long mentorId,
+            List<SubscriptionStatus> statuses,
+            LocalDateTime now
+    );
+
 }
