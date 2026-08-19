@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-// 💡 1. getFollowingQuestions 임포트 추가
+// 💡 팀원의 getQuestions와 우리가 만든 getFollowingQuestions를 함께 임포트
 import { getQuestions, getFollowingQuestions } from "@/lib/questions";
 
 import styles from "./page.module.css";
 
-// 💡 2. 카테고리에 '팔로잉' 추가
+// 💡 팀원 코드에 우리가 만든 '팔로잉' 카테고리 추가
 const CATEGORIES = ["전체", "팔로잉", "개발", "멘토링", "취업", "기타"];
 
 export default function QuestionsPage() {
@@ -21,6 +21,7 @@ export default function QuestionsPage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
+  // 🔍 검색어 및 정렬 옵션 상태 (팀원 코드 유지)
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState("latest");
 
@@ -34,13 +35,24 @@ export default function QuestionsPage() {
       try {
         let result;
 
-        // 💡 3. '팔로잉' 탭일 경우 전용 API 호출
+        // 💡 팔로잉 탭 로직 (우리 코드) + 서버 검색/정렬 파라미터 (팀원 코드) 병합
         if (category === "팔로잉") {
-          result = await getFollowingQuestions({ page, size: 10 });
+          result = await getFollowingQuestions({
+            page,
+            size: 10,
+            keyword: searchQuery,
+            sort: sortOption
+          });
         } else {
-          // "전체"인 경우 카테고리 필터 없이 호출하도록 빈 값 세팅
           const categoryParam = category === "전체" ? "" : category;
-          result = await getQuestions({ page, size: 10, category: categoryParam });
+          // 서버로 검색어(keyword)와 정렬(sort) 조건 전달 (팀원 코드)
+          result = await getQuestions({
+            page,
+            size: 10,
+            category: categoryParam,
+            keyword: searchQuery,
+            sort: sortOption
+          });
         }
 
         if (!ignore) {
@@ -68,10 +80,10 @@ export default function QuestionsPage() {
     return () => {
       ignore = true;
     };
-  }, [page, category]);
+  }, [page, category, searchQuery, sortOption]); // 👈 팀원 코드: 검색어나 정렬 변경 시 서버에서 다시 조회
 
   const handleCategoryChange = (newCategory) => {
-    // 💡 4. 팔로잉 탭 클릭 시 로그인 여부 체크
+    // 💡 팔로잉 탭 클릭 시 로그인 여부 체크 (우리 코드)
     if (newCategory === "팔로잉") {
       const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
       if (!token) {
@@ -87,31 +99,20 @@ export default function QuestionsPage() {
     }
   };
 
-  const rawQuestions = data?.content ?? [];
+  // 💡 검색어 변경 시 페이지 초기화 (팀원 코드)
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+    setPage(0);
+  };
 
-  const filteredQuestions = useMemo(() => {
-    let list = [...rawQuestions];
+  // 💡 정렬 변경 시 페이지 초기화 (팀원 코드)
+  const handleSortChange = (e) => {
+    setSortOption(e.target.value);
+    setPage(0);
+  };
 
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(
-          (item) =>
-              item.title?.toLowerCase().includes(q) ||
-              (item.authorName || item.name || "").toLowerCase().includes(q)
-      );
-    }
-
-    list.sort((a, b) => {
-      if (sortOption === "latest") return new Date(b.createdAt) - new Date(a.createdAt);
-      if (sortOption === "oldest") return new Date(a.createdAt) - new Date(b.createdAt);
-      if (sortOption === "mostAnswers") return (b.answerCount ?? 0) - (a.answerCount ?? 0);
-      if (sortOption === "mostLikes") return (b.likeCount ?? 0) - (a.likeCount ?? 0);
-      return 0;
-    });
-
-    return list;
-  }, [rawQuestions, searchQuery, sortOption]);
-
+  // 💡 팀원 로직: 클라이언트 사이드 필터링(useMemo) 대신 서버 데이터를 그대로 사용
+  const questions = data?.content ?? [];
   const totalElements = data?.totalElements ?? 0;
   const totalPages = Math.max(Math.ceil(totalElements / 10), 1);
 
@@ -147,6 +148,7 @@ export default function QuestionsPage() {
         </div>
 
         <section className={styles.panel}>
+          {/* 카테고리 탭 버튼 UI */}
           <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
             {CATEGORIES.map((cat) => (
                 <button
@@ -169,6 +171,7 @@ export default function QuestionsPage() {
             ))}
           </div>
 
+          {/* 🔍 검색창 & 정렬 드롭다운 바 */}
           <div
               style={{
                 display: "flex",
@@ -181,9 +184,9 @@ export default function QuestionsPage() {
           >
             <input
                 type="text"
-                placeholder="질문 제목 또는 작성자 검색..."
+                placeholder="질문 제목 또는 내용 검색..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleSearchChange}
                 style={{
                   padding: "8px 14px",
                   borderRadius: "6px",
@@ -195,7 +198,7 @@ export default function QuestionsPage() {
 
             <select
                 value={sortOption}
-                onChange={(e) => setSortOption(e.target.value)}
+                onChange={handleSortChange}
                 style={{
                   padding: "8px 12px",
                   borderRadius: "6px",
@@ -218,13 +221,13 @@ export default function QuestionsPage() {
               <p className={styles.errorMessage}>{errorMessage}</p>
           )}
 
-          {!loading && !errorMessage && filteredQuestions.length === 0 && (
+          {!loading && !errorMessage && questions.length === 0 && (
               <p className={styles.statusText}>
-                {searchQuery ? "검색 결과가 없습니다." : "해당 내역이 없습니다."}
+                {searchQuery ? "검색 결과가 없습니다." : "아직 등록된 질문이 없습니다."}
               </p>
           )}
 
-          {!loading && !errorMessage && filteredQuestions.length > 0 && (
+          {!loading && !errorMessage && questions.length > 0 && (
               <table className={styles.table}>
                 <thead>
                 <tr>
@@ -238,7 +241,7 @@ export default function QuestionsPage() {
                 </thead>
 
                 <tbody>
-                {filteredQuestions.map((question) => (
+                {questions.map((question) => (
                     <tr key={question.id}>
                       <td style={{ textAlign: "center" }}>
                     <span style={{ color: "#2867e8", fontSize: "13px", fontWeight: "bold" }}>
