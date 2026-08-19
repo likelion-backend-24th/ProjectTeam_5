@@ -110,8 +110,8 @@ public class MentorService {
                 dto.getCareer(),
                 dto.getTags(),
                 dto.getEducation(),
-                dto.getSchedule(),
-                dto.getSubscriptionPrice()
+                dto.getSchedule()
+//                dto.getSubscriptionPrice()
         );
 
         return MentorResponse.from(user);
