@@ -14,7 +14,10 @@ spring:
     properties:
       hibernate:
         format_sql: false
-
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
   security:
     oauth2:
       client:
@@ -53,6 +56,8 @@ app:
   oauth2:
     success-redirect-uri: https://like-lion-team5-find-answer.vercel.app/oauth/callback
     failure-redirect-uri: https://like-lion-team5-find-answer.vercel.app/login
+  upload:
+    dir: ${UPLOAD_DIR:./uploads}
 
 server:
   forward-headers-strategy: framework
@@ -61,5 +66,5 @@ kakao:
   admin-key: ${KAKAO_ADMIN_KEY:kakao_admin_key}
 
 cloudinary:
-  url: ${CLOUDINARY_URL}          # cloudinary://key:secret@cloudname
+  url: ${CLOUDINARY_URL:cloudinary://895865932964719:3Wy04vCM7WG3YSabRhI_s8d5G34@xml84nff}          # cloudinary://key:secret@cloudname
   folder: findanswer/posts
