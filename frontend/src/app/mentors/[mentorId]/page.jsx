@@ -311,6 +311,7 @@ export default function MentorProfilePage() {
 
       if (completeRes.subscriptionStatus === "ACTIVE") {
         setIsSubscribed(true);
+        setSubscriptionId(completeRes.subscriptionId);
         setSubscriptionStatus("ACTIVE");
         setCurrentPeriodEnd(completeRes.currentPeriodEnd);
 
