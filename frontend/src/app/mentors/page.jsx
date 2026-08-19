@@ -7,6 +7,14 @@ import styles from "./page.module.css";
 
 const PAGE_SIZE = 8;
 
+// 인라인 SVG 데이터 URI — 정적 파일(/default-avatar.png)에 의존하지 않아 404가 날 수 없다.
+const DEFAULT_AVATAR = `data:image/svg+xml,${encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="50" fill="#e5e7eb" />
+  <circle cx="50" cy="38" r="18" fill="#9ca3af" />
+  <path d="M50 62c-19 0-34 12-34 27v6a5 5 0 0 0 5 5h58a5 5 0 0 0 5-5v-6c0-15-15-27-34-27z" fill="#9ca3af" />
+</svg>`)}`;
+
 const CATEGORY_OPTIONS = [
   "전체",
   "개발",
@@ -622,15 +630,19 @@ export default function MentorListPage() {
                         <img
                           src={
                             mentor.profileImageUrl ||
-                            "/default-avatar.png"
+                            DEFAULT_AVATAR
                           }
                           alt={`${mentor.name || "멘토"} 프로필`}
                           className={
                             styles.avatar
                           }
                           onError={(event) => {
-                            event.currentTarget.src =
-                              "/default-avatar.png";
+                            const img = event.currentTarget;
+                            // 이미 대체 이미지로 바꾼 뒤엔 다시 시도하지 않는다 — 안 그러면
+                            // (깨진 URL → onError → 같은 src 재할당 → 재요청 → 다시 onError) 무한 루프에 빠진다.
+                            if (img.dataset.fallbackApplied) return;
+                            img.dataset.fallbackApplied = "true";
+                            img.src = DEFAULT_AVATAR;
                           }}
                         />
 

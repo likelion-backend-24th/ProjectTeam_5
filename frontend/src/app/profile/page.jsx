@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FaUserLarge } from "react-icons/fa6";
 import { useProfileActions } from "./useProfileActions";
 import ProfilePaymentSection from "./ProfilePaymentSection";
+import MentorPlanSection from "./MentorPlanSection";
 import styles from "./page.module.css";
 
 const TABS = ["프로필 정보", "활동 내역", "결제 수단 관리", "구독 관리", "보안 설정"];
@@ -20,6 +21,7 @@ export default function ProfilePage() {
     form,
     onChange,
     hasAppliedMentor,
+    profileStats,
     handleSaveProfile,
     handleApplyMentor,
     handleDeleteAccount,
@@ -84,11 +86,11 @@ export default function ProfilePage() {
 
         <div className={styles.stats}>
           {[
-            ["팔로워", "-"],
-            ["팔로잉", "-"],
-            ["작성 질문", "-"],
-            ["작성 답변", "-"],
-            ["받은 좋아요", "-"],
+            ["팔로워", profileStats.followerCount],
+            ["팔로잉", profileStats.followingCount],
+            ["작성 질문", profileStats.questionCount],
+            ["작성 답변", profileStats.answerCount],
+            // 받은 좋아요: 집계 API가 아직 없어 표시하지 않는다.
           ].map(([lbl, num]) => (
             <div key={lbl} className={styles.stat}>
               <div className={styles.statNum}>{num}</div>
@@ -207,6 +209,9 @@ export default function ProfilePage() {
         <div className={styles.col}>
           {/* 결제 수단 관리 (실제 백엔드 연동) */}
           <ProfilePaymentSection />
+
+          {/* 구독 플랜 관리 — 멘토가 아니면 컴포넌트 내부에서 null 반환 */}
+          <MentorPlanSection />
 
           {/* 구독 현황 */}
           <section className={styles.card}>

@@ -377,6 +377,18 @@
 .benefitList strong { display: block; margin-bottom: 2px; font-size: 11px; color: #172033; }
 .benefitList small { display: block; font-size: 9px; line-height: 1.4; color: #7b8799; }
 .sidebarSubscribeBtn { width: 100%; height: 36px; border: none; border-radius: 6px; background: #1261f5; color: #fff; font-size: 11px; font-weight: 700; cursor: pointer; }
+.sidebarSubscribeBtn:disabled { background: #b7c6e6; cursor: not-allowed; }
+
+.planSwitcher { display: flex; align-items: stretch; gap: 6px; margin-bottom: 8px; }
+.planArrow { flex-shrink: 0; width: 24px; border: 1px solid #e3e8f0; border-radius: 6px; background: #f8fafc; color: #526074; font-size: 14px; cursor: pointer; }
+.planArrow:disabled { opacity: 0.4; cursor: default; }
+.planCard { flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid #edf0f5; border-radius: 8px; background: #f8fafc; }
+.planName { display: block; font-size: 12px; color: #172033; }
+.planDescription { margin: 4px 0 0; font-size: 10px; line-height: 1.4; color: #7b8799; }
+.planCycle { display: inline-block; margin-top: 6px; font-size: 9px; color: #1261f5; font-weight: 700; }
+.planDots { display: flex; justify-content: center; gap: 5px; margin-bottom: 15px; }
+.planDot { width: 6px; height: 6px; padding: 0; border: none; border-radius: 50%; background: #dde3ec; cursor: pointer; }
+.planDotActive { background: #1261f5; }
 
 .infoList { list-style: none; padding: 0; margin: 15px 0 0; }
 .infoList li { margin-bottom: 13px; font-size: 11px; color: #526074; }
