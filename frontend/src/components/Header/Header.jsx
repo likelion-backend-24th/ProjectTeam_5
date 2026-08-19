@@ -11,7 +11,7 @@ export default function Header() {
   const router = useRouter();
   const { isLoggedIn, user, loading, logout } = useAuth();
 
-  // 드롭다운 상태 및 외부 클릭 감지용 Ref
+  // 드롭다운 상태 및 외부 클릭 감지용 Ref (우리 코드 유지)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -56,13 +56,14 @@ export default function Header() {
               질문피드
             </Link>
 
+            {/* 💡 팀원 코드 반영: /mentors 경로로 변경됨 */}
             <Link
-                href="/mentor-articles"
+                href="/mentors"
                 onClick={(e) =>
-                    handleProtectedNavigation(e, "/mentor-articles", "멘토피드")
+                    handleProtectedNavigation(e, "/mentors", "멘토피드")
                 }
                 className={
-                  pathname?.startsWith("/mentor-articles")
+                  pathname?.startsWith("/mentors")
                       ? styles.navActive
                       : undefined
                 }
@@ -70,6 +71,7 @@ export default function Header() {
               멘토피드
             </Link>
 
+            {/* 💡 우리 코드 반영: 관리자 전용 '유저 목록' 유지 */}
             {!loading && isLoggedIn && user?.role === "ADMIN" && (
                 <Link
                     href="/users"
@@ -84,7 +86,7 @@ export default function Header() {
                 </Link>
             )}
 
-            {/* 💡 여기에 있던 '내 프로필' 링크가 삭제되었습니다. 💡 */}
+            {/* 💡 상단바의 '내 프로필' 링크는 드롭다운 메뉴와 겹치므로 의도대로 삭제함 */}
 
             {!loading && isLoggedIn && user?.role === "ADMIN" && (
                 <Link
@@ -101,7 +103,7 @@ export default function Header() {
           <div className={styles.authArea}>
             {isLoggedIn ? (
                 <>
-                  {/* 우측 상단 유저 드롭다운 메뉴 */}
+                  {/* 💡 우리 코드 반영: 우측 상단 유저 드롭다운 메뉴 */}
                   <div className={styles.userMenuContainer} ref={dropdownRef}>
                     <div
                         className={styles.userInfo}
