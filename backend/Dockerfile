@@ -27,6 +27,8 @@ COPY --from=builder /app/build/libs/*.jar app.jar
 
 RUN chown spring:spring app.jar
 
+RUN mkdir -p /app/uploads && chown -R spring:spring /app/uploads
+
 USER spring:spring
 
 EXPOSE 8080

@@ -16,6 +16,10 @@ services:
 
     environment:
       SPRING_PROFILES_ACTIVE: dev
+      UPLOAD_DIR: /app/uploads
+
+    volumes:
+      - findanswer-uploads:/app/uploads
 
     depends_on:
       mysql:
@@ -94,3 +98,4 @@ networks:
 
 volumes:
   findanswer-mysql-data:
+  findanswer-uploads:
