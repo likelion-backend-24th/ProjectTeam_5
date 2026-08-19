@@ -44,13 +44,23 @@ public class User extends BaseTimeEntity {
     private String bio;
 
     @Column(length = 255)
+    private String tags;
+
+
+    @Column(length = 500)
+    private String careers;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Column(length = 100)
+    private String location;
+
+    @Column(length = 255)
     private String company;
 
     @Column(length = 255)
     private String career;
-
-    @Column(length = 255)
-    private String tags;
 
     @Column(length = 255)
     private String education;
@@ -58,9 +68,9 @@ public class User extends BaseTimeEntity {
     @Column(length = 255)
     private String schedule;
 
-//    // 💡 [추가] 멘토 구독 월 이용료 필드
-//    @Column(name = "subscription_price")
-//    private Integer subscriptionPrice = 9900;
+    //멘토 구독 월 이용료 필드
+//     @Column(name = "subscription_price")
+//     private Integer subscriptionPrice = 9900;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<MentorApplication> mentorApplications = new ArrayList<>();
@@ -68,6 +78,31 @@ public class User extends BaseTimeEntity {
     public void updateProfile(String name, String interests) {
         this.name = name;
         this.interests = interests;
+    }
+
+    //공개 프로필 업데이트
+    public void updatePublicProfile(String bio, String careers, String description, String location, String tags) {
+        this.bio = bio;
+        this.careers = careers;
+        this.description = description;
+        this.location = location;
+        this.tags = tags;
+    }
+
+    //프로필 이미지 업데이트
+    public void updateProfileImage(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
+    }
+
+    //멘토 프로필 업데이트
+    public void updateMentorProfile(String bio, String company, String career, String tags, String education, String schedule) {
+        this.bio = bio;
+        this.company = company;
+        this.career = career;
+        this.tags = tags;
+        this.education = education;
+        this.schedule = schedule;
+        //this.subscriptionPrice = (subscriptionPrice != null) ? subscriptionPrice : 9900;
     }
 
     public void updatePassword(String encodedPassword) {
@@ -105,14 +140,4 @@ public class User extends BaseTimeEntity {
         return this.blocked;
     }
 
-    // 💡 [수정] 멘토 프로필 전체 수정 메서드 (subscriptionPrice 추가)
-    public void updateMentorProfile(String bio, String company, String career, String tags, String education, String schedule) { //Integer subscriptionPrice
-        this.bio = bio;
-        this.company = company;
-        this.career = career;
-        this.tags = tags;
-        this.education = education;
-        this.schedule = schedule;
-//        this.subscriptionPrice = (subscriptionPrice != null) ? subscriptionPrice : 9900;
-    }
 }

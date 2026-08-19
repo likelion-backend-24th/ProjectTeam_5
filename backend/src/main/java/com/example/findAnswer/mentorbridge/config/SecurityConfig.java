@@ -71,6 +71,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/questions/user/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/users/{userId}").permitAll()
                         .anyRequest().authenticated()
                 )
                 //OAuth 로그인 설정

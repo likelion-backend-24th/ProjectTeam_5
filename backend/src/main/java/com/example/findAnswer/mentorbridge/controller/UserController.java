@@ -1,10 +1,7 @@
 package com.example.findAnswer.mentorbridge.controller;
 
 import com.example.findAnswer.mentorbridge.dto.mentor.MentorApplicationResponse;
-import com.example.findAnswer.mentorbridge.dto.user.UserEmailUpdateRequest;
-import com.example.findAnswer.mentorbridge.dto.user.UserPasswordUpdateRequest;
-import com.example.findAnswer.mentorbridge.dto.user.UserProfileUpdateRequest;
-import com.example.findAnswer.mentorbridge.dto.user.UserResponse;
+import com.example.findAnswer.mentorbridge.dto.user.*;
 import com.example.findAnswer.mentorbridge.service.MentorService;
 import com.example.findAnswer.mentorbridge.service.UserService;
 import jakarta.validation.Valid;
@@ -79,5 +76,38 @@ public class UserController {
     @GetMapping("/me/mentor/application")
     public ResponseEntity<MentorApplicationResponse> getMyMentorApplication(@AuthenticationPrincipal Long userId) {
         return ResponseEntity.ok(mentorService.getMyMentorApplication(userId));
+    }
+
+    // 특정 유저의 공개 프로필 조회 (누구나 볼 수 있어야 함)
+    @GetMapping("/{userId}")
+    public ResponseEntity<UserResponse> getPublicProfile(
+            @PathVariable Long userId,
+            @AuthenticationPrincipal Long currentUserId) {
+        return ResponseEntity.ok(userService.getPublicProfile(userId, currentUserId));
+    }
+
+    // 공개 프로필 텍스트 정보 업데이트
+    @PatchMapping("/me/public-profile")
+    public ResponseEntity<UserResponse> updatePublicProfile(
+            @AuthenticationPrincipal Long userId,
+            @RequestBody PublicProfileUpdateRequest request) {
+        return ResponseEntity.ok(userService.updatePublicProfile(userId, request));
+    }
+
+    // 프로필 이미지 URL 업데이트
+    @PatchMapping("/me/profile-image")
+    public ResponseEntity<UserResponse> updateProfileImage(
+            @AuthenticationPrincipal Long userId,
+            @RequestBody ProfileImageUpdateRequest request) {
+        return ResponseEntity.ok(userService.updateProfileImage(userId, request));
+    }
+
+    //팔로우/언팔로우 API
+    @PostMapping("/{userId}/follow")
+    public ResponseEntity<Void> toggleFollow(
+            @AuthenticationPrincipal Long currentUserId,
+            @PathVariable Long userId) {
+        userService.toggleFollow(currentUserId, userId);
+        return ResponseEntity.ok().build();
     }
 }

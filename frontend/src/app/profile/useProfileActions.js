@@ -20,6 +20,15 @@ export function useProfileActions() {
   const [subscriptions, setSubscriptions] = useState([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
 
+  // 활동 통계(팔로워/팔로잉/작성 질문/작성 답변) — 공개 프로필 페이지(users/[id])와 동일한 API를 재사용한다.
+  const [profileStats, setProfileStats] = useState({
+    followerCount: 0,
+    followingCount: 0,
+    questionCount: 0,
+    answerCount: 0,
+  });
+  const [loadingStats, setLoadingStats] = useState(false);
+
   const onChange = (field) => (e) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
@@ -39,7 +48,31 @@ export function useProfileActions() {
     }
   }, []);
 
-  // 유저 정보 → 폼 동기화 + 멘토 신청 상태 복원 + 구독 목록 로드
+  // 내 활동 통계 로드 — 공개 프로필 페이지(users/[id]/page.jsx)가 쓰는 것과 같은 API 3개를 그대로 재사용한다.
+  const fetchProfileStats = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      setLoadingStats(true);
+      const [profileData, questionsData, answeredData] = await Promise.all([
+        usersApi.getPublicProfile(user.id),
+        usersApi.getQuestionsByUser(user.id),
+        usersApi.getAnsweredQuestionsByUser(user.id),
+      ]);
+      setProfileStats({
+        followerCount: profileData?.followerCount || 0,
+        followingCount: profileData?.followingCount || 0,
+        // Page 응답의 totalElements(전체 개수)를 우선 쓰고, 없으면 현재 페이지 길이로 대체한다.
+        questionCount: questionsData?.totalElements ?? questionsData?.content?.length ?? 0,
+        answerCount: answeredData?.totalElements ?? answeredData?.content?.length ?? 0,
+      });
+    } catch (err) {
+      console.error("활동 통계 조회 실패:", err);
+    } finally {
+      setLoadingStats(false);
+    }
+  }, [user]);
+
+  // 유저 정보 → 폼 동기화 + 멘토 신청 상태 복원 + 구독 목록/활동 통계 로드
   useEffect(() => {
     if (!user) return;
     let ignore = false;
@@ -62,11 +95,12 @@ export function useProfileActions() {
     })();
 
     fetchSubscriptions();
+    fetchProfileStats();
 
     return () => {
       ignore = true;
     };
-  }, [user, fetchSubscriptions]);
+  }, [user, fetchSubscriptions, fetchProfileStats]);
 
   // 구독 해지 핸들러 (인자로 subscriptionId를 넘겨받도록 명시)
   const handleUnsubscribe = async (subscriptionId, mentorName) => {
@@ -180,6 +214,8 @@ export function useProfileActions() {
     form,
     onChange,
     hasAppliedMentor,
+    profileStats,
+    loadingStats,
     handleViewInfo,
     handleSaveProfile,
     handleApplyMentor,

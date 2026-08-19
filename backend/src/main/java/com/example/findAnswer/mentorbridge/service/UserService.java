@@ -5,13 +5,11 @@ import com.example.findAnswer.mentorbridge.constants.Role;
 import com.example.findAnswer.mentorbridge.dto.oauth.OAuthAccountSnapshot;
 import com.example.findAnswer.mentorbridge.dto.oauth.UserDisconnectEvent;
 import com.example.findAnswer.mentorbridge.dto.user.*;
+import com.example.findAnswer.mentorbridge.entity.Follow;
 import com.example.findAnswer.mentorbridge.entity.User;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
 import com.example.findAnswer.mentorbridge.jwt.JwtTokenProvider;
-import com.example.findAnswer.mentorbridge.repository.MentorApplicationRepository;
-import com.example.findAnswer.mentorbridge.repository.OAuthAccountRepository;
-import com.example.findAnswer.mentorbridge.repository.RefreshTokenRepository;
-import com.example.findAnswer.mentorbridge.repository.UserRepository;
+import com.example.findAnswer.mentorbridge.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -33,6 +31,7 @@ public class UserService {
     private final RefreshTokenService refreshTokenService;
     private final OAuthAccountRepository oAuthAccountRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final FollowRepository followRepository;
 
     // 회원가입
     @Transactional
@@ -120,6 +119,45 @@ public class UserService {
         applicationEventPublisher.publishEvent(new UserDisconnectEvent(userId, oAuthAccounts));
     }
 
+    // 공개 프로필 정보 업데이트
+    @Transactional
+    public UserResponse updatePublicProfile(Long userId, PublicProfileUpdateRequest request) {
+        User user = getUserById(userId);
+        user.updatePublicProfile(
+                request.getBio(),
+                request.getCareers(),
+                request.getDescription(),
+                request.getLocation(),
+                request.getTags()
+        );
+        return UserResponse.from(user);
+    }
+
+    // 프로필 이미지 URL 업데이트
+    @Transactional
+    public UserResponse updateProfileImage(Long userId, ProfileImageUpdateRequest request) {
+        User user = getUserById(userId);
+        user.updateProfileImage(request.getProfileImageUrl());
+        return UserResponse.from(user);
+    }
+
+    // 특정 유저 공개 조회 (다른 유저가 볼 때)
+    public UserResponse getPublicProfile(Long targetUserId, Long currentUserId) {
+        User user = getUserById(targetUserId);
+        UserResponse response = UserResponse.from(user);
+
+        long followers = followRepository.countByFolloweeId(targetUserId);
+        long followings = followRepository.countByFollowerId(targetUserId);
+        boolean isFollowing = false;
+
+        if (currentUserId != null) {
+            isFollowing = followRepository.existsByFollowerIdAndFolloweeId(currentUserId, targetUserId);
+        }
+
+        response.setFollowStats(followers, followings, isFollowing);
+        return response;
+    }
+
     // [관리자] 전체 회원 목록 조회
     public List<UserResponse> getAllUsers() {
         return userRepository.findAll().stream()
@@ -162,5 +200,21 @@ public class UserService {
     private User getUserById(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    @Transactional
+    public void toggleFollow(Long followerId, Long followeeId) {
+        if (followerId.equals(followeeId)) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+        User follower = getUserById(followerId);
+        User followee = getUserById(followeeId);
+
+        // 이미 팔로우 중이면 삭제, 아니면 생성
+        followRepository.findByFollowerIdAndFolloweeId(followerId, followeeId)
+                .ifPresentOrElse(
+                        followRepository::delete,
+                        () -> followRepository.save(new Follow(follower, followee))
+                );
     }
 }

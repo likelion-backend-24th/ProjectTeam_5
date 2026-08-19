@@ -6,7 +6,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -61,6 +63,35 @@ public class QuestionController {
 
         Page<QuestionListResponse> response = questionService.getQuestionsByUserId(userId, pageable);
         return ResponseEntity.ok(response);
+    }
+
+    // 유저가 답변을 작성한 질문 목록 조회 API
+    @GetMapping("/user/{userId}/answered")
+    public ResponseEntity<Page<QuestionListResponse>> getAnsweredQuestionsByUser(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<QuestionListResponse> responses = questionService.getAnsweredQuestionsByUser(userId, pageRequest);
+        return ResponseEntity.ok(responses);
+    }
+
+    // 팔로잉 유저 질문 피드 조회
+    @GetMapping("/following")
+    public ResponseEntity<Page<QuestionListResponse>> getFollowingQuestions(
+            @AuthenticationPrincipal Long currentUserId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        // 로그인하지 않은 사용자는 차단
+        if (currentUserId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<QuestionListResponse> responses = questionService.getFollowingQuestions(currentUserId, pageRequest);
+        return ResponseEntity.ok(responses);
     }
 
     //좋아요 토글 api
