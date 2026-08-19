@@ -2,6 +2,7 @@ package com.example.findAnswer.mentorbridge.controller;
 
 import com.example.findAnswer.mentorbridge.dto.questionAttachedFile.SignRequest;
 import com.example.findAnswer.mentorbridge.dto.questionAttachedFile.SignResponse;
+import com.example.findAnswer.mentorbridge.dto.questionAttachedFile.SignedUpload;
 import com.example.findAnswer.mentorbridge.service.AttachmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,5 +25,10 @@ public class AttachmentController {
 
     ) {
         return ResponseEntity.ok(attachmentService.createImageUploadSignature(currentUserId, request));
+    }
+
+    @PostMapping("/profile-image/signature")
+    public ResponseEntity<SignedUpload> createProfileImageSignature(@AuthenticationPrincipal Long currentUserId) {
+        return ResponseEntity.ok(attachmentService.createProfileImageSignature(currentUserId));
     }
 }

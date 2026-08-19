@@ -38,10 +38,38 @@ public class User extends BaseTimeEntity{
     @Column(nullable = false)
     private boolean blocked = false;
 
+    @Column(length = 500)
+    private String profileImageUrl;
+
+    @Column(length = 200)
+    private String bio;
+
+    @Column(length = 500)
+    private String careers;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Column(length = 100)
+    private String location;
+
+    @Column(length = 200)
+    private String tags;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<MentorApplication> mentorApplications = new ArrayList<>();
 
     public void updateProfile(String name, String interests) {this.name = name; this.interests = interests;}
+
+    public void updatePublicProfile(String bio, String careers, String description, String location, String tags) {
+        this.bio = bio;
+        this.careers = careers;
+        this.description = description;
+        this.location = location;
+        this.tags = tags;
+    }
+
+    public void updateProfileImage(String profileImageUrl) {this.profileImageUrl = profileImageUrl;}
 
     public void updatePassword(String encodedPassword) {this.password = encodedPassword;}
 
@@ -55,6 +83,7 @@ public class User extends BaseTimeEntity{
         this.name = name;
         this.role = role;
     }
+
 
     public static User ofOAuth(String email, String name, Role role){
         return new User(email, null, name, role);

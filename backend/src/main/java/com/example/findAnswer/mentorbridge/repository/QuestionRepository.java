@@ -29,4 +29,13 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     @EntityGraph(attributePaths = {"user"})
     Page<Question> findByUserId(Long userId, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"user"})
+    @Query("SELECT DISTINCT q FROM Question q JOIN q.answers a WHERE a.user.id = :userId")
+    Page<Question> findQuestionsByAnsweredUserId(@Param("userId") Long userId, Pageable pageable);
+
+    // 팔로우한 유저들의 질문 목록 조회
+    @EntityGraph(attributePaths = {"user"})
+    @Query("SELECT q FROM Question q WHERE q.user.id IN (SELECT f.followee.id FROM Follow f WHERE f.follower.id = :userId)")
+    Page<Question> findByFollowingUsers(@Param("userId") Long userId, Pageable pageable);
 }

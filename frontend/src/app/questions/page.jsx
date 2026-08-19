@@ -4,11 +4,13 @@ import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { getQuestions } from "@/lib/questions";
+// 💡 1. getFollowingQuestions 임포트 추가
+import { getQuestions, getFollowingQuestions } from "@/lib/questions";
 
 import styles from "./page.module.css";
 
-const CATEGORIES = ["전체", "개발", "멘토링", "취업", "기타"];
+// 💡 2. 카테고리에 '팔로잉' 추가
+const CATEGORIES = ["전체", "팔로잉", "개발", "멘토링", "취업", "기타"];
 
 export default function QuestionsPage() {
   const router = useRouter();
@@ -19,7 +21,6 @@ export default function QuestionsPage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // 🔍 검색어 및 정렬 옵션 상태
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState("latest");
 
@@ -31,7 +32,16 @@ export default function QuestionsPage() {
       setErrorMessage("");
 
       try {
-        const result = await getQuestions({ page, size: 10, category });
+        let result;
+
+        // 💡 3. '팔로잉' 탭일 경우 전용 API 호출
+        if (category === "팔로잉") {
+          result = await getFollowingQuestions({ page, size: 10 });
+        } else {
+          // "전체"인 경우 카테고리 필터 없이 호출하도록 빈 값 세팅
+          const categoryParam = category === "전체" ? "" : category;
+          result = await getQuestions({ page, size: 10, category: categoryParam });
+        }
 
         if (!ignore) {
           setData(result);
@@ -41,9 +51,9 @@ export default function QuestionsPage() {
 
         if (!ignore) {
           setErrorMessage(
-            error.message === "Failed to fetch"
-              ? "질문 목록을 불러오지 못했습니다."
-              : error.message
+              error.message === "Failed to fetch"
+                  ? "질문 목록을 불러오지 못했습니다."
+                  : error.message
           );
         }
       } finally {
@@ -61,6 +71,16 @@ export default function QuestionsPage() {
   }, [page, category]);
 
   const handleCategoryChange = (newCategory) => {
+    // 💡 4. 팔로잉 탭 클릭 시 로그인 여부 체크
+    if (newCategory === "팔로잉") {
+      const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
+      if (!token) {
+        alert("팔로우한 사람의 글을 보려면 로그인이 필요합니다.");
+        router.push("/login");
+        return;
+      }
+    }
+
     if (category !== newCategory) {
       setCategory(newCategory);
       setPage(0);
@@ -69,16 +89,15 @@ export default function QuestionsPage() {
 
   const rawQuestions = data?.content ?? [];
 
-  // 🔍 질문 목록 검색 및 정렬 필터링 (좋아요 순 추가)
   const filteredQuestions = useMemo(() => {
     let list = [...rawQuestions];
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(
-        (item) =>
-          item.title?.toLowerCase().includes(q) ||
-          (item.authorName || item.name || "").toLowerCase().includes(q)
+          (item) =>
+              item.title?.toLowerCase().includes(q) ||
+              (item.authorName || item.name || "").toLowerCase().includes(q)
       );
     }
 
@@ -86,7 +105,7 @@ export default function QuestionsPage() {
       if (sortOption === "latest") return new Date(b.createdAt) - new Date(a.createdAt);
       if (sortOption === "oldest") return new Date(a.createdAt) - new Date(b.createdAt);
       if (sortOption === "mostAnswers") return (b.answerCount ?? 0) - (a.answerCount ?? 0);
-      if (sortOption === "mostLikes") return (b.likeCount ?? 0) - (a.likeCount ?? 0); // ❤️ 좋아요 많은순
+      if (sortOption === "mostLikes") return (b.likeCount ?? 0) - (a.likeCount ?? 0);
       return 0;
     });
 
@@ -98,7 +117,7 @@ export default function QuestionsPage() {
 
   const handleAskClick = () => {
     const isLoggedIn = Boolean(
-      localStorage.getItem("accessToken") || localStorage.getItem("token")
+        localStorage.getItem("accessToken") || localStorage.getItem("token")
     );
 
     if (!isLoggedIn) {
@@ -111,192 +130,195 @@ export default function QuestionsPage() {
   };
 
   return (
-    <main className={styles.page}>
-      <div className={styles.heading}>
-        <div>
-          <h1>질문 피드</h1>
-          <p>취업 준비생들이 올린 현실적인 질문들을 확인해보세요 (비로그인 조회 가능)</p>
-        </div>
+      <main className={styles.page}>
+        <div className={styles.heading}>
+          <div>
+            <h1>질문 피드</h1>
+            <p>취업 준비생들이 올린 현실적인 질문들을 확인해보세요 (비로그인 조회 가능)</p>
+          </div>
 
-        <button
-          type="button"
-          onClick={handleAskClick}
-          className={styles.askButton}
-        >
-          질문하기
-        </button>
-      </div>
-
-      <section className={styles.panel}>
-        {/* 카테고리 탭 버튼 UI */}
-        <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat}
+          <button
               type="button"
-              onClick={() => handleCategoryChange(cat)}
-              style={{
-                padding: "6px 16px",
-                borderRadius: "20px",
-                border: category === cat ? "none" : "1px solid #e5e7eb",
-                backgroundColor: category === cat ? "#2867e8" : "#ffffff",
-                color: category === cat ? "#ffffff" : "#526176",
-                fontWeight: category === cat ? "700" : "500",
-                fontSize: "14px",
-                cursor: "pointer",
-              }}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        {/* 🔍 검색창 & 정렬 드롭다운 바 */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "12px",
-            marginBottom: "20px",
-            flexWrap: "wrap",
-          }}
-        >
-          <input
-            type="text"
-            placeholder="질문 제목 또는 작성자 검색..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              padding: "8px 14px",
-              borderRadius: "6px",
-              border: "1px solid #e5e7eb",
-              fontSize: "14px",
-              width: "280px",
-            }}
-          />
-
-          <select
-            value={sortOption}
-            onChange={(e) => setSortOption(e.target.value)}
-            style={{
-              padding: "8px 12px",
-              borderRadius: "6px",
-              border: "1px solid #e5e7eb",
-              fontSize: "14px",
-              backgroundColor: "#ffffff",
-              cursor: "pointer",
-            }}
+              onClick={handleAskClick}
+              className={styles.askButton}
           >
-            <option value="latest">최신순</option>
-            <option value="oldest">오래된순</option>
-            <option value="mostAnswers">답변 많은순</option>
-            <option value="mostLikes">좋아요 많은순</option>
-          </select>
+            질문하기
+          </button>
         </div>
 
-        {loading && <p className={styles.statusText}>불러오는 중...</p>}
+        <section className={styles.panel}>
+          <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
+            {CATEGORIES.map((cat) => (
+                <button
+                    key={cat}
+                    type="button"
+                    onClick={() => handleCategoryChange(cat)}
+                    style={{
+                      padding: "6px 16px",
+                      borderRadius: "20px",
+                      border: category === cat ? "none" : "1px solid #e5e7eb",
+                      backgroundColor: category === cat ? "#2867e8" : "#ffffff",
+                      color: category === cat ? "#ffffff" : "#526176",
+                      fontWeight: category === cat ? "700" : "500",
+                      fontSize: "14px",
+                      cursor: "pointer",
+                    }}
+                >
+                  {cat}
+                </button>
+            ))}
+          </div>
 
-        {!loading && errorMessage && (
-          <p className={styles.errorMessage}>{errorMessage}</p>
-        )}
+          <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "12px",
+                marginBottom: "20px",
+                flexWrap: "wrap",
+              }}
+          >
+            <input
+                type="text"
+                placeholder="질문 제목 또는 작성자 검색..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: "6px",
+                  border: "1px solid #e5e7eb",
+                  fontSize: "14px",
+                  width: "280px",
+                }}
+            />
 
-        {!loading && !errorMessage && filteredQuestions.length === 0 && (
-          <p className={styles.statusText}>
-            {searchQuery ? "검색 결과가 없습니다." : "아직 등록된 질문이 없습니다."}
-          </p>
-        )}
+            <select
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value)}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: "6px",
+                  border: "1px solid #e5e7eb",
+                  fontSize: "14px",
+                  backgroundColor: "#ffffff",
+                  cursor: "pointer",
+                }}
+            >
+              <option value="latest">최신순</option>
+              <option value="oldest">오래된순</option>
+              <option value="mostAnswers">답변 많은순</option>
+              <option value="mostLikes">좋아요 많은순</option>
+            </select>
+          </div>
 
-        {!loading && !errorMessage && filteredQuestions.length > 0 && (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th style={{ width: "70px", textAlign: "center" }}>분류</th>
-                <th style={{ width: "auto" }}>질문 제목</th>
-                <th style={{ width: "110px" }}>작성자</th>
-                <th style={{ width: "70px", textAlign: "center" }}>답변수</th>
-                <th style={{ width: "80px", textAlign: "center" }}>좋아요</th>
-                <th style={{ width: "100px", textAlign: "center" }}>등록일</th>
-              </tr>
-            </thead>
+          {loading && <p className={styles.statusText}>불러오는 중...</p>}
 
-            <tbody>
-              {filteredQuestions.map((question) => (
-                <tr key={question.id}>
-                  <td style={{ textAlign: "center" }}>
+          {!loading && errorMessage && (
+              <p className={styles.errorMessage}>{errorMessage}</p>
+          )}
+
+          {!loading && !errorMessage && filteredQuestions.length === 0 && (
+              <p className={styles.statusText}>
+                {searchQuery ? "검색 결과가 없습니다." : "해당 내역이 없습니다."}
+              </p>
+          )}
+
+          {!loading && !errorMessage && filteredQuestions.length > 0 && (
+              <table className={styles.table}>
+                <thead>
+                <tr>
+                  <th style={{ width: "70px", textAlign: "center" }}>분류</th>
+                  <th style={{ width: "auto" }}>질문 제목</th>
+                  <th style={{ width: "110px" }}>작성자</th>
+                  <th style={{ width: "70px", textAlign: "center" }}>답변수</th>
+                  <th style={{ width: "80px", textAlign: "center" }}>좋아요</th>
+                  <th style={{ width: "100px", textAlign: "center" }}>등록일</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                {filteredQuestions.map((question) => (
+                    <tr key={question.id}>
+                      <td style={{ textAlign: "center" }}>
                     <span style={{ color: "#2867e8", fontSize: "13px", fontWeight: "bold" }}>
                       [{question.category || "기타"}]
                     </span>
-                  </td>
-                  <td className={styles.titleCell}>
-                    <Link href={`/questions/${question.id}`}>
-                      {question.title}
-                    </Link>
-                  </td>
-                  <td>{question.authorName || question.name || "익명"}</td>
-                  <td style={{ textAlign: "center" }}>
+                      </td>
+                      <td className={styles.titleCell}>
+                        <Link href={`/questions/${question.id}`}>
+                          {question.title}
+                        </Link>
+                      </td>
+                      <td>
+                        <Link
+                            href={`/users/${question.userId}?name=${encodeURIComponent(question.authorName || question.name || "익명")}`}
+                            style={{ color: "#111827", textDecoration: "none", transition: "color 0.2s" }}
+                            onMouseOver={(e) => e.target.style.color = "#2867e8"}
+                            onMouseOut={(e) => e.target.style.color = "#111827"}
+                        >
+                          {question.authorName || question.name || "익명"}
+                        </Link>
+                      </td>
+                      <td style={{ textAlign: "center" }}>
                     <span className={styles.answerCount}>
                       {question.answerCount ?? 0}개
                     </span>
-                  </td>
-                  <td style={{ textAlign: "center" }}>
+                      </td>
+                      <td style={{ textAlign: "center" }}>
                     <span className={styles.likeCountBadge}>
                       ❤️ {question.likeCount ?? 0}
                     </span>
-                  </td>
-                  <td style={{ textAlign: "center" }}>{formatDate(question.createdAt)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+                      </td>
+                      <td style={{ textAlign: "center" }}>{formatDate(question.createdAt)}</td>
+                    </tr>
+                ))}
+                </tbody>
+              </table>
+          )}
 
-        <div className={styles.pagination}>
-          <button
-            type="button"
-            onClick={() => setPage((previous) => Math.max(previous - 1, 0))}
-            disabled={page === 0 || loading}
-          >
-            {"<"}
-          </button>
-
-          {Array.from({ length: totalPages }).map((_, index) => (
+          <div className={styles.pagination}>
             <button
-              key={index}
-              type="button"
-              className={index === page ? styles.pageActive : undefined}
-              onClick={() => setPage(index)}
-              disabled={loading}
+                type="button"
+                onClick={() => setPage((previous) => Math.max(previous - 1, 0))}
+                disabled={page === 0 || loading}
             >
-              {index + 1}
+              {"<"}
             </button>
-          ))}
 
-          <button
-            type="button"
-            onClick={() =>
-              setPage((previous) => Math.min(previous + 1, totalPages - 1))
-            }
-            disabled={page + 1 >= totalPages || loading}
-          >
-            {">"}
-          </button>
-        </div>
-      </section>
-    </main>
+            {Array.from({ length: totalPages }).map((_, index) => (
+                <button
+                    key={index}
+                    type="button"
+                    className={index === page ? styles.pageActive : undefined}
+                    onClick={() => setPage(index)}
+                    disabled={loading}
+                >
+                  {index + 1}
+                </button>
+            ))}
+
+            <button
+                type="button"
+                onClick={() =>
+                    setPage((previous) => Math.min(previous + 1, totalPages - 1))
+                }
+                disabled={page + 1 >= totalPages || loading}
+            >
+              {">"}
+            </button>
+          </div>
+        </section>
+      </main>
   );
 }
 
 function formatDate(value) {
   if (!value) return "-";
-
   const date = new Date(value);
-
   if (Number.isNaN(date.getTime())) return "-";
-
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
-
   return `${year}.${month}.${day}`;
 }

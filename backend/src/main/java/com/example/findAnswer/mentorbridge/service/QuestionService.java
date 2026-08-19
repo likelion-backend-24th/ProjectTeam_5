@@ -119,6 +119,13 @@ public class QuestionService {
         return questionRepository.findByCategory(category, pageable).map(QuestionListResponse::from);
     }
 
+    // 팔로잉 유저들의 질문 목록 조회
+    @Transactional(readOnly = true)
+    public Page<QuestionListResponse> getFollowingQuestions(Long followerId, Pageable pageable) {
+        return questionRepository.findByFollowingUsers(followerId, pageable)
+                .map(QuestionListResponse::from);
+    }
+
     @Transactional
     public QuestionLikeResponse toggleLike(Long questionId, Long userId) {
         Question question = questionRepository.findById(questionId)
@@ -211,6 +218,13 @@ public class QuestionService {
                 .map(f -> new ImageResponse(f.getId(),
                         attachmentStorage.publicUrl(f.getStorageKey(), IMAGE_TRANSFORM)))
                 .toList();
+    }
+
+    // 유저가 답변한 질문 목록 조회
+    @Transactional(readOnly = true)
+    public Page<QuestionListResponse> getAnsweredQuestionsByUser(Long userId, Pageable pageable) {
+        return questionRepository.findQuestionsByAnsweredUserId(userId, pageable)
+                .map(QuestionListResponse::from);
     }
 
     // 질문 삭제 (작성자 본인 또는 관리자 가능)
