@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/mentors/{mentorId}/posts")
 @RequiredArgsConstructor
@@ -32,12 +34,12 @@ public class MentorPostController {
 
     // F-41: 멘토 게시글 단건 조회 (구독 여부 자동 검증!)
     @GetMapping("/{postId}")
-    @RequireSubscription // <-- URL의 {mentorId}를 읽어서 구독 유효성을 AOP가 자동 검사합니다.
+    @RequireSubscription
     public ResponseEntity<MentorPostResponse> getPost(
+            @RequestHeader(value = "X-USER-ID", required = false) Long userId, // 💡 이 부분을 추가해 주세요!
             @PathVariable Long mentorId,
             @PathVariable Long postId) {
 
-        // 💡 mentorId와 postId를 모두 넘겨주도록 수정
         return ResponseEntity.ok(mentorPostService.getPost(mentorId, postId));
     }
 
@@ -61,5 +63,11 @@ public class MentorPostController {
 
         mentorPostService.deletePost(userId, postId);
         return ResponseEntity.ok().build();
+    }
+
+    // F-41: 멘토의 전체 게시글 목록 조회
+    @GetMapping
+    public ResponseEntity<List<MentorPostResponse>> getPosts(@PathVariable Long mentorId) {
+        return ResponseEntity.ok(mentorPostService.getPostsByMentorId(mentorId));
     }
 }

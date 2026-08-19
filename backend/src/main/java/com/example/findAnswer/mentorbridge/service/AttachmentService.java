@@ -13,6 +13,7 @@ import com.example.findAnswer.mentorbridge.exception.UnsupportedFileTypeExceptio
 import com.example.findAnswer.mentorbridge.repository.QuestionAttachmentFileRepository;
 import com.example.findAnswer.mentorbridge.repository.UserRepository;
 import com.example.findAnswer.mentorbridge.storage.AttachmentStorage;
+import com.example.findAnswer.mentorbridge.storage.FileStorage;
 import lombok.RequiredArgsConstructor;
 import org.apache.tomcat.util.http.fileupload.InvalidFileNameException;
 import org.springframework.stereotype.Service;
@@ -33,9 +34,14 @@ public class AttachmentService {
     private final AttachmentStorage attachmentStorage;
     private final QuestionAttachmentFileRepository questionAttachmentFileRepository;
     private final UserRepository userRepository;
+    private final FileStorage fileStorage;
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif", "webp");
     private static final long MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+
+    private static final Set<String> ALLOWED_FILE_EXTENSIONS = Set.of("pdf", "zip");
+    private static final long MAX_FILE_SIZE = 50L * 1024 * 1024; // 50MB
+
 
     @Transactional
     public SignResponse createImageUploadSignature(Long userId, SignRequest signRequest){

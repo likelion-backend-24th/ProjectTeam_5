@@ -1,481 +1,345 @@
 .page {
-  min-height: calc(100vh - 82px);
-  padding: 32px 46px;
-  background-color: #f8fafc;
-  color: #111827;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+  color: #0f172a;
 }
 
-.contentGrid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(420px, 0.9fr);
-  gap: 36px;
-}
-
-.profileCard,
-.managementCard {
-  border: 1px solid #d9e2ee;
-  border-radius: 16px;
-  background-color: #ffffff;
-  box-shadow: 0 4px 18px rgb(15 23 42 / 4%);
-}
-
-.profileCard {
-  padding: 34px;
-  border-color: #2f6df6;
-}
-
-.managementCard {
-  padding: 34px 30px 28px;
-}
-
-.cardHeading {
+/* ===== 페이지 헤더 ===== */
+.pageHead {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
 }
-
-.cardHeading h1,
-.managementCard h2 {
+.pageHead h1 {
+  font-size: 26px;
   margin: 0;
-  font-size: 25px;
-  font-weight: 800;
-  letter-spacing: -0.6px;
 }
-
-.cardHeading h1 {
-  color: #2464e9;
-}
-
 .privateText {
-  color: #64748b;
+  color: #94a3b8;
   font-size: 14px;
 }
 
-.profileSummary {
+/* ===== 히어로 카드 ===== */
+.hero {
   display: flex;
-  align-items: center;
   gap: 28px;
-  margin-top: 28px;
-}
-
-.avatar {
-  display: flex;
-  flex: 0 0 112px;
   align-items: center;
-  justify-content: center;
-  width: 112px;
-  height: 112px;
-  border-radius: 50%;
-  background-color: #edf4ff;
-  color: #2563eb;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 28px;
+  flex-wrap: wrap;
 }
-
-.avatar svg {
-  width: 52px;
-  height: 52px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.7;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.profileIdentity h2 {
-  margin: 0 0 10px;
-  font-size: 31px;
-  font-weight: 800;
-}
-
-.nameInput {
-  width: min(100%, 280px);
-  height: 48px;
-  padding: 0 13px;
-  border: 1px solid #93b5ff;
-  border-radius: 8px;
-  color: #111827;
-  font-size: 26px;
-  font-weight: 800;
-  outline: none;
-}
-
-.roleLine {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: #475569;
-  font-size: 17px;
-}
-
-.roleBadge {
-  padding: 5px 11px;
-  border-radius: 7px;
-  background-color: #dcfce7;
-  color: #059669;
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.divider {
-  height: 1px;
-  margin: 28px 0 20px;
-  background-color: #dce5f0;
-}
-
-.profileDetails {
+.heroLeft {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  align-items: center;
+  gap: 12px;
+}
+.avatar {
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 56px;
+  color: #94a3b8;
+  overflow: hidden;
+}
+.changeImgBtn {
+  font-size: 13px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 7px 12px;
+  background: #fff;
+  cursor: pointer;
+}
+.changeImgBtn:hover {
+  background: #f8fafc;
+}
+.heroMid {
+  flex: 1;
+  min-width: 260px;
+}
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.nameRow h2 {
+  font-size: 24px;
   margin: 0;
 }
-
-.profileDetails div {
-  display: grid;
-  grid-template-columns: 145px minmax(0, 1fr);
+.roleBadge {
+  font-size: 12px;
+  color: #2563eb;
+  background: #eff6ff;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-weight: 600;
+}
+.handle {
+  color: #64748b;
+  margin-top: 4px;
+}
+.bio {
+  margin: 12px 0;
+  color: #334155;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+.meta {
+  color: #64748b;
+  font-size: 14px;
+  margin-top: 6px;
+  display: flex;
+  gap: 8px;
   align-items: center;
+}
+
+/* ===== 통계 ===== */
+.stats {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+.stat {
+  text-align: center;
+  min-width: 56px;
+}
+.statNum {
+  font-size: 22px;
+  font-weight: 700;
+  color: #2563eb;
+}
+.statLbl {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* ===== 탭 ===== */
+.tabs {
+  display: flex;
+  gap: 24px;
+  border-bottom: 1px solid #e5e7eb;
+  margin: 28px 0 20px;
+  overflow-x: auto;
+}
+.tab {
+  padding: 12px 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 15px;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.tabActive {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+  font-weight: 600;
+}
+
+/* ===== 2단 그리드 ===== */
+.grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.col {
+  display: grid;
   gap: 24px;
 }
 
-.profileDetails dt {
-  color: #475569;
-  font-size: 16px;
+/* ===== 카드 공통 ===== */
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 22px;
 }
-
-.profileDetails dd {
-  margin: 0;
-  color: #334155;
+.cardTitle {
+  margin: 0 0 8px;
   font-size: 17px;
-  text-align: right;
-  overflow-wrap: anywhere;
 }
 
-.inlineInput {
-  width: min(100%, 320px);
-  height: 42px;
-  padding: 0 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 7px;
-  outline: none;
-}
-
-.inlineInput:focus,
-.nameInput:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgb(37 99 235 / 12%);
-}
-
-.mentorBanner {
+/* ===== 기본 정보 행 ===== */
+.infoRow {
   display: flex;
   align-items: center;
-  gap: 18px;
-  margin-top: 30px;
-  padding: 23px;
-  border: 1px solid #bfd4ff;
-  border-radius: 12px;
-  background-color: #f5f8ff;
+  gap: 12px;
+  padding: 13px 0;
+  border-bottom: 1px solid #f1f5f9;
 }
-
-.mentorBannerIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background-color: #e5efff;
-  color: #2563eb;
-  font-size: 26px;
+.infoRow:last-child {
+  border-bottom: none;
 }
-
-.mentorBannerContent {
+.infoLabel {
+  width: 88px;
+  color: #64748b;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.infoValue {
+  flex: 1;
+  color: #0f172a;
   min-width: 0;
 }
-
-.mentorBannerTitle {
-  display: flex;
-  align-items: center;
-  gap: 20px;
+.muted {
+  color: #94a3b8;
 }
-
-.mentorBannerTitle strong {
-  color: #2464e9;
-  font-size: 21px;
+.editBtn {
+  font-size: 13px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 4px 12px;
+  background: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
 }
-
-.mentorBannerTitle span {
-  color: #f59e0b;
-  font-size: 15px;
+.editBtn:hover {
+  background: #f8fafc;
 }
-
-.mentorBannerContent p {
-  margin: 8px 0 0;
-  color: #64748b;
+.inlineInput {
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  width: 100%;
+  font-family: inherit;
   font-size: 14px;
 }
-
-.linkButton {
-  border: none;
-  background: none;
-  padding: 0;
-  color: #2563eb;
-  font-weight: 700;
-  text-decoration: underline;
-  cursor: pointer;
+.tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
 }
-
+.tag {
+  font-size: 13px;
+  color: #2563eb;
+  background: #eff6ff;
+  border-radius: 6px;
+  padding: 3px 8px;
+}
 .editActions {
   display: flex;
+  gap: 8px;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
+  margin-top: 16px;
 }
-
 .cancelButton,
 .saveButton {
-  height: 42px;
-  padding: 0 20px;
+  padding: 9px 18px;
   border-radius: 8px;
-  font-weight: 700;
   cursor: pointer;
-}
-
-.cancelButton {
-  border: 1px solid #cbd5e1;
-  background-color: #ffffff;
-  color: #475569;
-}
-
-.saveButton {
-  border: 1px solid #2563eb;
-  background-color: #2563eb;
-  color: #ffffff;
-}
-
-.managementCard h2 {
-  margin-bottom: 24px;
-}
-
-.managementList {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.managementItem {
-  display: grid;
-  grid-template-columns: 60px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 18px;
-  min-height: 112px;
-  padding: 19px 22px;
-  border: 1px solid #dbe4ef;
-  border-radius: 12px;
-}
-
-.itemIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #2563eb;
-  font-size: 28px;
-}
-
-.itemContent strong {
-  display: block;
-  color: #111827;
-  font-size: 19px;
-}
-
-.itemContent p {
-  margin: 8px 0 0;
-  color: #64748b;
   font-size: 14px;
-  line-height: 1.5;
+}
+.cancelButton {
+  border: 1px solid #d1d5db;
+  background: #fff;
+}
+.saveButton {
+  border: none;
+  background: #2563eb;
+  color: #fff;
 }
 
-.outlineButton,
-.primaryButton,
-.dangerButton,
-.mentorButton {
-  min-width: 122px;
-  height: 46px;
-  padding: 0 17px;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.outlineButton {
-  border: 1px solid #94a3b8;
-  background-color: #ffffff;
-  color: #475569;
-}
-
-.primaryButton {
-  border: 1px solid #2563eb;
-  background-color: #2563eb;
-  color: #ffffff;
-}
-
-.primaryButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.65;
-}
-
-.dangerItem {
-  border-color: #fecaca;
-  background-color: #fffafa;
-}
-
-.dangerIcon,
-.dangerText {
-  color: #dc2626 !important;
-}
-
-.dangerButton {
-  border: 1px solid #ef4444;
-  background-color: #ffffff;
-  color: #dc2626;
-}
-
-.mentorIcon {
-  color: #10b981;
-}
-
-.mentorButton {
-  border: 1px solid #cbd5e1;
-  background-color: #ffffff;
-  color: #64748b;
-}
-
-.mentorButton:not(:disabled) {
-  border-color: #10b981;
-  color: #059669;
-}
-
-/* ================= 하단: 구독 목록 카드 전용 스타일 ================= */
-.subscriptionGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
-  margin-top: 24px;
-}
-
-.subCard {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  background-color: #f8fafc;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.subCard:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 2px 8px rgb(15 23 42 / 4%);
-}
-
-.subCardInfo {
+/* ===== 목록형 행(보안/계정) ===== */
+.rowLink {
   display: flex;
   align-items: center;
   gap: 14px;
+  padding: 14px;
+  border: 1px solid #eef0f3;
+  border-radius: 10px;
+  margin-top: 10px;
+  cursor: pointer;
+  background: #fff;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+}
+.rowLink:hover {
+  background: #f8fafc;
+}
+.rowIcon {
+  font-size: 18px;
+  width: 22px;
+  text-align: center;
+}
+.rowText strong {
+  display: block;
+  font-size: 15px;
+}
+.rowText p {
+  margin: 2px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+.chev {
+  margin-left: auto;
+  color: #94a3b8;
+  font-size: 18px;
+}
+.danger strong {
+  color: #dc2626;
 }
 
-.subAvatar {
+/* ===== 구독 현황 ===== */
+.subHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.subCrown {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #f5f3ff;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background-color: #e0f2fe;
-  font-size: 20px;
+  font-size: 22px;
+  flex-shrink: 0;
 }
-
-.subCardInfo strong {
-  display: block;
-  color: #1e293b;
-  font-size: 16px;
+.subBetween {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+  margin-top: 6px;
 }
-
-.subCardInfo p {
-  margin: 3px 0 0;
-  color: #94a3b8;
-  font-size: 13px;
+.subPrice {
+  color: #2563eb;
+  font-weight: 700;
 }
-
-.subCancelButton {
-  padding: 6px 12px;
-  border: 1px solid #fca5a5;
-  border-radius: 6px;
-  background-color: #ffffff;
-  color: #ef4444;
-  font-size: 13px;
-  font-weight: 600;
+.manageBtn {
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  font-size: 14px;
+}
+.manageBtn:hover {
+  background: #f8fafc;
 }
 
-.subCancelButton:hover {
-  background-color: #fef2f2;
-}
-
-/* 반응형 모바일 대응 */
-@media (max-width: 1100px) {
-  .contentGrid {
+@media (max-width: 880px) {
+  .grid {
     grid-template-columns: 1fr;
   }
-}
-
-@media (max-width: 700px) {
-  .page {
-    padding: 24px 16px;
-  }
-
-  .profileCard,
-  .managementCard {
-    padding: 24px 20px;
-  }
-
-  .cardHeading {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .profileSummary {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .profileDetails div {
-    grid-template-columns: 1fr;
-    gap: 6px;
-  }
-
-  .profileDetails dd {
-    text-align: left;
-  }
-
-  .managementItem {
-    grid-template-columns: 48px minmax(0, 1fr);
-  }
-
-  .managementItem > button {
-    grid-column: 1 / -1;
-    width: 100%;
-  }
-
-  .outlineButton,
-  .primaryButton,
-  .dangerButton,
-  .mentorButton {
-    width: 100%;
-  }
-
-  .subscriptionGrid {
-    grid-template-columns: 1fr;
+  .hero {
+    justify-content: center;
+    text-align: center;
   }
 }

@@ -22,30 +22,35 @@ public class SubscriptionService {
     private final UserRepository userRepository;
 
     /**
-     * F-24: 구독 신청 (PG사 연동 전 임시 활성화 로직)
+     * F-24: 구독 신청 (멘토가 지정한 가격 동적 반영)
      */
     @Transactional
     public SubscriptionResponse subscribe(Long userId, Long mentorId) {
         LocalDateTime now = LocalDateTime.now();
 
-        // 💡 기존 구독 이력이 있는지 확인
+        // 💡 [수정] 멘토가 설정한 구독 금액 조회
+        Integer mentorPrice = userRepository.findById(mentorId)
+                .map(user -> user.getSubscriptionPrice() != null ? user.getSubscriptionPrice() : 9900)
+                .orElse(9900);
+
+        // 기존 구독 이력이 있는지 확인
         Subscription subscription = subscriptionRepository.findByUserIdAndMentorId(userId, mentorId)
                 .map(sub -> {
-                    // 이미 권한이 유효한 상태라면 중복 신청 불가 예외 발생
                     if (sub.hasActivePermission(now)) {
                         throw new IllegalStateException("이미 진행 중인 구독이 존재합니다.");
                     }
-                    // 만료(EXPIRED)된 상태 등이라면 기존 레코드를 재활용하여 ACTIVE로 갱신
-                    sub.reactivate(now, now.plusMonths(1));
+                    // 만료된 상태라면 최신 멘토 가격을 반영하여 재활용
+                    sub.reactivate(now, now.plusMonths(1), mentorPrice);
                     return sub;
                 })
                 .orElseGet(() -> {
-                    // 아예 구독 이력이 없는 신규 신청인 경우 새로 생성
+                    // 신규 구독 생성 시 멘토가 지정한 가격(mentorPrice) 대입
                     return subscriptionRepository.save(
                             Subscription.builder()
                                     .userId(userId)
                                     .mentorId(mentorId)
                                     .status(SubscriptionStatus.ACTIVE)
+                                    .amount(mentorPrice)
                                     .currentPeriodStart(now)
                                     .currentPeriodEnd(now.plusMonths(1))
                                     .build()
@@ -75,7 +80,7 @@ public class SubscriptionService {
     }
 
     /**
-     * F-23: 구독 권한 검증 (내부 호출/API)
+     * F-23: 구독 권한 검증
      */
     public SubscriptionCheckResponse checkAccessPermission(Long userId, Long mentorId) {
         LocalDateTime now = LocalDateTime.now();
@@ -89,12 +94,11 @@ public class SubscriptionService {
     }
 
     /**
-     * F-28: 내 구독 상태 목록 조회 (💡 만료 시간이 안 지난 항목만 필터링)
+     * F-28: 내 구독 상태 목록 조회
      */
     public List<SubscriptionResponse> getMySubscriptions(Long userId) {
         List<SubscriptionStatus> activeStatuses = List.of(SubscriptionStatus.ACTIVE, SubscriptionStatus.CANCEL_RESERVED);
 
-        // 💡 CurrentPeriodEndAfter(LocalDateTime.now()) 조건을 추가하여 이미 만료 기간이 지난 건은 프론트에 표시되지 않음
         return subscriptionRepository.findByUserIdAndStatusInAndCurrentPeriodEndAfter(userId, activeStatuses, LocalDateTime.now())
                 .stream()
                 .map(sub -> {
