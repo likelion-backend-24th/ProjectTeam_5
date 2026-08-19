@@ -9,7 +9,9 @@ public record MentorPostResponse(
         Long mentorId,
         String title,
         String content,
-        List<Long> attachmentIds, // 💡 [추가] 첨부파일 ID 목록
+        String category,       // 💡 [추가]
+        Boolean isPublic,      // 💡 [추가]
+        List<Long> attachmentIds,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
@@ -19,7 +21,9 @@ public record MentorPostResponse(
                 post.getMentorId(),
                 post.getTitle(),
                 post.getContent(),
-                post.getAttachmentIds(), // 💡 [추가]
+                post.getCategory(),     // 💡 [추가]
+                post.getIsPublic(),     // 💡 [추가]
+                post.getAttachmentIds(),
                 post.getCreatedAt(),
                 post.getUpdatedAt()
         );

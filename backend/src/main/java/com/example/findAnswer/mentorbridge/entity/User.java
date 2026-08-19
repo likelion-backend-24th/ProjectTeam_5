@@ -36,8 +36,8 @@ public class User extends BaseTimeEntity {
     @Column(nullable = false)
     private boolean blocked = false;
 
-
-    @Column(name = "profile_image_url", length = 500)
+    // 멘토 프로필 관련 필드들
+    @Column(name = "profile_image_url")
     private String profileImageUrl;
 
     @Column(length = 1000)
@@ -68,8 +68,9 @@ public class User extends BaseTimeEntity {
     @Column(length = 255)
     private String schedule;
 
-    @Column(name = "subscription_price")
-    private Integer subscriptionPrice = 9900;
+//    // 💡 [추가] 멘토 구독 월 이용료 필드
+//    @Column(name = "subscription_price")
+//    private Integer subscriptionPrice = 9900;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<MentorApplication> mentorApplications = new ArrayList<>();
@@ -101,7 +102,7 @@ public class User extends BaseTimeEntity {
         this.tags = tags;
         this.education = education;
         this.schedule = schedule;
-        this.subscriptionPrice = (subscriptionPrice != null) ? subscriptionPrice : 9900;
+        //this.subscriptionPrice = (subscriptionPrice != null) ? subscriptionPrice : 9900;
     }
 
     public void updatePassword(String encodedPassword) {
@@ -138,4 +139,5 @@ public class User extends BaseTimeEntity {
     public boolean isBlocked() {
         return this.blocked;
     }
+
 }

@@ -24,7 +24,9 @@ public class MentorPostService {
                 .mentorId(mentorId)
                 .title(request.title())
                 .content(request.content())
-                .attachmentIds(request.attachmentIds()) // 💡 [추가]
+                .category(request.category())     // 💡 [추가]
+                .isPublic(request.isPublic())     // 💡 [추가]
+                .attachmentIds(request.attachmentIds()) // 💡 [이미지 해결] 첨부파일 ID 반영
                 .build();
 
         return MentorPostResponse.from(mentorPostRepository.save(post));
@@ -40,7 +42,14 @@ public class MentorPostService {
             throw new IllegalArgumentException("본인의 게시글만 수정할 수 있습니다.");
         }
 
-        post.update(request.title(), request.content(), request.attachmentIds()); // 💡 [추가]
+        post.update(
+                request.title(),
+                request.content(),
+                request.category(),
+                request.isPublic(),
+                request.attachmentIds()
+        ); // 💡 [추가]
+
         return MentorPostResponse.from(post);
     }
 
@@ -57,14 +66,12 @@ public class MentorPostService {
         mentorPostRepository.delete(post);
     }
 
-    // 💡 [수정] 게시글 단건 조회 시 mentorId도 함께 검증하도록 변경
     public MentorPostResponse getPost(Long mentorId, Long postId) {
         MentorPost post = mentorPostRepository.findByIdAndMentorId(postId, mentorId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 멘토의 게시글을 찾을 수 없습니다."));
         return MentorPostResponse.from(post);
     }
 
-    // 멘토의 전체 게시글 목록 조회
     public List<MentorPostResponse> getPostsByMentorId(Long mentorId) {
         return mentorPostRepository.findByMentorIdOrderByCreatedAtDesc(mentorId)
                 .stream()

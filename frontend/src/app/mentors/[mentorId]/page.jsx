@@ -9,6 +9,49 @@ import { uploadImage, validateImage } from "@/lib/attachments";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 const MAX_BIO_LENGTH = 500;
+const DAYS_OF_WEEK = ["월", "화", "수", "목", "금", "토", "일"];
+
+const parseScheduleMap = (scheduleStr = "") => {
+  const scheduleMap = {};
+  DAYS_OF_WEEK.forEach(day => {
+    scheduleMap[day] = { enabled: false, startTime: "10:00", endTime: "17:00" };
+  });
+
+  if (!scheduleStr) return scheduleMap;
+
+  const matches = [...scheduleStr.matchAll(/([월화수목금토일])\s*\(([^)]+)\)/g)];
+  if (matches.length > 0) {
+    matches.forEach(match => {
+      const day = match[1];
+      const timeRange = match[2];
+      const [start = "10:00", end = "17:00"] = timeRange.split("-").map(t => t.trim());
+      if (scheduleMap[day]) {
+        scheduleMap[day] = { enabled: true, startTime: start, endTime: end };
+      }
+    });
+  } else {
+    const dayPart = scheduleStr.split("(")[0] || "";
+    const timePart = scheduleStr.match(/\((.*?)\)/)?.[1] || "10:00 - 17:00";
+    const [start = "10:00", end = "17:00"] = timePart.split("-").map(t => t.trim());
+    
+    DAYS_OF_WEEK.forEach(day => {
+      if (dayPart.includes(day)) {
+        scheduleMap[day] = { enabled: true, startTime: start, endTime: end };
+      }
+    });
+  }
+  return scheduleMap;
+};
+
+const stringifyScheduleMap = (scheduleMap) => {
+  const parts = [];
+  DAYS_OF_WEEK.forEach(day => {
+    if (scheduleMap[day]?.enabled) {
+      parts.push(`${day}(${scheduleMap[day].startTime} - ${scheduleMap[day].endTime})`);
+    }
+  });
+  return parts.length > 0 ? parts.join(", ") : "상담 시간 미설정";
+};
 
 export default function MentorProfilePage() {
   const params = useParams();
@@ -20,16 +63,24 @@ export default function MentorProfilePage() {
   const [mentorInfo, setMentorInfo] = useState(null);
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [activeTab, setActiveTab] = useState("feed");
   const [filter, setFilter] = useState("all");
+  const [searchText, setSearchText] = useState("");
 
   const [isOwner, setIsOwner] = useState(false);
-  
-  // 구독 상태 관리용 State
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [subscriptionId, setSubscriptionId] = useState(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+  const [currentPeriodEnd, setCurrentPeriodEnd] = useState(null);
+
+  // 구독 유도 모달 상태 추가
+  const [showSubscribeModal, setShowSubscribeModal] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
+  const [profileSnapshot, setProfileSnapshot] = useState(null);
+  const [savingProfile, setSavingProfile] = useState(false);
+
   const [editForm, setEditForm] = useState({
     bio: "",
     company: "",
@@ -37,16 +88,41 @@ export default function MentorProfilePage() {
     tags: "",
     education: "",
     schedule: "",
-    subscriptionPrice: 9900, // 💡 [추가] 구독 가격 상태값
+    subscriptionPrice: 9900,
   });
 
   const [isWritingPost, setIsWritingPost] = useState(false);
-  const [postForm, setPostForm] = useState({ title: "", content: "" });
+  const [postForm, setPostForm] = useState({
+    title: "",
+    content: "",
+    category: "일반",
+    isPublic: true,
+  });
+
   const [files, setFiles] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   const contentRef = useRef(null);
+
+  const checkIsAvailable = (scheduleStr) => {
+    if (!scheduleStr) return false;
+    const now = new Date();
+    const day = now.getDay();
+    const daysMap = ["일", "월", "화", "수", "목", "금", "토"];
+    const todayStr = daysMap[day];
+
+    const scheduleMap = parseScheduleMap(scheduleStr);
+    const todayInfo = scheduleMap[todayStr];
+
+    if (!todayInfo || !todayInfo.enabled) return false;
+
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    const [startH, startM] = todayInfo.startTime.split(":").map(Number);
+    const [endH, endM] = todayInfo.endTime.split(":").map(Number);
+    
+    return currentTime >= (startH * 60 + startM) && currentTime <= (endH * 60 + endM);
+  };
 
   const insertCodeBlock = () => {
     const el = contentRef.current;
@@ -55,7 +131,7 @@ export default function MentorProfilePage() {
     const end = el.selectionEnd;
     const selected = postForm.content.slice(start, end);
     const snippet = "```java\n" + (selected || "여기에 코드") + "\n```\n";
-    
+
     setPostForm((prev) => ({
       ...prev,
       content: prev.content.slice(0, start) + snippet + prev.content.slice(end),
@@ -102,77 +178,60 @@ export default function MentorProfilePage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-
-        const token =
-          typeof window !== "undefined"
-            ? localStorage.getItem("accessToken") || localStorage.getItem("token")
-            : null;
-
+        const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") || localStorage.getItem("token") : null;
         const headers = {
           "Content-Type": "application/json",
           ...(currentUserId && { "X-USER-ID": String(currentUserId) }),
           ...(token && { Authorization: `Bearer ${token}` }),
         };
 
-        const profileRes = await fetch(`${BACKEND_URL}/api/mentors/${mentorId}`, {
-          method: "GET",
-          headers,
-        });
-
+        const profileRes = await fetch(`${BACKEND_URL}/api/mentors/${mentorId}`, { method: "GET", headers });
         if (profileRes.ok) {
           const profileData = await profileRes.json();
           setMentorInfo(profileData);
-          
           setEditForm({
             bio: profileData.bio || "",
             company: profileData.company || "",
             career: profileData.career || "",
             tags: profileData.tags || "",
             education: profileData.education || "",
-            schedule: profileData.schedule || "월 - 금 (10:00 - 17:00)",
-            subscriptionPrice: profileData.subscriptionPrice || 9900, // 💡 [추가] 멘토가 설정한 구독 가격 초기화
+            schedule: profileData.schedule || "월(10:00 - 17:00), 수(10:00 - 17:00), 금(10:00 - 17:00)",
+            subscriptionPrice: profileData.subscriptionPrice || 9900,
           });
-
-          if (isLoggedIn && authUser) {
-            const targetMentorUserId = profileData.mentorId; 
-            if (currentUserId && targetMentorUserId && String(targetMentorUserId) === String(currentUserId)) {
-              setIsOwner(true);
-            }
-          }
+          setIsOwner(Boolean(isLoggedIn && currentUserId && profileData.mentorId && String(profileData.mentorId) === String(currentUserId)));
         }
 
-        const articlesRes = await fetch(`${BACKEND_URL}/api/v1/mentors/${mentorId}/posts`, {
-          method: "GET",
-          headers,
-        });
-
+        const articlesRes = await fetch(`${BACKEND_URL}/api/v1/mentors/${mentorId}/posts`, { method: "GET", headers });
         if (articlesRes.ok) {
           const articlesData = await articlesRes.json();
           setArticles(articlesData);
         }
 
-        // 구독 정보 검증 로직
         if (isLoggedIn && currentUserId) {
           try {
-            const checkRes = await fetch(`${BACKEND_URL}/api/v1/subscriptions/check?mentorId=${mentorId}`, {
-              method: "GET",
-              headers,
-            });
+            const checkRes = await fetch(`${BACKEND_URL}/api/v1/subscriptions/check?mentorId=${mentorId}`, { method: "GET", headers });
             if (checkRes.ok) {
               const checkData = await checkRes.json();
-              setIsSubscribed(checkData.isSubscribed);
+              if (checkData.status) setSubscriptionStatus(checkData.status);
+              if (checkData.currentPeriodEnd) setCurrentPeriodEnd(checkData.currentPeriodEnd);
             }
 
-            const mySubsRes = await fetch(`${BACKEND_URL}/api/v1/subscriptions/me`, {
-              method: "GET",
-              headers,
-            });
+            const mySubsRes = await fetch(`${BACKEND_URL}/api/v1/subscriptions/me`, { method: "GET", headers });
             if (mySubsRes.ok) {
               const mySubs = await mySubsRes.json();
               const currentSub = mySubs.find((sub) => String(sub.mentorId) === String(mentorId));
               if (currentSub) {
                 setSubscriptionId(currentSub.subscriptionId);
-                setIsSubscribed(true);
+                const subStatus = currentSub.status;
+                const periodEnd = currentSub.currentPeriodEnd || currentSub.current_period_end;
+                setSubscriptionStatus(subStatus);
+                setCurrentPeriodEnd(periodEnd);
+
+                const now = new Date();
+                const endDate = periodEnd ? new Date(periodEnd) : null;
+                const isValidActive = subStatus === 'ACTIVE';
+                const isCancelReservedButValid = subStatus === 'CANCEL_RESERVED' && (!endDate || endDate > now);
+                setIsSubscribed(isValidActive || isCancelReservedButValid);
               }
             }
           } catch (subErr) {
@@ -180,7 +239,7 @@ export default function MentorProfilePage() {
           }
         }
       } catch (error) {
-        console.error("데이터 로드 중 네트워크 오류 발생:", error);
+        console.error("데이터 로드 오류:", error);
       } finally {
         setLoading(false);
       }
@@ -194,7 +253,6 @@ export default function MentorProfilePage() {
       alert("로그인이 필요한 서비스입니다.");
       return;
     }
-
     try {
       const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
       const res = await fetch(`${BACKEND_URL}/api/v1/subscriptions`, {
@@ -211,6 +269,16 @@ export default function MentorProfilePage() {
         const data = await res.json();
         setIsSubscribed(true);
         setSubscriptionId(data.subscriptionId);
+        setSubscriptionStatus('ACTIVE');
+        setCurrentPeriodEnd(data.currentPeriodEnd || data.current_period_end);
+        
+        // 구독 성공 시 구독자 수 +1 실시간 반영
+        setMentorInfo(prev => ({
+          ...prev,
+          subscriberCount: (prev.subscriberCount || 0) + 1
+        }));
+
+        setShowSubscribeModal(false);
         alert("멘토 구독이 완료되었습니다!");
       } else {
         const err = await res.json().catch(() => ({}));
@@ -223,12 +291,19 @@ export default function MentorProfilePage() {
   };
 
   const handleCancelSubscription = async () => {
+    if (subscriptionStatus === 'CANCEL_RESERVED') {
+      const endDateStr = currentPeriodEnd ? new Date(currentPeriodEnd).toLocaleDateString() : "기간 만료일";
+      alert(`이미 해지 예약된 구독입니다.\n${endDateStr}까지는 정상적으로 혜택을 이용하실 수 있습니다.`);
+      return;
+    }
+
     if (!subscriptionId) {
       alert("구독 정보를 찾을 수 없습니다.");
       return;
     }
-
-    if (!confirm("정말 구독을 해지하시겠습니까?")) return;
+    
+    const endDateStr = currentPeriodEnd ? new Date(currentPeriodEnd).toLocaleDateString() : "기간 만료일";
+    if (!confirm(`정말 구독을 해지하시겠습니까?\n해지해도 ${endDateStr}까지는 구독 혜택이 유지됩니다.`)) return;
 
     try {
       const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
@@ -241,9 +316,8 @@ export default function MentorProfilePage() {
       });
 
       if (res.ok) {
-        setIsSubscribed(false);
-        setSubscriptionId(null);
-        alert("구독이 해지되었습니다.");
+        setSubscriptionStatus('CANCEL_RESERVED');
+        alert(`구독이 해지 예약되었습니다. ${endDateStr}까지 혜택이 유지됩니다.`);
       } else {
         alert("구독 해지에 실패했습니다.");
       }
@@ -255,7 +329,10 @@ export default function MentorProfilePage() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setEditForm((prev) => ({ ...prev, [name]: value }));
+    setEditForm((prev) => ({
+      ...prev,
+      [name]: name === "subscriptionPrice" ? (value === "" ? "" : Number(value)) : value,
+    }));
   };
 
   const handlePostInputChange = (e) => {
@@ -264,33 +341,67 @@ export default function MentorProfilePage() {
   };
 
   const handleSaveProfile = async () => {
+    const price = Number(editForm.subscriptionPrice);
+    if (!editForm.bio.trim()) {
+      alert("소개글을 입력해주세요.");
+      return;
+    }
     if (editForm.bio.length > MAX_BIO_LENGTH) {
       alert(`소개글은 ${MAX_BIO_LENGTH}자 이내로 작성해주세요.`);
       return;
     }
 
+    const normalizedForm = {
+      ...editForm,
+      bio: editForm.bio.trim(),
+      company: editForm.company.trim(),
+      career: editForm.career.trim(),
+      tags: editForm.tags.split(",").map((tag) => tag.trim()).filter(Boolean).join(", "),
+      education: editForm.education.trim(),
+      schedule: editForm.schedule.trim(),
+      subscriptionPrice: price,
+    };
+
     try {
+      setSavingProfile(true);
       const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
       const res = await fetch(`${BACKEND_URL}/api/mentors/${mentorId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          ...(currentUserId && { "X-USER-ID": String(currentUserId) }),
           ...(token && { Authorization: `Bearer ${token}` }),
         },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify(normalizedForm),
       });
 
       if (res.ok) {
-        const updatedData = await res.json();
-        setMentorInfo((prev) => ({ ...prev, ...updatedData, ...editForm }));
+        const updatedData = await res.json().catch(() => ({}));
+        setMentorInfo({ ...mentorInfo, ...updatedData, ...normalizedForm });
+        setEditForm(normalizedForm);
+        setProfileSnapshot(null);
         setIsEditing(false);
         alert("프로필이 성공적으로 수정되었습니다.");
       } else {
-        alert("프로필 수정 실패");
+        const error = await res.json().catch(() => ({}));
+        alert(error.message || "프로필 수정에 실패했습니다.");
       }
     } catch (error) {
-      console.error(error);
+    } finally {
+      setSavingProfile(false);
     }
+  };
+
+  const startProfileEdit = () => {
+    const snapshot = { ...editForm, tags: editForm.tags || "", schedule: editForm.schedule || "" };
+    setProfileSnapshot(snapshot);
+    setIsEditing(true);
+  };
+
+  const cancelProfileEdit = () => {
+    if (profileSnapshot) setEditForm(profileSnapshot);
+    setProfileSnapshot(null);
+    setIsEditing(false);
   };
 
   const handlePostSubmit = async (e) => {
@@ -305,13 +416,10 @@ export default function MentorProfilePage() {
 
     try {
       const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
-      
       const uploaded = files.length > 0 ? await Promise.all(files.map((f) => uploadImage(f))) : [];
       const attachmentIds = uploaded.map((u) => u.attachId);
 
-      const url = `${BACKEND_URL}/api/v1/mentors/${mentorId}/posts`;
-
-      const res = await fetch(url, {
+      const res = await fetch(`${BACKEND_URL}/api/v1/mentors/${mentorId}/posts`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -323,17 +431,13 @@ export default function MentorProfilePage() {
 
       if (res.ok) {
         alert("게시글이 작성되었습니다.");
-        
         const newPostData = await res.json().catch(() => null);
         if (newPostData && newPostData.id) {
           setArticles((prev) => [newPostData, ...prev]);
         } else {
-          setTimeout(async () => {
-            await fetchArticles();
-          }, 200);
+          setTimeout(async () => { await fetchArticles(); }, 200);
         }
-
-        setPostForm({ title: "", content: "" });
+        setPostForm({ title: "", content: "", category: "일반", isPublic: true });
         setFiles([]);
         setIsWritingPost(false);
       } else {
@@ -351,87 +455,110 @@ export default function MentorProfilePage() {
   if (loading) return <div className={styles.loading}>로딩 중...</div>;
   if (!mentorInfo) return <div className={styles.error}>멘토 정보를 찾을 수 없습니다.</div>;
 
-  const tagsArray = mentorInfo.tags ? mentorInfo.tags.split(",").map((t) => t.trim()) : [];
-  
-  // 미구독자 여부 판단 (소유자가 아니고, 구독하지 않은 경우)
-  const showBlurOverlay = !isOwner && !isSubscribed;
-
-  // 💡 [동적 가격 계산 헬퍼]
+  const tagsArray = mentorInfo.tags ? mentorInfo.tags.split(",").map((t) => t.trim()).filter(Boolean) : [];
+  const isAccessValid = isSubscribed || (subscriptionStatus === 'CANCEL_RESERVED' && (!currentPeriodEnd || new Date(currentPeriodEnd) > new Date()));
   const currentPrice = mentorInfo.subscriptionPrice ? Number(mentorInfo.subscriptionPrice).toLocaleString() : "9,900";
+  const isAvailableNow = checkIsAvailable(mentorInfo.schedule);
+  const statusColor = isAvailableNow ? "#22c55e" : "#f97316";
+
+  const filteredArticles = [...articles]
+    .filter((article) => {
+      if (!searchText.trim()) return true;
+      const keyword = searchText.toLowerCase().trim();
+      return article.title?.toLowerCase().includes(keyword) || article.content?.toLowerCase().includes(keyword);
+    })
+    .sort((a, b) => {
+      if (filter === "popular") return (b.likeCount ?? 0) - (a.likeCount ?? 0);
+      if (filter === "latest") {
+        return new Date(b.createdAt || b.updatedAt || 0).getTime() - new Date(a.createdAt || a.updatedAt || 0).getTime();
+      }
+      return 0;
+    });
 
   return (
     <div className={styles.container}>
-      {/* 1. 상단 멘토 프로필 배너 */}
+      {/* 프로필 섹션 */}
       <section className={styles.profileBanner}>
         <div className={styles.heroLeft}>
-          <img
-            src={mentorInfo.profileImageUrl || "[https://via.placeholder.com/100](https://via.placeholder.com/100)"}
-            alt={mentorInfo.name}
-            className={styles.avatar}
-          />
+          <div className={styles.avatarWrapper}>
+            <img src={mentorInfo.profileImageUrl || "/images/default-profile.png"} alt={mentorInfo.name || "멘토"} className={styles.avatar} />
+            <span className={styles.onlineDot} style={{ backgroundColor: statusColor, borderColor: "#fff" }} />
+          </div>
           <div className={styles.heroText}>
             <h1 className={styles.mentorName}>{mentorInfo.name}</h1>
             {isEditing ? (
               <div className={styles.editWrapper}>
-                <textarea
-                  name="bio"
-                  value={editForm.bio}
-                  onChange={handleInputChange}
-                  maxLength={MAX_BIO_LENGTH}
-                  className={styles.editBioInput}
-                  placeholder="소개글을 입력하세요"
-                />
-                <p className={styles.charCount}>{editForm.bio.length} / {MAX_BIO_LENGTH} 자</p>
+                <textarea name="bio" value={editForm.bio} onChange={handleInputChange} maxLength={MAX_BIO_LENGTH} className={styles.editBioInput} />
+                <p className={styles.charCount}>{editForm.bio.length} / {MAX_BIO_LENGTH}자</p>
               </div>
             ) : (
               <p className={styles.mentorBio}>{mentorInfo.bio || "소개글이 없습니다."}</p>
             )}
-
             <div className={styles.tagGroup}>
-              {tagsArray.map((tag, i) => (
-                <span key={i} className={styles.tag}>
-                  {tag}
-                </span>
-              ))}
+              {tagsArray.slice(0, 5).map((tag, i) => (<span key={i} className={styles.tag}>{tag}</span>))}
             </div>
             <div className={styles.statsRow}>
-              <span>★ {mentorInfo.rating || "4.9"} ({mentorInfo.reviewCount || 0})</span>
-              <span>👥 {mentorInfo.subscriberCount || 0} 구독자</span>
+              <span><span className={styles.star}>★</span> {mentorInfo.rating || "4.9"} ({mentorInfo.reviewCount || 0})</span>
+              <span>♙ {mentorInfo.subscriberCount || 0} 구독자</span>
             </div>
           </div>
         </div>
 
-        <div className={styles.heroStats}>
-          <div className={styles.statBox}>
-            <span className={styles.statLabel}>게시글</span>
-            <span className={styles.statValue}>{articles.length}</span>
+        <div className={styles.heroRight}>
+          <div className={styles.heroStats}>
+            <div className={styles.statBox}>
+              <span className={styles.statIcon}>▤</span>
+              <span className={styles.statLabel}>게시글</span>
+              <span className={styles.statValue}>{articles.length}</span>
+              <span className={styles.statSub}>전체 게시글</span>
+            </div>
+            <div className={styles.statBox}>
+              <span className={styles.statIcon}>♡</span>
+              <span className={styles.statLabel}>리뷰</span>
+              <span className={styles.statValue}>{mentorInfo.reviewCount || 0}</span>
+              <span className={styles.statSub}>평균 리뷰</span>
+            </div>
+            <div className={styles.statBox}>
+              <span className={styles.statIcon}>◷</span>
+              <span className={styles.statLabel}>상담 가능</span>
+              <span className={styles.statValueSmall}>
+                {(() => {
+                  const scheduleMap = parseScheduleMap(mentorInfo.schedule);
+                  const activeDays = DAYS_OF_WEEK.filter(d => scheduleMap[d]?.enabled);
+                  return activeDays.length > 0 ? activeDays.join(", ") : "미설정";
+                })()}
+              </span>
+              <span className={styles.statSub}>요일별 운영</span>
+            </div>
           </div>
-          <div className={styles.statBox}>
-            <span className={styles.statLabel}>리뷰</span>
-            <span className={styles.statValue}>{mentorInfo.reviewCount || 0}</span>
-          </div>
+
           <div className={styles.actionBtns}>
-            {isOwner && (
+            {isOwner ? (
               isEditing ? (
                 <>
-                  <button className={styles.saveBtn} onClick={handleSaveProfile}>저장</button>
-                  <button className={styles.cancelBtn} onClick={() => setIsEditing(false)}>취소</button>
+                  <button className={styles.saveBtn} onClick={handleSaveProfile} disabled={savingProfile}>
+                    {savingProfile ? "저장 중..." : "저장"}
+                  </button>
+                  <button className={styles.cancelBtn} onClick={cancelProfileEdit}>취소</button>
                 </>
               ) : (
-                <button className={styles.editBtn} onClick={() => setIsEditing(true)}>프로필 수정</button>
+                <button className={styles.editBtn} onClick={startProfileEdit}>프로필 수정</button>
               )
-            )}
-
-            {!isOwner && (
+            ) : (
               <>
                 {isSubscribed ? (
-                  <button className={styles.subBtn} onClick={handleCancelSubscription} style={{ backgroundColor: "#555", color: "#fff" }}>
-                    ✓ 구독중
-                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}>
+                    <button className={styles.subBtn} onClick={handleCancelSubscription} style={{ background: subscriptionStatus === 'CANCEL_RESERVED' ? '#f97316' : '#1261f5' }}>
+                      {subscriptionStatus === 'CANCEL_RESERVED' ? '✓ 해지 예약됨' : '✓ 구독중'}
+                    </button>
+                    {subscriptionStatus === 'CANCEL_RESERVED' && currentPeriodEnd && (
+                      <span style={{ fontSize: '9px', color: '#64748b', textAlign: 'center' }}>
+                        (~{new Date(currentPeriodEnd).toLocaleDateString()}까지)
+                      </span>
+                    )}
+                  </div>
                 ) : (
-                  <button className={styles.subBtn} onClick={handleSubscribe} style={{ backgroundColor: "#000", color: "#fff" }}>
-                    구독하기
-                  </button>
+                  <button className={styles.subBtn} onClick={handleSubscribe}>구독하기</button>
                 )}
                 <button className={styles.consultBtn}>상담 신청</button>
               </>
@@ -440,276 +567,185 @@ export default function MentorProfilePage() {
         </div>
       </section>
 
-      {/* 2. 탭 네비게이션 */}
+      {/* 탭 내비게이션 */}
       <div className={styles.tabNav}>
         <button className={activeTab === "feed" ? styles.activeTab : ""} onClick={() => setActiveTab("feed")}>피드</button>
         <button className={activeTab === "info" ? styles.activeTab : ""} onClick={() => setActiveTab("info")}>소개</button>
         <button className={activeTab === "review" ? styles.activeTab : ""} onClick={() => setActiveTab("review")}>리뷰</button>
       </div>
 
-      {/* 3. 메인 2단 레이아웃 */}
       <div className={styles.mainGrid}>
-        <div className={styles.feedColumn} style={{ position: "relative" }}>
-          
-          {isOwner && (
-            <div style={{ marginBottom: "20px" }}>
-              <button 
-                className={styles.editBtn} 
-                onClick={() => {
-                  setPostForm({ title: "", content: "" });
-                  setFiles([]);
-                  setIsWritingPost(!isWritingPost);
-                }}
-              >
-                {isWritingPost ? "작성 취소" : "✏️ 새 게시글 작성"}
-              </button>
-            </div>
-          )}
-
-          {isWritingPost && (
-            <form onSubmit={handlePostSubmit} style={{ background: "#f9f9f9", padding: "20px", borderRadius: "8px", marginBottom: "20px" }}>
-              <h3>새 게시글 작성</h3>
-              <div style={{ marginBottom: "10px" }}>
-                <input
-                  type="text"
-                  name="title"
-                  placeholder="제목을 입력하세요"
-                  value={postForm.title}
-                  onChange={handlePostInputChange}
-                  style={{ width: "100%", padding: "10px", borderRadius: "4px", border: "1px solid #ccc" }}
-                  required
-                />
-              </div>
-
-              <div style={{ marginBottom: "10px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
-                  <label htmlFor="content">내용 (마크다운)</label>
-                  <button type="button" onClick={insertCodeBlock} style={{ padding: "2px 8px", cursor: "pointer" }}>
-                    &lt;/&gt; 코드블록
+        <main className={styles.feedColumn}>
+          {activeTab === "feed" && (
+            <>
+              {isOwner && (
+                <div className={styles.writePostBar}>
+                  <button className={styles.editBtn} onClick={() => { setPostForm({ title: "", content: "", category: "일반", isPublic: true }); setFiles([]); setIsWritingPost(!isWritingPost); }}>
+                    {isWritingPost ? "작성 취소" : "✏️ 새 게시글 작성"}
                   </button>
                 </div>
-                <textarea
-                  id="content"
-                  ref={contentRef}
-                  name="content"
-                  placeholder="내용을 입력하세요"
-                  value={postForm.content}
-                  onChange={handlePostInputChange}
-                  rows={5}
-                  style={{ width: "100%", padding: "10px", borderRadius: "4px", border: "1px solid #ccc" }}
-                  required
-                />
+              )}
+
+              {isWritingPost && (
+                <form onSubmit={handlePostSubmit} className={styles.postForm}>
+                  <h3>새 게시글 작성</h3>
+                  <div className={styles.formGroup}>
+                    <label className={styles.fileLabel}>카테고리</label>
+                    <select name="category" value={postForm.category} onChange={handlePostInputChange} className={styles.formInput}>
+                      <option value="일반">일반</option>
+                      <option value="실무팁">실무팁</option>
+                      <option value="커리어">커리어</option>
+                      <option value="질문답변">질문답변</option>
+                    </select>
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.fileLabel}>공개 범위</label>
+                    <div style={{ display: "flex", gap: "15px", marginTop: "5px" }}>
+                      <label style={{ fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}>
+                        <input type="radio" name="isPublic" checked={postForm.isPublic === true} onChange={() => setPostForm(prev => ({ ...prev, isPublic: true }))} />
+                        전체 공개 (비구독자 열람 가능)
+                      </label>
+                      <label style={{ fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}>
+                        <input type="radio" name="isPublic" checked={postForm.isPublic === false} onChange={() => setPostForm(prev => ({ ...prev, isPublic: false }))} />
+                        구독자 전용
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <input type="text" name="title" placeholder="제목을 입력하세요" value={postForm.title} onChange={handlePostInputChange} className={styles.formInput} required />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <div className={styles.formLabelRow}>
+                      <label htmlFor="content">내용 (마크다운)</label>
+                      <button type="button" onClick={insertCodeBlock} className={styles.codeButton}>&lt;/&gt; 코드블록</button>
+                    </div>
+                    <textarea id="content" ref={contentRef} name="content" placeholder="내용을 입력하세요" value={postForm.content} onChange={handlePostInputChange} rows={6} className={styles.formTextarea} required />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.fileLabel}>파일 첨부 <span>이미지, 최대 5MB</span></label>
+                    <input id="images" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple onChange={handleFileChange} disabled={submitting} />
+                    {files.length > 0 && (
+                      <ul className={styles.filePreviewList}>
+                        {files.map((file, index) => (
+                          <li key={index} className={styles.filePreview}>
+                            <img src={URL.createObjectURL(file)} alt={file.name} />
+                            <button type="button" onClick={() => removeFile(index)}>×</button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  {errorMessage && <p className={styles.formError}>{errorMessage}</p>}
+                  <button type="submit" className={styles.saveBtn} disabled={submitting}>{submitting ? "처리 중..." : "작성 완료"}</button>
+                </form>
+              )}
+
+              <div className={styles.filterBar}>
+                <div className={styles.filterGroup}>
+                  <button className={filter === "all" ? styles.activeFilter : ""} onClick={() => setFilter("all")}>전체</button>
+                  <button className={filter === "popular" ? styles.activeFilter : ""} onClick={() => setFilter("popular")}>인기순</button>
+                  <button className={filter === "latest" ? styles.activeFilter : ""} onClick={() => setFilter("latest")}>최신순</button>
+                </div>
+                <div className={styles.searchWrapper}>
+                  <input type="text" placeholder="게시글 검색" value={searchText} onChange={(e) => setSearchText(e.target.value)} className={styles.searchInput} />
+                  <span>🔍</span>
+                </div>
               </div>
 
-              <div style={{ marginBottom: "15px" }}>
-                <label htmlFor="images" style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>파일 첨부 (이미지, 최대 5MB)</label>
-                <input
-                  id="images"
-                  type="file"
-                  accept="image/png,image/jpeg,image/gif,image/webp"
-                  multiple
-                  onChange={handleFileChange}
-                  disabled={submitting}
-                />
-                {files.length > 0 && (
-                  <ul style={{ display: "flex", gap: 8, flexWrap: "wrap", listStyle: "none", padding: 0, marginTop: "10px" }}>
-                    {files.map((file, index) => (
-                      <li key={index} style={{ position: "relative" }}>
-                        <img
-                          src={URL.createObjectURL(file)}
-                          alt={file.name}
-                          width={80}
-                          height={80}
-                          style={{ objectFit: "cover", borderRadius: 6 }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeFile(index)}
-                          style={{ position: "absolute", top: 2, right: 2, background: "rgba(0,0,0,0.5)", color: "#fff", border: "none", borderRadius: "50%", width: 20, height: 20, cursor: "pointer" }}
-                        >
-                          ×
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+              {/* 게시글 목록 영역 */}
+              <div className={styles.articleArea}>
+                <div className={styles.articleList}>
+                  {filteredArticles.length === 0 ? (
+                    <div className={styles.empty}>등록된 게시글이 없습니다.</div>
+                  ) : (
+                    filteredArticles.map((article, index) => {
+                      const isPostAccessible = isOwner || article.isPublic !== false || isAccessValid;
+
+                      const likeCount = article.likeCount ?? 128 - index * 8;
+                      const commentCount = article.commentCount ?? Math.max(0, 23 - index);
+                      const viewCount = article.viewCount ?? (index === 0 ? "1.2K" : index === 1 ? "892" : index === 2 ? "1.1K" : "731");
+
+                      return (
+                        <div key={article.id} className={styles.articleCardWrapper}>
+                          {isPostAccessible ? (
+                            <Link className={styles.articleCard} href={`/mentors/${mentorId}/posts/${article.id}`}>                              
+                              <div className={styles.articleBody}>
+                                <div className={styles.articleTop}>
+                                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                    <span className={styles.articleCategory}>{article.category || "일반"}</span>
+                                    <span style={{ fontSize: '11px', fontWeight: '600', color: article.isPublic !== false ? '#16a34a' : '#f97316' }}>
+                                      {article.isPublic !== false ? "전체공개" : "🔒 구독자전용"}
+                                    </span>
+                                  </div>
+                                  <span className={styles.date}>{article.createdAt ? article.createdAt.replace("T", " ").substring(0, 10) : ""}</span>
+                                </div>
+                                <h3 className={styles.articleTitle}>{article.title}</h3>
+                                <div className={styles.articleBottom}>
+                                  <div className={styles.articleStats}>
+                                    <span>♡ {likeCount}</span>
+                                    <span>💬 {commentCount}</span>
+                                    <span>◉ {viewCount}</span>
+                                    <span className={styles.bookmark}>♡</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </Link>
+                          ) : (
+                            <div className={styles.articleCardLocked} onClick={() => setShowSubscribeModal(true)}>
+                              <div className={styles.lockNoticeInner}>
+                                <span style={{ fontSize: '20px' }}>🔒</span>
+                                <div>
+                                  <span className={styles.articleCategory}>{article.category || "일반"}</span>
+                                  <h4 style={{ margin: '4px 0 2px', fontSize: '14px', color: '#111827' }}>{article.title}</h4>
+                                  <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>구독자 전용 게시글입니다. 클릭하여 구독 후 확인해보세요!</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
-
-              {errorMessage && <p style={{ color: "red", marginBottom: "10px" }}>{errorMessage}</p>}
-
-              <button type="submit" className={styles.saveBtn} disabled={submitting}>
-                {submitting ? "처리 중..." : "작성 완료"}
-              </button>
-            </form>
+            </>
           )}
 
-          <div className={styles.filterBar}>
-            <div className={styles.filterGroup}>
-              <button className={filter === "all" ? styles.activeFilter : ""} onClick={() => setFilter("all")}>전체</button>
-              <button className={filter === "popular" ? styles.activeFilter : ""} onClick={() => setFilter("popular")}>인기순</button>
-              <button className={filter === "latest" ? styles.activeFilter : ""} onClick={() => setFilter("latest")}>최신순</button>
+          {activeTab === "info" && (
+            <div className={styles.empty}>
+              <h3>멘토 소개</h3>
+              <p style={{ marginTop: '10px' }}>{mentorInfo.bio || '상세 소개 내용이 없습니다.'}</p>
             </div>
-            <input type="text" placeholder="게시글 검색" className={styles.searchInput} />
-          </div>
+          )}
 
-          {/* 미구독자용 블러 및 오버레이 영역 */}
-          <div style={{ position: "relative" }}>
-            <div style={{ filter: showBlurOverlay ? "blur(6px)" : "none", pointerEvents: showBlurOverlay ? "none" : "auto", transition: "filter 0.3s" }}>
-              <div className={styles.articleList}>
-                {articles.length === 0 ? (
-                  <div className={styles.empty}>등록된 게시글이 없습니다.</div>
-                ) : (
-                  articles.map((article) => (
-                    <div key={article.id} className={styles.articleCardWrapper} style={{ position: "relative", marginBottom: "15px" }}>
-                        <Link className={styles.articleCard} href={`/mentors/${mentorId}/posts/${article.id}`}>                        <div className={styles.articleBody}>
-                          <div className={styles.badgeRow}>
-                            <span className={styles.date}>
-                              {article.createdAt ? article.createdAt.replace("T", " ").substring(0, 10) : ""}
-                            </span>
-                          </div>
-                          <h3 className={styles.articleTitle}>{article.title}</h3>
-                          <p className={styles.articleDesc}>{article.content}</p>
-                        </div>
-                      </Link>
-                    </div>
-                  ))
-                )}
-              </div>
+          {activeTab === "review" && (
+            <div className={styles.empty}>
+              <h3>리뷰 ({mentorInfo.reviewCount || 0})</h3>
+              <p style={{ marginTop: '10px' }}>등록된 리뷰가 없습니다.</p>
             </div>
+          )}
+        </main>
 
-            {/* 미구독 안내 오버레이 박스 */}
-            {showBlurOverlay && (
-              <div style={{
-                position: "absolute",
-                top: "40px",
-                left: "50%",
-                transform: "translateX(-50%)",
-                width: "90%",
-                maxWidth: "520px",
-                background: "#fff",
-                borderRadius: "16px",
-                boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
-                padding: "32px 24px",
-                textAlign: "center",
-                zIndex: 10
-              }}>
-                <div style={{ fontSize: "28px", marginBottom: "12px" }}>🔒</div>
-                <h3 style={{ fontSize: "20px", fontWeight: "bold", marginBottom: "8px", color: "#111" }}>
-                  이 멘토의 게시글은 구독자에게만 공개됩니다
-                </h3>
-                <p style={{ fontSize: "14px", color: "#666", marginBottom: "24px" }}>
-                  실무에서 바로 적용 가능한 인사이트와 노하우를<br />지금 구독하고 모두 확인해보세요.
-                </p>
-
-                <div style={{ background: "#f8f9fa", borderRadius: "12px", padding: "16px", marginBottom: "24px", display: "flex", justifyContent: "space-around" }}>
-                  <div>
-                    <div style={{ fontSize: "16px", marginBottom: "4px" }}>📄</div>
-                    <div style={{ fontSize: "12px", fontWeight: "bold", color: "#333" }}>전체 게시글 열람</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: "16px", marginBottom: "4px" }}>💡</div>
-                    <div style={{ fontSize: "12px", fontWeight: "bold", color: "#333" }}>실무 노하우</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: "16px", marginBottom: "4px" }}>💬</div>
-                    <div style={{ fontSize: "12px", fontWeight: "bold", color: "#333" }}>댓글 참여</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: "16px", marginBottom: "4px" }}>📥</div>
-                    <div style={{ fontSize: "12px", fontWeight: "bold", color: "#333" }}>자료 다운로드</div>
-                  </div>
-                </div>
-
-                {/* 💡 [수정] 동적 구독 금액 반영 */}
-                <div style={{ fontSize: "18px", fontWeight: "bold", color: "#111", marginBottom: "16px" }}>
-                  월 {currentPrice}원 구독
-                </div>
-
-                <button 
-                  onClick={handleSubscribe}
-                  style={{
-                    width: "100%",
-                    background: "#0051ff",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "8px",
-                    padding: "14px",
-                    fontSize: "16px",
-                    fontWeight: "bold",
-                    cursor: "pointer",
-                    marginBottom: "12px"
-                  }}
-                >
-                  월 {currentPrice}원으로 구독하기
-                </button>
-                <p style={{ fontSize: "12px", color: "#888" }}>언제든지 해지할 수 있어요. • 첫 구독 시 7일 무료 체험</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-      {/* 우측 사이드바 */}
+        {/* 사이드바 */}
         <aside className={styles.sidebar}>
-          
-          {/* 구독 혜택 카드 */}
-          {!isOwner && !isSubscribed && (
-            <div className={styles.sidebarCard} style={{ border: "1px solid #e1e7ec", background: "#fff" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: "bold", marginBottom: "16px" }}>구독 혜택</h3>
-              <ul style={{ listStyle: "none", padding: 0, margin: "0 0 20px 0", display: "flex", flexDirection: "column", gap: "12px" }}>
-                <li style={{ display: "flex", alignItems: "flex-start", gap: "10px", fontSize: "13px" }}>
-                  <span style={{ color: "#0051ff", fontWeight: "bold" }}>✓</span>
-                  <div>
-                    <strong style={{ display: "block", color: "#111" }}>전체 피드 열람</strong>
-                    <span style={{ color: "#666", fontSize: "12px" }}>모든 게시글 무제한 열람</span>
-                  </div>
-                </li>
-                <li style={{ display: "flex", alignItems: "flex-start", gap: "10px", fontSize: "13px" }}>
-                  <span style={{ color: "#0051ff", fontWeight: "bold" }}>✓</span>
-                  <div>
-                    <strong style={{ display: "block", color: "#111" }}>구독자 전용 콘텐츠</strong>
-                    <span style={{ color: "#666", fontSize: "12px" }}>실무 노하우와 심층 인사이트</span>
-                  </div>
-                </li>
-                <li style={{ display: "flex", alignItems: "flex-start", gap: "10px", fontSize: "13px" }}>
-                  <span style={{ color: "#0051ff", fontWeight: "bold" }}>✓</span>
-                  <div>
-                    <strong style={{ display: "block", color: "#111" }}>자료 다운로드</strong>
-                    <span style={{ color: "#666", fontSize: "12px" }}>템플릿, 체크리스트, 가이드 제공</span>
-                  </div>
-                </li>
-                <li style={{ display: "flex", alignItems: "flex-start", gap: "10px", fontSize: "13px" }}>
-                  <span style={{ color: "#0051ff", fontWeight: "bold" }}>✓</span>
-                  <div>
-                    <strong style={{ display: "block", color: "#111" }}>댓글 참여 및 질문</strong>
-                    <span style={{ color: "#666", fontSize: "12px" }}>멘토에게 직접 질문하고 답변 받기</span>
-                  </div>
-                </li>
-              </ul>
-
-              <div style={{ borderTop: "1px solid #eee", paddingTop: "16px" }}>
-                {/* 💡 [수정] 동적 구독 금액 반영 */}
-                <div style={{ fontSize: "18px", fontWeight: "bold", color: "#111", marginBottom: "12px" }}>
-                  월 {currentPrice}원
-                </div>
-                <button 
-                  onClick={handleSubscribe}
-                  style={{
-                    width: "100%",
-                    background: "#0051ff",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "8px",
-                    padding: "12px",
-                    fontSize: "14px",
-                    fontWeight: "bold",
-                    cursor: "pointer",
-                    marginBottom: "8px"
-                  }}
-                >
-                  구독하고 전체 보기
-                </button>
-                <p style={{ fontSize: "11px", color: "#888", textAlign: "center" }}>첫 구독 시 7일 무료 체험</p>
+          {!isOwner && !isAccessValid && (
+            <div className={styles.sidebarCard}>
+              <div className={styles.sidebarTitleRow}>
+                <h3>구독 혜택</h3>
+                <span className={styles.sidebarPrice}>월 {currentPrice}원</span>
               </div>
+              <ul className={styles.benefitList}>
+                <li><span>✓</span><div><strong>전체 피드 열람</strong><small>모든 게시글 무제한 열람</small></div></li>
+                <li><span>✓</span><div><strong>구독자 전용 콘텐츠</strong><small>실무 노하우와 심층 인사이트</small></div></li>
+                <li><span>✓</span><div><strong>자료 다운로드</strong><small>템플릿, 체크리스트, 가이드 제공</small></div></li>
+                <li><span>✓</span><div><strong>댓글 참여 및 질문</strong><small>멘토에게 직접 질문하고 답변 받기</small></div></li>
+              </ul>
+              <button className={styles.sidebarSubscribeBtn} onClick={handleSubscribe}>구독하고 전체 보기</button>
             </div>
           )}
 
@@ -718,69 +754,146 @@ export default function MentorProfilePage() {
             <ul className={styles.infoList}>
               <li>
                 <strong>현직</strong>
-                {isEditing ? (
-                  <input type="text" name="company" value={editForm.company} onChange={handleInputChange} className={styles.editInput} />
-                ) : (
-                  <span>{mentorInfo.company || "Senior Designer @ 네이버"}</span>
-                )}
+                {isEditing ? <input type="text" name="company" value={editForm.company} onChange={handleInputChange} className={styles.editInput} /> : <span>{mentorInfo.company || "Senior UI/UX Designer @ 네이버"}</span>}
               </li>
               <li>
                 <strong>경력</strong>
-                {isEditing ? (
-                  <input type="text" name="career" value={editForm.career} onChange={handleInputChange} className={styles.editInput} />
-                ) : (
-                  <span>{mentorInfo.career || "9년"}</span>
-                )}
+                {isEditing ? <input type="text" name="career" value={editForm.career} onChange={handleInputChange} className={styles.editInput} /> : <span>{mentorInfo.career || "9년"}</span>}
               </li>
               <li>
                 <strong>전문 분야</strong>
-                {isEditing ? (
-                  <input type="text" name="tags" value={editForm.tags} onChange={handleInputChange} className={styles.editInput} placeholder="쉼표(,)로 구분" />
-                ) : (
-                  <span>{mentorInfo.tags || "UI/UX, 프로토타이핑"}</span>
-                )}
+                {isEditing ? <input type="text" name="tags" value={editForm.tags} onChange={handleInputChange} className={styles.editInput} placeholder="쉼표(,)로 구분" /> : <span>{mentorInfo.tags || "UI/UX, 프로토타이핑"}</span>}
               </li>
               <li>
                 <strong>학력</strong>
-                {isEditing ? (
-                  <input type="text" name="education" value={editForm.education} onChange={handleInputChange} className={styles.editInput} />
-                ) : (
-                  <span>{mentorInfo.education || "홍익대학교 디자인과"}</span>
-                )}
+                {isEditing ? <input type="text" name="education" value={editForm.education} onChange={handleInputChange} className={styles.editInput} /> : <span>{mentorInfo.education || "홍익대학교 디자인과"}</span>}
               </li>
-
-              {/* 💡 [추가] 멘토 본인일 때 수정 모드에서 구독 가격 입력 가능 */}
               {isEditing && (
                 <li>
                   <strong>구독 월 이용료</strong>
-                  <input 
-                    type="number" 
-                    name="subscriptionPrice" 
-                    value={editForm.subscriptionPrice} 
-                    onChange={handleInputChange} 
-                    className={styles.editInput} 
-                    step="1000"
-                    min="0"
-                  />
+                  <input type="number" name="subscriptionPrice" value={editForm.subscriptionPrice} onChange={handleInputChange} className={styles.editInput} step="1000" min="0" />
                 </li>
               )}
             </ul>
           </div>
 
           <div className={styles.sidebarCard}>
-            <h3>상담 가능 시간</h3>
+            <div className={styles.scheduleHeader}>
+              <h3>상담 가능 시간</h3>
+              <span className={styles.available} style={{ color: statusColor }}>
+                ● 오늘 기준 {isAvailableNow ? '상담 가능' : '상담 불가'}
+              </span>
+            </div>
+
             {isEditing ? (
-              <textarea name="schedule" value={editForm.schedule} onChange={handleInputChange} className={styles.editBioInput} />
+              <div className={styles.scheduleEditContainer}>
+                <label className={styles.editSubLabel}>요일 및 시간 개별 설정</label>
+                <div className={styles.dayPillGroup}>
+                  {DAYS_OF_WEEK.map((day) => {
+                    const scheduleMap = parseScheduleMap(editForm.schedule);
+                    const isSelected = scheduleMap[day]?.enabled;
+                    return (
+                      <button
+                        key={day}
+                        type="button"
+                        className={`${styles.dayPill} ${isSelected ? styles.dayPillActive : ""}`}
+                        onClick={() => {
+                          const nextMap = { ...scheduleMap };
+                          nextMap[day] = { ...nextMap[day], enabled: !isSelected };
+                          setEditForm(prev => ({ ...prev, schedule: stringifyScheduleMap(nextMap) }));
+                        }}
+                      >
+                        {day}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className={styles.dayTimeConfigList}>
+                  {DAYS_OF_WEEK.map((day) => {
+                    const scheduleMap = parseScheduleMap(editForm.schedule);
+                    if (!scheduleMap[day]?.enabled) return null;
+                    return (
+                      <div key={day} className={styles.dayTimeRow}>
+                        <span className={styles.dayBadge}>{day}요일</span>
+                        <div className={styles.timeInputWrapper}>
+                          <input
+                            type="time"
+                            value={scheduleMap[day].startTime}
+                            onChange={(e) => {
+                              const nextMap = { ...scheduleMap };
+                              nextMap[day].startTime = e.target.value;
+                              setEditForm(prev => ({ ...prev, schedule: stringifyScheduleMap(nextMap) }));
+                            }}
+                            className={styles.roundedTimeInput}
+                          />
+                          <span className={styles.timeWave}>~</span>
+                          <input
+                            type="time"
+                            value={scheduleMap[day].endTime}
+                            onChange={(e) => {
+                              const nextMap = { ...scheduleMap };
+                              nextMap[day].endTime = e.target.value;
+                              setEditForm(prev => ({ ...prev, schedule: stringifyScheduleMap(nextMap) }));
+                            }}
+                            className={styles.roundedTimeInput}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             ) : (
-              <ul className={styles.scheduleList}>
-                <li>
-                  <span>{mentorInfo.schedule || "월 - 금 (10:00 - 17:00)"}</span>
-                </li>
-              </ul>
+              <div className={styles.scheduleViewBox}>
+                {(() => {
+                  const scheduleMap = parseScheduleMap(mentorInfo.schedule);
+                  const activeDays = DAYS_OF_WEEK.filter(day => scheduleMap[day]?.enabled);
+                  if (activeDays.length === 0) {
+                    return <div className={styles.scheduleText}>{mentorInfo.schedule || "등록된 상담 가능 시간이 없습니다."}</div>;
+                  }
+                  return (
+                    <div className={styles.scheduleList}>
+                      {activeDays.map((day) => (
+                        <div key={day} className={styles.scheduleRowItem}>
+                          <span className={styles.scheduleDay}>{day}요일</span>
+                          <span className={styles.scheduleTime}>{scheduleMap[day].startTime} ~ {scheduleMap[day].endTime}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
             )}
+            <p className={styles.scheduleNotice}>* 예약은 상담 신청 버튼을 통해 가능합니다.</p>
           </div>
         </aside>
       </div>
+
+      {/* 구독 유도 모달 팝업 */}
+      {showSubscribeModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <span className={styles.modalLockIcon}>🔒</span>
+            <h2>구독자 전용 콘텐츠입니다</h2>
+            <p>이 멘토의 모든 실무 노하우와 전체 게시글을 확인하려면 구독을 시작해보세요!</p>
+            
+            <div className={styles.modalPriceBox}>
+              <span>구독 이용료</span>
+              <strong>월 {currentPrice}원</strong>
+            </div>
+
+            <div className={styles.modalActionBtns}>
+              <button className={styles.modalSubBtn} onClick={handleSubscribe}>
+                월 {currentPrice}원으로 구독하기
+              </button>
+              <button className={styles.modalCloseBtn} onClick={() => setShowSubscribeModal(false)}>
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
