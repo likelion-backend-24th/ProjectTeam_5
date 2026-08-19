@@ -18,7 +18,12 @@ public enum ErrorCode {
     FILE_STORAGE_ERROR(HttpStatus.BAD_REQUEST, "파일 저장소 설정이 잘못되었습니다."),
     FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다."),
     PAYMENT_METHOD_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 결제수단입니다."),
-    PLAN_NOT_FOUND(HttpStatus.NOT_FOUND, "구독 플랜을 찾을 수 없습니다.");
+    PLAN_NOT_FOUND(HttpStatus.NOT_FOUND, "구독 플랜을 찾을 수 없습니다."),
+    MENTOR_PLAN_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 요금제입니다."),
+    SUBSCRIPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 구독입니다."),
+    PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 결제입니다."),
+    ALREADY_SUBSCRIBED(HttpStatus.CONFLICT, "이미 진행 중인 구독이 존재합니다."),
+    PAYMENT_VERIFICATION_FAILED(HttpStatus.BAD_REQUEST, "결제 검증에 실패했습니다.");
 
 
     private final HttpStatus status;
