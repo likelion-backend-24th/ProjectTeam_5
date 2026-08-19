@@ -14,7 +14,8 @@ public enum ErrorCode {
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
     FILE_TOO_LARGE(HttpStatus.BAD_REQUEST, "파일이 너무 큽니다."),
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 요청입니다."),
-    USER_BLOCKED(HttpStatus.FORBIDDEN, "차단된 계정입니다. 관리자에게 문의하세요.");
+    USER_BLOCKED(HttpStatus.FORBIDDEN, "차단된 계정입니다. 관리자에게 문의하세요."),
+    PAYMENT_METHOD_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 결제수단입니다.");
 
 
     private final HttpStatus status;
