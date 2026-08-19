@@ -81,7 +81,6 @@ export default function MentorPlanNewPage() {
             value={price}
             onChange={(e) => setPrice(e.target.value.replace(/\D/g, ""))}
             inputMode="numeric"
-            placeholder="9900"
           />
         </label>
 
