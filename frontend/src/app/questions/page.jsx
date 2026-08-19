@@ -4,12 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-// 💡 팀원의 getQuestions와 우리가 만든 getFollowingQuestions를 함께 임포트
+
 import { getQuestions, getFollowingQuestions } from "@/lib/questions";
 
 import styles from "./page.module.css";
 
-// 💡 팀원 코드에 우리가 만든 '팔로잉' 카테고리 추가
+
 const CATEGORIES = ["전체", "팔로잉", "개발", "멘토링", "취업", "기타"];
 
 export default function QuestionsPage() {
@@ -21,7 +21,7 @@ export default function QuestionsPage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // 🔍 검색어 및 정렬 옵션 상태 (팀원 코드 유지)
+  // 🔍 검색어 및 정렬 옵션 상태
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState("latest");
 
@@ -35,7 +35,7 @@ export default function QuestionsPage() {
       try {
         let result;
 
-        // 💡 팔로잉 탭 로직 (우리 코드) + 서버 검색/정렬 파라미터 (팀원 코드) 병합
+        // 💡 팔로잉 탭 로직
         if (category === "팔로잉") {
           result = await getFollowingQuestions({
             page,
@@ -80,10 +80,10 @@ export default function QuestionsPage() {
     return () => {
       ignore = true;
     };
-  }, [page, category, searchQuery, sortOption]); // 👈 팀원 코드: 검색어나 정렬 변경 시 서버에서 다시 조회
+  }, [page, category, searchQuery, sortOption]);
 
   const handleCategoryChange = (newCategory) => {
-    // 💡 팔로잉 탭 클릭 시 로그인 여부 체크 (우리 코드)
+
     if (newCategory === "팔로잉") {
       const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
       if (!token) {
@@ -99,19 +99,19 @@ export default function QuestionsPage() {
     }
   };
 
-  // 💡 검색어 변경 시 페이지 초기화 (팀원 코드)
+
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
     setPage(0);
   };
 
-  // 💡 정렬 변경 시 페이지 초기화 (팀원 코드)
+  // 💡 정렬 변경 시 페이지 초기화
   const handleSortChange = (e) => {
     setSortOption(e.target.value);
     setPage(0);
   };
 
-  // 💡 팀원 로직: 클라이언트 사이드 필터링(useMemo) 대신 서버 데이터를 그대로 사용
+
   const questions = data?.content ?? [];
   const totalElements = data?.totalElements ?? 0;
   const totalPages = Math.max(Math.ceil(totalElements / 10), 1);
