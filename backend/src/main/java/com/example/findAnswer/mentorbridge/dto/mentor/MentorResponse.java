@@ -14,12 +14,12 @@ public record MentorResponse(
         String company,
         String career,
         String education,
-        String schedule,
-        Integer subscriptionPrice // 💡 [추가]
+        String schedule
+//        Integer subscriptionPrice // 💡 [추가]
 ) {
     // 기존 목록 조회(getMentors)를 위한 생성자
     public MentorResponse(Long mentorId, String name, String profileImageUrl, String bio, String tags, Double rating, Integer reviewCount) {
-        this(mentorId, name, profileImageUrl, bio, tags, rating, reviewCount, 0, null, null, null, null, 9900);
+        this(mentorId, name, profileImageUrl, bio, tags, rating, reviewCount, 0, null, null, null, null); //9900
     }
 
     // 단건 상세 조회를 위한 변환 메서드
@@ -36,8 +36,8 @@ public record MentorResponse(
                 user.getCompany(),
                 user.getCareer(),
                 user.getEducation(),
-                user.getSchedule(),
-                user.getSubscriptionPrice() != null ? user.getSubscriptionPrice() : 9900 // 💡 [추가]
+                user.getSchedule()
+//                user.getSubscriptionPrice() != null ? user.getSubscriptionPrice() : 9900 // 💡 [추가]
         );
     }
 }
