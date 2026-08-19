@@ -72,7 +72,7 @@ kakao:
   admin-key: ${KAKAO_ADMIN_KEY:kakao_admin_key}
 
 cloudinary:
-  url: ${CLOUDINARY_URL:cloudinary://895865932964719:3Wy04vCM7WG3YSabRhI_s8d5G34@xml84nff}
+  url: ${CLOUDINARY_URL:cloudinary://API_KEY:API_SECRET@CLOUD_NAME}
   folder: findanswer/posts
 
 
