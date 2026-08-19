@@ -41,5 +41,12 @@ public class MentorPlan extends BaseTimeEntity {
         return this.mentorId.equals(mentorId);
     }
 
+    public void update(String planName, String description, Integer price, int billingCycle) {
+        this.planName = planName;
+        this.description = description;
+        this.price = price;
+        this.billingCycle = billingCycle;
+    }
+
 
 }

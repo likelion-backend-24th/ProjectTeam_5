@@ -36,12 +36,44 @@ public class MentorPlanService {
     }
 
     @Transactional
-    public void createMentorPlan(MentorPlanRequest mentorPlanRequest) {
-
+    public MentorPlanResponse createMentorPlan(Long mentorId, MentorPlanRequest request) {
+        MentorPlan plan = mentorPlanRepository.save(
+                MentorPlan.builder()
+                        .mentorId(mentorId)
+                        .planName(request.planName())
+                        .description(request.description())
+                        .price(request.price())
+                        .billingCycle(request.billingCycle())
+                        .isActive(true)
+                        .build()
+        );
+        return MentorPlanResponse.fromEntity(plan);
     }
 
     @Transactional
-    public void updateMentorPlan(MentorPlanRequest mentorPlanRequest) {
+    public MentorPlanResponse updateMentorPlan(Long mentorId, Long mentorPlanId, MentorPlanRequest request) {
+        MentorPlan plan = mentorPlanRepository.findById(mentorPlanId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PLAN_NOT_FOUND));
 
+        if (!plan.isOwnedByMentor(mentorId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+
+        plan.update(request.planName(), request.description(), request.price(), request.billingCycle());
+        // 더티 체킹
+        return MentorPlanResponse.fromEntity(plan);
+    }
+
+    @Transactional
+    public void deleteMentorPlanById(Long mentorId, Long mentorPlanId) {
+        MentorPlan plan = mentorPlanRepository.findById(mentorPlanId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PLAN_NOT_FOUND));
+
+        if (!plan.isOwnedByMentor(mentorId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+
+        // 비활성화
+        plan.deactivate();
     }
 }
