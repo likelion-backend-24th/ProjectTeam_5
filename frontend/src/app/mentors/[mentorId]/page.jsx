@@ -97,6 +97,7 @@ export default function MentorProfilePage() {
     education: "",
     schedule: "",
     subscriptionPrice: 9900,
+    links: "", // 💡 링크 필드 추가
   });
 
   const [isWritingPost, setIsWritingPost] = useState(false);
@@ -205,6 +206,7 @@ export default function MentorProfilePage() {
             education: profileData.education || "",
             schedule: profileData.schedule || "월(10:00 - 17:00), 수(10:00 - 17:00), 금(10:00 - 17:00)",
             subscriptionPrice: profileData.subscriptionPrice || 9900,
+            links: profileData.links || "", // 💡 링크 데이터 반영
           });
           setIsOwner(Boolean(isLoggedIn && currentUserId && profileData.mentorId && String(profileData.mentorId) === String(currentUserId)));
         }
@@ -403,6 +405,7 @@ export default function MentorProfilePage() {
       education: editForm.education.trim(),
       schedule: editForm.schedule.trim(),
       subscriptionPrice: price,
+      links: editForm.links.trim(), // 💡 링크 데이터 정제
     };
 
     try {
@@ -430,13 +433,14 @@ export default function MentorProfilePage() {
         alert(error.message || "프로필 수정에 실패했습니다.");
       }
     } catch (error) {
+      console.error(error);
     } finally {
       setSavingProfile(false);
     }
   };
 
   const startProfileEdit = () => {
-    const snapshot = { ...editForm, tags: editForm.tags || "", schedule: editForm.schedule || "" };
+    const snapshot = { ...editForm, tags: editForm.tags || "", schedule: editForm.schedule || "", links: editForm.links || "" };
     setProfileSnapshot(snapshot);
     setIsEditing(true);
   };
@@ -867,6 +871,30 @@ export default function MentorProfilePage() {
               <li>
                 <strong>학력</strong>
                 {isEditing ? <input type="text" name="education" value={editForm.education} onChange={handleInputChange} className={styles.editInput} /> : <span>{mentorInfo.education || "홍익대학교 디자인과"}</span>}
+              </li>
+              {/* 💡 깃허브, 노션 등 관련 링크 항목 추가 */}
+              <li>
+                <strong>관련 링크</strong>
+                {isEditing ? (
+                  <input 
+                    type="text" 
+                    name="links" 
+                    value={editForm.links} 
+                    onChange={handleInputChange} 
+                    className={styles.editInput} 
+                    placeholder="깃허브, 노션 등 링크 입력 (예: https://...)" 
+                  />
+                ) : (
+                  <span>
+                    {mentorInfo.links ? (
+                      <a href={mentorInfo.links} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' }}>
+                        {mentorInfo.links}
+                      </a>
+                    ) : (
+                      "등록된 링크가 없습니다."
+                    )}
+                  </span>
+                )}
               </li>
               {isEditing && (
                 <li>
