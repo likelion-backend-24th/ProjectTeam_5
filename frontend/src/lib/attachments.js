@@ -60,3 +60,20 @@ export async function uploadImage(file) {
     name: file.name,
   };
 }
+
+// 프로필 사진 업로드
+export async function uploadProfileImage(file) {
+  validateImage(file);
+
+  // 1. 프로필 전용 서명 발급 (파라미터 불필요)
+  const sign = await request("/api/attachments/profile-image/signature", {
+    method: "POST",
+    fallbackMessage: "프로필 이미지 업로드 준비에 실패했습니다.",
+  });
+
+  // 2. Cloudinary 업로드
+  const result = await uploadToCloudinary(file, sign);
+
+  // 3. 업로드된 URL 반환
+  return result.secure_url;
+}

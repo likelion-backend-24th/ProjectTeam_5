@@ -87,3 +87,14 @@ export async function toggleLike(questionId) {
     fallbackMessage: "좋아요 처리에 실패했습니다.",
   });
 }
+
+// 팔로잉 유저 질문 목록 조회
+export async function getFollowingQuestions({ page = 0, size = 10 } = {}) {
+  const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") || localStorage.getItem("token") : null;
+  const query = new URLSearchParams({ page, size }).toString();
+  return request(`/api/questions/following?${query}`, {
+    method: "GET",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    fallbackMessage: "팔로잉 유저의 질문 목록을 불러오지 못했습니다.",
+  });
+}

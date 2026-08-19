@@ -42,19 +42,29 @@
 }
 
 .ownerActions {
+  margin-left: auto;
   display: flex;
   gap: 12px;
+  align-items: center;
 }
 
 .ownerActions button,
 .ownerActions a {
   border: none;
   background: none;
-  color: #2867e8;
+  color: #64748b;
   font-size: 13px;
   cursor: pointer;
   padding: 0;
   text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.ownerActions button:hover,
+.ownerActions a:hover {
+  color: #ef4444; /* 마우스 오버 시 빨간색으로 경고 효과 */
+  text-decoration: underline;
 }
 
 .panel h1 {
@@ -179,4 +189,88 @@
   font-size: 15px;
   font-weight: 700;
   color: #374151;
+}
+
+.profileSection {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.profileImage {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: #f3f4f6;
+  margin-right: 14px;
+  object-fit: cover;
+}
+
+.profileInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.authorName {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.authorName:hover {
+  color: #2867e8;
+}
+
+.separator {
+  color: #d1d5db;
+  font-weight: 700;
+}
+
+.postDate {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.questionTitle {
+  margin: 0 0 20px;
+  color: #111827;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.4;
+  letter-spacing: -0.5px;
+}
+
+/* 질문 상세 페이지의 미니 팔로우 버튼 */
+.followBadgeBtn {
+  background-color: #ffffff;
+  color: #2867e8;
+  border: 1px solid #2867e8;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 12px;
+  transition: all 0.2s;
+}
+
+.followBadgeBtn:hover {
+  background-color: #eff6ff;
+}
+
+.followingBadgeBtn {
+  background-color: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 12px;
+  transition: all 0.2s;
 }

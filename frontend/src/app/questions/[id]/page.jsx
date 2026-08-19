@@ -12,9 +12,11 @@ import {
   createAnswer,
   updateAnswer,
   deleteAnswer,
-  toggleLike, // 추가
+  toggleLike,
 } from "@/lib/questions";
 import { getMe } from "@/lib/auth";
+// 👇 팔로우 관련 함수 임포트 추가
+import { getPublicProfile, toggleFollowUser, getToken } from "@/lib/users";
 
 import AnswerForm from "../answers/AnswerForm";
 import AnswerList from "../answers/AnserList";
@@ -31,7 +33,10 @@ export default function QuestionDetailPage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLikeLoading, setIsLikeLoading] = useState(false); // 좋아요 로딩 상태
+  const [isLikeLoading, setIsLikeLoading] = useState(false);
+
+  // 👇 팔로우 로딩 상태 추가
+  const [isFollowing, setIsFollowing] = useState(false);
 
   const fetchAnswers = useCallback(async () => {
     try {
@@ -50,9 +55,9 @@ export default function QuestionDetailPage() {
       setErrorMessage("");
 
       const token =
-        typeof window !== "undefined"
-          ? localStorage.getItem("token") || localStorage.getItem("accessToken")
-          : null;
+          typeof window !== "undefined"
+              ? localStorage.getItem("token") || localStorage.getItem("accessToken")
+              : null;
 
       try {
         const [questionResult, answersResult, userResult] = await Promise.all([
@@ -65,6 +70,18 @@ export default function QuestionDetailPage() {
           setQuestion(questionResult);
           setAnswers(answersResult.content ?? answersResult ?? []);
           setCurrentUser(userResult);
+
+          // 💡 질문 작성자의 정보를 조회하여 내가 팔로우 중인지 확인
+          if (questionResult?.userId || questionResult?.authorId) {
+            const targetUserId = questionResult.userId || questionResult.authorId;
+            try {
+              // getPublicProfile 내부에서 자동으로 getToken()을 통해 내 토큰을 보냄
+              const prof = await getPublicProfile(targetUserId);
+              if (prof) setIsFollowing(prof.isFollowing);
+            } catch (e) {
+              console.error("프로필 조회 실패:", e);
+            }
+          }
         }
       } catch (error) {
         console.error("데이터 조회 실패:", error);
@@ -118,8 +135,8 @@ export default function QuestionDetailPage() {
 
     const nextIsLiked = !prevIsLiked;
     const nextLikeCount = nextIsLiked
-      ? prevLikeCount + 1
-      : Math.max(0, prevLikeCount - 1);
+        ? prevLikeCount + 1
+        : Math.max(0, prevLikeCount - 1);
 
     setQuestion((prev) => ({
       ...prev,
@@ -131,7 +148,6 @@ export default function QuestionDetailPage() {
       setIsLikeLoading(true);
       const res = await toggleLike(id);
 
-      // 상태 즉시 업데이트
       setQuestion((prev) => ({
         ...prev,
         isLiked: res.isLiked ?? nextIsLiked,
@@ -146,6 +162,24 @@ export default function QuestionDetailPage() {
       alert(error.message || "좋아요 처리에 실패했습니다.");
     } finally {
       setIsLikeLoading(false);
+    }
+  };
+
+  // 👇 팔로우 토글 핸들러
+  const handleFollow = async () => {
+    const token = getToken();
+    if (!token) {
+      alert("로그인이 필요합니다.");
+      router.push("/login");
+      return;
+    }
+
+    try {
+      const targetUserId = question.userId || question.authorId;
+      await toggleFollowUser(targetUserId, token);
+      setIsFollowing(!isFollowing);
+    } catch (e) {
+      alert(e.message || "팔로우 처리에 실패했습니다.");
     }
   };
 
@@ -200,117 +234,143 @@ export default function QuestionDetailPage() {
   };
 
   const isQuestionOwner =
-    currentUser &&
-    question &&
-    (currentUser.id === question.authorId ||
-      currentUser.id === question.userId ||
-      currentUser.id === question.author?.id ||
-      currentUser.name === question.authorName);
+      currentUser &&
+      question &&
+      (currentUser.id === question.authorId ||
+          currentUser.id === question.userId ||
+          currentUser.id === question.author?.id ||
+          currentUser.name === question.authorName);
 
   const isAdmin =
-    currentUser?.role === "ADMIN" || currentUser?.role === "ROLE_ADMIN";
+      currentUser?.role === "ADMIN" || currentUser?.role === "ROLE_ADMIN";
 
   const canManageQuestion = isQuestionOwner || isAdmin;
 
   return (
-    <main className={styles.page}>
-      <Link href="/questions" className={styles.backLink}>
-        ← 목록으로
-      </Link>
+      <main className={styles.page}>
+        <Link href="/questions" className={styles.backLink}>
+          ← 목록으로
+        </Link>
 
-      {loading && <p className={styles.statusText}>불러오는 중...</p>}
+        {loading && <p className={styles.statusText}>불러오는 중...</p>}
 
-      {!loading && errorMessage && (
-        <p className={styles.errorMessage}>{errorMessage}</p>
-      )}
+        {!loading && errorMessage && (
+            <p className={styles.errorMessage}>{errorMessage}</p>
+        )}
 
-      {!loading && !errorMessage && question && (
-        <>
-          <section className={styles.panel}>
-            <div className={styles.meta}>
-              <span>
-                작성자: {question.authorName || question.name || "익명"} |{" "}
-                {formatDate(question.createdAt)}
-              </span>
-
-              <span className={styles.ownerActions}>
-                {isQuestionOwner && (
-                  <Link href={`/questions/${id}/edit`}>수정</Link>
-                )}
-                {canManageQuestion && (
-                  <button type="button" onClick={handleDeleteQuestion}>
-                    삭제
-                  </button>
-                )}
-              </span>
-            </div>
-
-            <h1>{question.title}</h1>
-            <div className={styles.content}>
-              <Markdown source={question.content} />
-            </div>
-
-            {question.images?.length > 0 && (
-              <div className={styles.attachments}>
-                {question.images.map((img) => (
+        {!loading && !errorMessage && question && (
+            <>
+              <section className={styles.panel}>
+                <div className={styles.profileSection}>
                   <img
-                    key={img.attachId}
-                    src={img.url}
-                    alt="첨부 이미지"
-                    style={{
-                      maxWidth: "100%",
-                      borderRadius: 8,
-                      marginTop: 12,
-                      display: "block",
-                    }}
+                      src={question.authorProfileImageUrl || `https://ui-avatars.com/api/?name=${question.authorName || question.name || "익명"}&background=f3f4f6&color=6b7280`}
+                      alt="프로필"
+                      className={styles.profileImage}
                   />
-                ))}
-              </div>
-            )}
 
-            {/* 좋아요 버튼 섹션 */}
-            <div className={styles.likeSection}>
-              <button
-                type="button"
-                className={styles.likeButton}
-                onClick={handleToggleLike}
-                disabled={isLikeLoading}
-              >
-                <div
-                  className={`${styles.likeIcon} ${
-                    question.isLiked ? styles.likeIconActive : ""
-                  }`}
-                >
-                  {question.isLiked ? <FaHeart /> : <FaRegHeart />}
+                  <div className={styles.profileInfo}>
+
+                    <Link
+                        href={`/users/${question.userId || question.authorId}?name=${encodeURIComponent(question.authorName || question.name || "익명")}`}
+                        className={styles.authorName}
+                    >
+                      {question.authorName || question.name || "익명"}
+                    </Link>
+                    <span className={styles.separator}>·</span>
+                    <span className={styles.postDate}>
+                  {formatDate(question.createdAt)}
+                </span>
+
+                    {/* 👇 본인 글이 아닐 때만 팔로우 버튼 표시 👇 */}
+                    {!isQuestionOwner && (question.userId || question.authorId) && (
+                        <button
+                            className={isFollowing ? styles.followingBadgeBtn : styles.followBadgeBtn}
+                            onClick={handleFollow}
+                        >
+                          {isFollowing ? "✓ 팔로잉" : "+ 팔로우"}
+                        </button>
+                    )}
+                  </div>
+
+                  {/* 수정/삭제 버튼 컨테이너 */}
+                  <div className={styles.ownerActions}>
+                    {isQuestionOwner && (
+                        <Link href={`/questions/${id}/edit`}>수정</Link>
+                    )}
+                    {canManageQuestion && (
+                        <button type="button" onClick={handleDeleteQuestion}>
+                          삭제
+                        </button>
+                    )}
+                  </div>
                 </div>
-                <span className={styles.likeCount}>
+
+                <h1>{question.title}</h1>
+                <div className={styles.content}>
+                  <Markdown source={question.content} />
+                </div>
+
+                {question.images?.length > 0 && (
+                    <div className={styles.attachments}>
+                      {question.images.map((img) => (
+                          <img
+                              key={img.attachId}
+                              src={img.url}
+                              alt="첨부 이미지"
+                              style={{
+                                maxWidth: "100%",
+                                borderRadius: 8,
+                                marginTop: 12,
+                                display: "block",
+                              }}
+                          />
+                      ))}
+                    </div>
+                )}
+
+                {/* 좋아요 버튼 섹션 */}
+                <div className={styles.likeSection}>
+                  <button
+                      type="button"
+                      className={styles.likeButton}
+                      onClick={handleToggleLike}
+                      disabled={isLikeLoading}
+                  >
+                    <div
+                        className={`${styles.likeIcon} ${
+                            question.isLiked ? styles.likeIconActive : ""
+                        }`}
+                    >
+                      {question.isLiked ? <FaHeart /> : <FaRegHeart />}
+                    </div>
+                    <span className={styles.likeCount}>
                   좋아요 {question.likeCount ?? 0}
                 </span>
-              </button>
-            </div>
-          </section>
+                  </button>
+                </div>
+              </section>
 
-          <section className={styles.answers}>
-            <h2>답변 목록 ({answers.length})</h2>
+              <section className={styles.answers}>
+                <h2>답변 목록 ({answers.length})</h2>
 
-            <AnswerForm
-              onSubmit={handleCreateAnswer}
-              isSubmitting={isSubmitting}
-              currentUser={currentUser}
-            />
+                <AnswerForm
+                    onSubmit={handleCreateAnswer}
+                    isSubmitting={isSubmitting}
+                    currentUser={currentUser}
+                />
 
-            <AnswerList
-              answers={answers}
-              currentUser={currentUser}
-              onUpdate={handleUpdateAnswer}
-              onDelete={handleDeleteAnswer}
-              formatDate={formatDate}
-              onCreateAnswer={handleCreateAnswer}
-            />
-          </section>
-        </>
-      )}
-    </main>
+                <AnswerList
+                    answers={answers}
+                    currentUser={currentUser}
+                    onUpdate={handleUpdateAnswer}
+                    onDelete={handleDeleteAnswer}
+                    formatDate={formatDate}
+                    onCreateAnswer={handleCreateAnswer}
+                />
+              </section>
+            </>
+        )}
+      </main>
   );
 }
 

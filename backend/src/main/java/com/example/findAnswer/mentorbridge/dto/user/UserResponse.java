@@ -15,9 +15,20 @@ public class UserResponse {
     private String name;
     private String interests;
     private Role role;
+    private String profileImageUrl;
+    private String bio;
+    private String careers;
+    private String description;
+    private String location;
+    private String tags;
+    private long followerCount;
+    private long followingCount;
 
     @JsonProperty("blocked")
     private boolean blocked;
+
+    @JsonProperty("isFollowing")
+    private boolean isFollowing;
 
     private LocalDateTime createdAt;
 
@@ -32,6 +43,18 @@ public class UserResponse {
         response.interests = user.getInterests();
         response.blocked = user.isBlocked();
         response.createdAt = user.getCreatedAt();
+        response.profileImageUrl = user.getProfileImageUrl();
+        response.bio = user.getBio();
+        response.careers = user.getCareers();
+        response.description = user.getDescription();
+        response.location = user.getLocation();
+        response.tags = user.getTags();
         return response;
+    }
+
+    public void setFollowStats(long followerCount, long followingCount, boolean isFollowing) {
+        this.followerCount = followerCount;
+        this.followingCount = followingCount;
+        this.isFollowing = isFollowing;
     }
 }

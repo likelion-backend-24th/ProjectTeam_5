@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
+import { FaUserLarge } from "react-icons/fa6";
 import { getMentors } from "@/lib/mentors";
 import styles from "./page.module.css";
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 16;
 
 const CATEGORY_OPTIONS = [
   "전체",
@@ -113,21 +114,42 @@ function isMentorActive(mentor) {
   return true;
 }
 
+// 상담 가능 시간 판별 로직
 function isConsultationAvailable(mentor) {
   if (typeof mentor?.consultationAvailable === "boolean") {
     return mentor.consultationAvailable;
   }
-
   if (typeof mentor?.isAvailable === "boolean") {
     return mentor.isAvailable;
   }
-
   if (typeof mentor?.available === "boolean") {
     return mentor.available;
   }
 
-  const schedule = String(mentor?.schedule || "").trim();
-  return Boolean(schedule);
+  const schedule = String(mentor?.schedule || "").trim().toLowerCase();
+  if (!schedule) return false;
+
+  const now = new Date();
+  const dayIndex = now.getDay();
+  const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+  const currentDayStr = dayNames[dayIndex];
+
+  const hasWeekend = schedule.includes("토") || schedule.includes("일") || schedule.includes("주말");
+  const hasWeekday = schedule.includes("월") || schedule.includes("화") || schedule.includes("수") || schedule.includes("목") || schedule.includes("금") || schedule.includes("평일");
+
+  if ((currentDayStr === "토" || currentDayStr === "일") && !hasWeekend && hasWeekday) {
+    return false;
+  }
+  if (currentDayStr !== "토" && currentDayStr !== "일" && hasWeekend && !hasWeekday) {
+    return false;
+  }
+
+  const containsSpecificDay = ["월", "화", "수", "목", "금", "토", "일"].some(d => schedule.includes(d));
+  if (containsSpecificDay && !schedule.includes(currentDayStr)) {
+    return false;
+  }
+
+  return true;
 }
 
 function matchesStatus(mentor, status) {
@@ -165,6 +187,7 @@ function getCreatedTime(mentor) {
 
 function sortMentors(list, sort) {
   return [...list].sort((a, b) => {
+    // 1. 평점순: 평점 내림차순, 리뷰 수 내림차순
     if (sort === "rating") {
       return (
         getRating(b) - getRating(a) ||
@@ -172,10 +195,12 @@ function sortMentors(list, sort) {
       );
     }
 
+    // 2. 최신순: 최신 게시글(작성일) 기준 내림차순
     if (sort === "latest") {
       return getCreatedTime(b) - getCreatedTime(a);
     }
 
+    // 3. 추천순: 구독자수 내림차순 (같을 경우 평점/리뷰수 순)
     return (
       getSubscriberCount(b) - getSubscriberCount(a) ||
       getRating(b) - getRating(a) ||
@@ -645,22 +670,29 @@ export default function MentorListPage() {
 
                         {active && (
                           <span
-                            className={
-                              styles.onlineBadge
-                            }
-                            title="활동 중"
-                            aria-label="활동 중"
+                            className={`${styles.onlineBadge} ${
+                              !consultAvailable ? styles.orangeBadge : ""
+                            }`}
+                            title={consultAvailable ? "상담 가능" : "상담 가능 시간 아님"}
+                            aria-label={consultAvailable ? "상담 가능" : "상담 가능 시간 아님"}
                           />
                         )}
                       </div>
 
-                      <span
-                        className={
-                          styles.mentorBadge
-                        }
-                      >
-                        MENTOR
-                      </span>
+                      <div className={styles.headerBadges}>
+                        {consultAvailable && (
+                          <span className={styles.consultBadge}>
+                            상담가능
+                          </span>
+                        )}
+                        <span
+                          className={
+                            styles.mentorBadge
+                          }
+                        >
+                          MENTOR
+                        </span>
+                      </div>
                     </div>
 
                     <h2
@@ -680,6 +712,10 @@ export default function MentorListPage() {
                       {mentor.bio ||
                         "소개글이 없습니다."}
                     </p>
+
+                    <div className={styles.careerInfoText}>
+                      경력: {careerText}
+                    </div>
 
                     <div
                       className={
@@ -748,20 +784,20 @@ export default function MentorListPage() {
 
                       <div
                         className={
-                          styles.chatInfo
+                          styles.subscriberInfo
                         }
-                        title="상담/후기"
+                        title="구독자 수"
                       >
                         <span
                           className={
-                            styles.chatIcon
+                            styles.subscriberIcon
                           }
                           aria-hidden="true"
                         >
-                          ♡
+                          ♙
                         </span>
                         <span>
-                          {reviewCount}
+                          {subscriberCount} 구독
                         </span>
                       </div>
                     </div>
