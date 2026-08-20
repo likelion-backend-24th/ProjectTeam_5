@@ -30,6 +30,9 @@ public class UserResponse {
     @JsonProperty("isFollowing")
     private boolean isFollowing;
 
+    @JsonProperty("emailVerified")
+    private boolean emailVerified;
+
     private LocalDateTime createdAt;
 
     public UserResponse() {}
@@ -49,6 +52,7 @@ public class UserResponse {
         response.description = user.getDescription();
         response.location = user.getLocation();
         response.tags = user.getTags();
+        response.emailVerified = user.isEmailVerified();
         return response;
     }
 

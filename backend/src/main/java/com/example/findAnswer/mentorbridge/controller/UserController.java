@@ -27,10 +27,10 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
-    // 전체 회원 목록 조회 (공개)
+    // 전체 회원 목록 조회 (공개) — 탈퇴한 계정은 제외
     @GetMapping
     public ResponseEntity<List<UserResponse>> getUsers() {
-        List<UserResponse> responses = userService.getAllUsers();
+        List<UserResponse> responses = userService.getActiveUsers();
         return ResponseEntity.ok(responses);
     }
 
@@ -109,5 +109,23 @@ public class UserController {
             @PathVariable Long userId) {
         userService.toggleFollow(currentUserId, userId);
         return ResponseEntity.ok().build();
+    }
+
+    //이메일 인증 발송 API
+    @PostMapping("/me/email/verification-code")
+    public ResponseEntity<Void> sendVerificationCode(
+            @AuthenticationPrincipal Long userId,
+            @RequestBody EmailVerificationRequest request) {
+        userService.sendVerificationCode(userId, request);
+        return ResponseEntity.ok().build();
+    }
+
+    //이메일 인증 확인 API
+    @PostMapping("/me/email/verify")
+    public ResponseEntity<UserResponse> verifyEmailCode(
+            @AuthenticationPrincipal Long userId,
+            @RequestBody EmailVerificationSubmitRequest request) {
+        UserResponse response = userService.verifyEmailCode(userId, request);
+        return ResponseEntity.ok(response);
     }
 }

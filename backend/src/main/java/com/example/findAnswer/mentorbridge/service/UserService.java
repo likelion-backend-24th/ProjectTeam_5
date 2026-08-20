@@ -5,6 +5,7 @@ import com.example.findAnswer.mentorbridge.constants.Role;
 import com.example.findAnswer.mentorbridge.dto.oauth.OAuthAccountSnapshot;
 import com.example.findAnswer.mentorbridge.dto.oauth.UserDisconnectEvent;
 import com.example.findAnswer.mentorbridge.dto.user.*;
+import com.example.findAnswer.mentorbridge.entity.EmailVerification;
 import com.example.findAnswer.mentorbridge.entity.Follow;
 import com.example.findAnswer.mentorbridge.entity.User;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
@@ -27,11 +28,12 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
-    private final MentorApplicationRepository mentorApplicationRepository;
     private final RefreshTokenService refreshTokenService;
     private final OAuthAccountRepository oAuthAccountRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final FollowRepository followRepository;
+    private final EmailVerificationRepository emailVerificationRepository;
+    private final EmailService emailService;
 
     // 회원가입
     @Transactional
@@ -55,6 +57,11 @@ public class UserService {
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new CustomException(ErrorCode.AUTH_INVALID_CREDENTIALS);
+        }
+
+        // 탈퇴(소프트 삭제)한 계정 체크
+        if (user.isDeleted()) {
+            throw new CustomException(ErrorCode.USER_DELETED);
         }
 
         // 차단된 유저 체크
@@ -101,20 +108,22 @@ public class UserService {
         return UserResponse.from(user);
     }
 
-    // 회원 탈퇴 / 회원 강제 삭제
+    // 회원 탈퇴(본인) / 회원 강제 탈퇴(관리자) 공용 — 소프트 삭제.
+    // DB 행을 실제로 지우지 않으므로 질문/답변/구독 등 FK로 물려있는 데이터를 정리할 필요가 없고, FK 위반도 나지 않는다.
     @Transactional
     public void deleteUser(Long userId) {
         User user = getUserById(userId);
+        if (user.isDeleted()) {
+            return; // 이미 탈퇴한 계정 — 중복 호출 방지
+        }
 
         List<OAuthAccountSnapshot> oAuthAccounts = oAuthAccountRepository.findAllByUserId(userId)
                 .stream()
                 .map(account -> new OAuthAccountSnapshot(account.getProvider().toString(), account.getProviderUserId()))
                 .toList();
 
-        mentorApplicationRepository.deleteByUserId(userId);
-        refreshTokenRepository.deleteByUserId(userId);
-        oAuthAccountRepository.deleteByUserId(userId);
-        userRepository.delete(user);
+        user.softDelete();
+        refreshTokenRepository.deleteByUserId(userId); // 기존 토큰 즉시 무효화 (차단 처리와 동일한 패턴)
 
         applicationEventPublisher.publishEvent(new UserDisconnectEvent(userId, oAuthAccounts));
     }
@@ -158,9 +167,16 @@ public class UserService {
         return response;
     }
 
-    // [관리자] 전체 회원 목록 조회
+    // [관리자] 전체 회원 목록 조회 (탈퇴한 계정 포함)
     public List<UserResponse> getAllUsers() {
         return userRepository.findAll().stream()
+                .map(UserResponse::from)
+                .toList();
+    }
+
+    // 전체 회원 목록 조회 (공개) — 탈퇴한 계정은 제외
+    public List<UserResponse> getActiveUsers() {
+        return userRepository.findAllByDeletedAtIsNull().stream()
                 .map(UserResponse::from)
                 .toList();
     }
@@ -217,4 +233,38 @@ public class UserService {
                         () -> followRepository.save(new Follow(follower, followee))
                 );
     }
+
+    //인증 이메일 발송
+    @Transactional
+    public void sendVerificationCode(Long userId, EmailVerificationRequest request) {
+        String email = request.email();
+        String code = String.format("%06d", new java.util.Random().nextInt(1000000));
+        java.time.LocalDateTime expiresAt = java.time.LocalDateTime.now().plusMinutes(5);
+
+        emailVerificationRepository.deleteByUserId(userId);
+        emailVerificationRepository.save(new EmailVerification(userId, email, code, expiresAt));
+        emailService.sendVerificationEmail(email, code); // 실제 메일 발송!
+    }
+
+    //인증번호 확인
+    @Transactional
+    public UserResponse verifyEmailCode(Long userId, EmailVerificationSubmitRequest request) {
+        EmailVerification verification = emailVerificationRepository.findByUserIdAndEmail(userId, request.email())
+                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_REQUEST));
+
+        if (verification.getExpiresAt().isBefore(java.time.LocalDateTime.now())) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+        if (!verification.getCode().equals(request.code())) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+
+        User user = getUserById(userId);
+        user.updateEmail(request.email());
+        user.verifyEmail();
+
+        emailVerificationRepository.delete(verification);
+        return UserResponse.from(user);
+    }
+
 }
