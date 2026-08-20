@@ -328,6 +328,31 @@ export default function QuestionDetailPage() {
                     </div>
                 )}
 
+                {question.files?.length > 0 && (
+                    <ul style={{ listStyle: "none", padding: 0, marginTop: 12, display: "grid", gap: 6 }}>
+                      {question.files.map((file) => (
+                          <li key={file.attachId}>
+                            <a
+                                href={`${process.env.NEXT_PUBLIC_API_URL}${file.downloadUrl}`}
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 6,
+                                  padding: "8px 12px",
+                                  border: "1px solid #e5e7eb",
+                                  borderRadius: 8,
+                                  fontSize: 14,
+                                  textDecoration: "none",
+                                  color: "#374151",
+                                }}
+                            >
+                              📎 {file.originalFileName} ({(file.size / 1024 / 1024).toFixed(2)}MB)
+                            </a>
+                          </li>
+                      ))}
+                    </ul>
+                )}
+
                 {/* 좋아요 버튼 섹션 */}
                 <div className={styles.likeSection}>
                   <button

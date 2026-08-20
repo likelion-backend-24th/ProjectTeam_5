@@ -48,6 +48,10 @@ public class User extends BaseTimeEntity {
     @Column(name = "profile_image_url")
     private String profileImageUrl;
 
+    // 카드 등록 시 받아서 저장 — 서버가 직접 트리거하는 결제(구독/정기결제)에 구매자 정보로 필요(이니시스 V2 필수값)
+    @Column(name = "phone_number", length = 20)
+    private String phoneNumber;
+
     // 멘토 프로필과 1:1 관계 설정 (정규화 유지)
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private MentorProfile mentorProfile;
@@ -63,6 +67,10 @@ public class User extends BaseTimeEntity {
     // 프로필 이미지 업데이트
     public void updateProfileImage(String profileImageUrl) {
         this.profileImageUrl = profileImageUrl;
+    }
+
+    public void updatePhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 
     public void updatePassword(String encodedPassword) {

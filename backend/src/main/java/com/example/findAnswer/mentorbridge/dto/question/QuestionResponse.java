@@ -1,6 +1,7 @@
 package com.example.findAnswer.mentorbridge.dto.question;
 
 import com.example.findAnswer.mentorbridge.dto.answer.AnswerResponse;
+import com.example.findAnswer.mentorbridge.dto.questionAttachedFile.FileResponse;
 import com.example.findAnswer.mentorbridge.entity.Question;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
@@ -28,11 +29,12 @@ public class QuestionResponse {
     @JsonProperty("isLiked")
     private boolean isLiked;
     private List<ImageResponse> images;
+    private List<FileResponse> files; // 이미지가 아닌 일반 첨부파일(PDF/ZIP) 목록
 //    private List<String> imageUrls;   // 첨부 이미지 CDN URL 목록 (없으면 빈 리스트)
 
 
     // 이미지 URL은 storageKey로부터 서비스에서 생성해 넘겨준다.
-    public static QuestionResponse from(Question question, List<ImageResponse> images, boolean isLiked) {
+    public static QuestionResponse from(Question question, List<ImageResponse> images, List<FileResponse> files, boolean isLiked) {
         QuestionResponse response = new QuestionResponse();
         response.id = question.getId();
         response.userId = question.getUser().getId();
@@ -49,10 +51,11 @@ public class QuestionResponse {
         response.likeCount = question.getLikeCount();
         response.isLiked = isLiked;
         response.images = (images == null) ? List.of() : images;
+        response.files = (files == null) ? List.of() : files;
         return response;
     }
 
     public static QuestionResponse from(Question question) {
-        return from(question, List.of(), false);
+        return from(question, List.of(), List.of(), false);
     }
 }

@@ -3,12 +3,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { requestPayment } from "@portone/browser-sdk/v2";
 import { useAuth } from "@/app/contexts/AuthContext";
 import styles from "./page.module.css";
-import { uploadImage, validateImage } from "@/lib/attachments";
+import { uploadImage, validateImage, uploadFile, validateFile } from "@/lib/attachments";
 import { getMentorPlans } from "@/lib/mentorPlans";
-import { prepareSubscription, completePayment } from "@/lib/subscriptions";
+import { subscribeToMentor } from "@/lib/subscriptions";
 import { getOrCreateChatRoom } from "@/lib/chat";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -88,8 +87,6 @@ export default function MentorProfilePage() {
 
   // 구독 유도 모달 상태 추가
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
-  const [subscribePhone, setSubscribePhone] = useState("");
-  const [subscribePhoneError, setSubscribePhoneError] = useState("");
 
   const [isEditing, setIsEditing] = useState(false);
   const [profileSnapshot, setProfileSnapshot] = useState(null);
@@ -113,6 +110,7 @@ export default function MentorProfilePage() {
   });
 
   const [files, setFiles] = useState([]);
+  const [docFiles, setDocFiles] = useState([]); // 게시글 첨부 문서(PDF/ZIP)
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -171,6 +169,22 @@ export default function MentorProfilePage() {
 
   const removeFile = (index) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleDocFileChange = (event) => {
+    const selected = Array.from(event.target.files || []);
+    event.target.value = "";
+    try {
+      selected.forEach(validateFile);
+      setDocFiles((prev) => [...prev, ...selected]);
+      setErrorMessage("");
+    } catch (err) {
+      setErrorMessage(err.message);
+    }
+  };
+
+  const removeDocFile = (index) => {
+    setDocFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const fetchArticles = async () => {
@@ -278,8 +292,8 @@ export default function MentorProfilePage() {
     setSelectedPlanIndex((i) => (plans.length === 0 ? 0 : (i + 1) % plans.length));
   };
 
-  // 구독하기: 결제 준비(prepare) → PortOne 결제창 → 서버 검증(complete) 3단계.
-  // 프론트 결제 결과는 신호일 뿐이고, complete가 성공해야만 구독이 ACTIVE로 반영된다.
+  // 구독하기: 등록된 카드(빌링키)로 서버가 즉시 청구하고 결과까지 한 번에 받는다 — 결제창 팝업 없음.
+  // 등록된 카드가 없으면 서버가 PAYMENT_METHOD_REQUIRED로 거절 → 카드 등록 화면으로 보낸다.
   const handleSubscribe = async () => {
     if (!isLoggedIn) {
       alert("로그인이 필요한 서비스입니다.");
@@ -291,41 +305,9 @@ export default function MentorProfilePage() {
     }
     if (subscribing) return;
 
-    // 이니시스 V2는 구매자 이름/휴대폰번호/이메일이 필수인데 우리 회원 정보엔 휴대폰번호가 없어서 모달에서 직접 받는다.
-    if (!/^01[0-9]{8,9}$/.test(subscribePhone.trim())) {
-      setSubscribePhoneError("올바른 휴대폰 번호를 입력해주세요. (예: 01012345678)");
-      setShowSubscribeModal(true);
-      return;
-    }
-    setSubscribePhoneError("");
-
     setSubscribing(true);
     try {
-      const prepareRes = await prepareSubscription(mentorId, selectedPlan.id);
-
-      const paymentResult = await requestPayment({
-        storeId: prepareRes.storeId,
-        channelKey: prepareRes.channelKey,
-        paymentId: prepareRes.paymentId,
-        orderName: prepareRes.orderName,
-        totalAmount: prepareRes.totalAmount,
-        currency: prepareRes.currency,
-        payMethod: "CARD",
-        // 이니시스 V2 일반결제는 구매자 이름/휴대폰번호/이메일이 필수라 안 넣으면 결제창 자체가 안 열린다.
-        customer: {
-          fullName: authUser?.name,
-          phoneNumber: subscribePhone.trim(),
-          email: authUser?.email,
-        },
-      });
-
-      if (paymentResult?.code) {
-        // 사용자가 결제창을 닫았거나 PG 승인이 거부된 경우 — 서버 상태는 그대로 READY/PENDING으로 남는다.
-        alert(paymentResult.message || "결제가 취소되었습니다.");
-        return;
-      }
-
-      const completeRes = await completePayment(paymentResult.paymentId);
+      const completeRes = await subscribeToMentor(mentorId, selectedPlan.id);
 
       if (completeRes.subscriptionStatus === "ACTIVE") {
         setIsSubscribed(true);
@@ -340,13 +322,18 @@ export default function MentorProfilePage() {
         }));
 
         setShowSubscribeModal(false);
-        setSubscribePhone("");
         alert("멘토 구독이 완료되었습니다!");
       } else {
         alert("결제 검증에 실패했습니다. 잠시 후 다시 시도해주세요.");
       }
     } catch (e) {
       console.error(e);
+      if (e.data?.errorCode === "PAYMENT_METHOD_REQUIRED") {
+        if (confirm("구독하려면 결제수단(카드)을 먼저 등록해야 합니다. 지금 등록하시겠어요?")) {
+          router.push(`/profile/payment-methods/new?redirect=${encodeURIComponent(window.location.pathname)}`);
+        }
+        return;
+      }
       alert(e.message || "구독 결제 중 오류가 발생했습니다.");
     } finally {
       setSubscribing(false);
@@ -498,7 +485,8 @@ export default function MentorProfilePage() {
     try {
       const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
       const uploaded = files.length > 0 ? await Promise.all(files.map((f) => uploadImage(f))) : [];
-      const attachmentIds = uploaded.map((u) => u.attachId);
+      const uploadedDocs = docFiles.length > 0 ? await Promise.all(docFiles.map((f) => uploadFile(f))) : [];
+      const attachmentIds = [...uploaded, ...uploadedDocs].map((u) => u.attachId);
 
       const res = await fetch(`${BACKEND_URL}/api/v1/mentors/${mentorId}/posts`, {
         method: "POST",
@@ -520,6 +508,7 @@ export default function MentorProfilePage() {
         }
         setPostForm({ title: "", content: "", category: "일반", isPublic: true });
         setFiles([]);
+        setDocFiles([]);
         setIsWritingPost(false);
       } else {
         const err = await res.json().catch(() => ({}));
@@ -663,7 +652,7 @@ export default function MentorProfilePage() {
             <>
               {isOwner && (
                 <div className={styles.writePostBar}>
-                  <button className={styles.editBtn} onClick={() => { setPostForm({ title: "", content: "", category: "일반", isPublic: true }); setFiles([]); setIsWritingPost(!isWritingPost); }}>
+                  <button className={styles.editBtn} onClick={() => { setPostForm({ title: "", content: "", category: "일반", isPublic: true }); setFiles([]); setDocFiles([]); setIsWritingPost(!isWritingPost); }}>
                     {isWritingPost ? "작성 취소" : "✏️ 새 게시글 작성"}
                   </button>
                 </div>
@@ -717,6 +706,21 @@ export default function MentorProfilePage() {
                           <li key={index} className={styles.filePreview}>
                             <img src={URL.createObjectURL(file)} alt={file.name} />
                             <button type="button" onClick={() => removeFile(index)}>×</button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.fileLabel}>문서 첨부 <span>PDF, ZIP, 최대 50MB</span></label>
+                    <input id="docs" type="file" accept=".pdf,.zip,application/pdf,application/zip" multiple onChange={handleDocFileChange} disabled={submitting} />
+                    {docFiles.length > 0 && (
+                      <ul style={{ listStyle: "none", padding: 0, marginTop: 8, display: "grid", gap: 6 }}>
+                        {docFiles.map((file, index) => (
+                          <li key={index} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", border: "1px solid #e5e7eb", borderRadius: 6, padding: "6px 10px", fontSize: 13 }}>
+                            <span>📎 {file.name} ({(file.size / 1024 / 1024).toFixed(2)}MB)</span>
+                            <button type="button" onClick={() => removeDocFile(index)}>×</button>
                           </li>
                         ))}
                       </ul>
@@ -1032,36 +1036,9 @@ export default function MentorProfilePage() {
               <strong>월 {currentPrice}원</strong>
             </div>
 
-            <div style={{ textAlign: "left", marginTop: 12 }}>
-              <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 4 }}>
-                휴대폰 번호 <span style={{ color: "#ef4444" }}>*</span>
-              </label>
-              <input
-                type="tel"
-                inputMode="numeric"
-                value={subscribePhone}
-                onChange={(e) => {
-                  setSubscribePhone(e.target.value.replace(/\D/g, ""));
-                  setSubscribePhoneError("");
-                }}
-                placeholder="01012345678"
-                maxLength={11}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: 8,
-                  border: subscribePhoneError ? "1px solid #ef4444" : "1px solid #d1d5db",
-                  fontSize: 14,
-                  boxSizing: "border-box",
-                }}
-              />
-              <p style={{ fontSize: 12, color: "#6b7280", margin: "4px 0 0" }}>
-                결제창(PortOne)에 전달되는 용도로만 사용돼요.
-              </p>
-              {subscribePhoneError && (
-                <p style={{ fontSize: 12, color: "#ef4444", margin: "4px 0 0" }}>{subscribePhoneError}</p>
-              )}
-            </div>
+            <p style={{ fontSize: 12, color: "#6b7280", margin: "12px 0 0" }}>
+              등록된 카드로 바로 결제됩니다. 카드가 없으면 등록 화면으로 안내해드려요.
+            </p>
 
             <div className={styles.modalActionBtns}>
               <button className={styles.modalSubBtn} onClick={handleSubscribe} disabled={!selectedPlan || subscribing}>
@@ -1069,10 +1046,7 @@ export default function MentorProfilePage() {
               </button>
               <button
                 className={styles.modalCloseBtn}
-                onClick={() => {
-                  setShowSubscribeModal(false);
-                  setSubscribePhoneError("");
-                }}
+                onClick={() => setShowSubscribeModal(false)}
               >
                 닫기
               </button>

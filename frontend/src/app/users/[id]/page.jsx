@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/app/contexts/AuthContext";
 // 👇 getAnsweredQuestionsByUser, toggleFollowUser 함수 임포트
 import { getQuestionsByUser, getPublicProfile, updatePublicProfileData, updateProfileImageUrl, getToken, getAnsweredQuestionsByUser, toggleFollowUser } from "@/lib/users";
-import { uploadProfileImage } from "@/lib/attachments";
+import { uploadProfileImage, validateImage } from "@/lib/attachments";
 import styles from "./page.module.css";
 
 export default function PublicProfilePage() {
@@ -89,7 +89,16 @@ export default function PublicProfilePage() {
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
+        e.target.value = ""; // 같은 파일을 다시 선택해도 onChange가 발생하도록
         if (!file) return;
+
+        try {
+            validateImage(file);
+        } catch (err) {
+            alert(err.message);
+            return;
+        }
+
         setNewImageFile(file);
         setImagePreview(URL.createObjectURL(file));
     };
@@ -149,7 +158,7 @@ export default function PublicProfilePage() {
                                 <span>📷 변경</span>
                             </div>
                         )}
-                        <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="image/*" hidden />
+                        <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="image/png,image/jpeg,image/gif,image/webp" hidden />
                     </div>
 
                     <div className={styles.info}>

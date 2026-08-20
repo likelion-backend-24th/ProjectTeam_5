@@ -1,5 +1,6 @@
 package com.example.findAnswer.mentorbridge.repository;
 
+import com.example.findAnswer.mentorbridge.entity.MentorPost;
 import com.example.findAnswer.mentorbridge.entity.Question;
 import com.example.findAnswer.mentorbridge.entity.QuestionAttachmentFile;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,4 +11,7 @@ public interface QuestionAttachmentFileRepository extends JpaRepository<Question
 
     // 특정 질문에 연결된 첨부 전체 (삭제/조회용)
     List<QuestionAttachmentFile> findByQuestion(Question question);
+
+    // 특정 멘토 게시글에 연결된 첨부 전체 (삭제/조회용)
+    List<QuestionAttachmentFile> findByMentorPost(MentorPost mentorPost);
 }

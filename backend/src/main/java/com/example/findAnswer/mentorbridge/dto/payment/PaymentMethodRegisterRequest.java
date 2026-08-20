@@ -11,6 +11,9 @@ public record PaymentMethodRegisterRequest(
         String issueId,
         // PortOne requestIssueBillingKey() 응답으로 프론트가 받은 실제 빌링키. 서버가 이 값을 PortOne에 재조회해 검증한다.
         @NotBlank(message = "billingKey는 필수입니다.")
-        String billingKey
+        String billingKey,
+        // 서버가 나중에 이 카드로 직접 결제(구독/정기결제)를 트리거할 때 구매자 정보로 필요해서 같이 저장해둔다.
+        @NotBlank(message = "휴대폰 번호는 필수입니다.")
+        String phoneNumber
 ) {
 }
