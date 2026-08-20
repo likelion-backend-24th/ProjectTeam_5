@@ -43,6 +43,7 @@ coverage/
 # 4. Environment & Logs (보안 및 로그)
 ########################################
 .env
+.env.dev
 .env.*.local
 *.log
 
