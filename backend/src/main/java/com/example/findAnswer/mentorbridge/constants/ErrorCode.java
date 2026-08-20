@@ -36,7 +36,6 @@ public enum ErrorCode {
         this.status = status;
         this.message = message;
     }
-
     public HttpStatus getStatus() { return status; }
     public String getMessage() { return message; }
 }
