@@ -1,11 +1,15 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { requestPayment } from "@portone/browser-sdk/v2";
 import { useAuth } from "@/app/contexts/AuthContext";
 import styles from "./page.module.css";
 import { uploadImage, validateImage } from "@/lib/attachments";
+import { getMentorPlans } from "@/lib/mentorPlans";
+import { prepareSubscription, completePayment } from "@/lib/subscriptions";
+import { getOrCreateChatRoom } from "@/lib/chat";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 const MAX_BIO_LENGTH = 500;
@@ -55,10 +59,13 @@ const stringifyScheduleMap = (scheduleMap) => {
 
 export default function MentorProfilePage() {
   const params = useParams();
+  const router = useRouter();
   const mentorId = params?.mentorId || params?.id;
 
   const { user: authUser, isLoggedIn } = useAuth();
   const currentUserId = authUser?.id || authUser?.userId;
+
+  const [requestingConsult, setRequestingConsult] = useState(false);
 
   const [mentorInfo, setMentorInfo] = useState(null);
   const [articles, setArticles] = useState([]);
@@ -74,8 +81,15 @@ export default function MentorProfilePage() {
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [currentPeriodEnd, setCurrentPeriodEnd] = useState(null);
 
+  // 구독 요금제 캐러셀 + 결제 진행 상태
+  const [plans, setPlans] = useState([]);
+  const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
+  const [subscribing, setSubscribing] = useState(false);
+
   // 구독 유도 모달 상태 추가
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
+  const [subscribePhone, setSubscribePhone] = useState("");
+  const [subscribePhoneError, setSubscribePhoneError] = useState("");
 
   const [isEditing, setIsEditing] = useState(false);
   const [profileSnapshot, setProfileSnapshot] = useState(null);
@@ -88,7 +102,6 @@ export default function MentorProfilePage() {
     tags: "",
     education: "",
     schedule: "",
-    subscriptionPrice: 9900,
   });
 
   const [isWritingPost, setIsWritingPost] = useState(false);
@@ -196,7 +209,6 @@ export default function MentorProfilePage() {
             tags: profileData.tags || "",
             education: profileData.education || "",
             schedule: profileData.schedule || "월(10:00 - 17:00), 수(10:00 - 17:00), 금(10:00 - 17:00)",
-            subscriptionPrice: profileData.subscriptionPrice || 9900,
           });
           setIsOwner(Boolean(isLoggedIn && currentUserId && profileData.mentorId && String(profileData.mentorId) === String(currentUserId)));
         }
@@ -205,6 +217,14 @@ export default function MentorProfilePage() {
         if (articlesRes.ok) {
           const articlesData = await articlesRes.json();
           setArticles(articlesData);
+        }
+
+        try {
+          const planData = await getMentorPlans(mentorId);
+          setPlans(Array.isArray(planData) ? planData : []);
+          setSelectedPlanIndex(0);
+        } catch (planErr) {
+          console.error("요금제 목록 조회 실패:", planErr);
         }
 
         if (isLoggedIn && currentUserId) {
@@ -248,45 +268,88 @@ export default function MentorProfilePage() {
     fetchData();
   }, [mentorId, isLoggedIn, authUser, currentUserId]);
 
+  const selectedPlan = plans[selectedPlanIndex] || null;
+
+  const showPrevPlan = () => {
+    setSelectedPlanIndex((i) => (plans.length === 0 ? 0 : (i - 1 + plans.length) % plans.length));
+  };
+
+  const showNextPlan = () => {
+    setSelectedPlanIndex((i) => (plans.length === 0 ? 0 : (i + 1) % plans.length));
+  };
+
+  // 구독하기: 결제 준비(prepare) → PortOne 결제창 → 서버 검증(complete) 3단계.
+  // 프론트 결제 결과는 신호일 뿐이고, complete가 성공해야만 구독이 ACTIVE로 반영된다.
   const handleSubscribe = async () => {
     if (!isLoggedIn) {
       alert("로그인이 필요한 서비스입니다.");
       return;
     }
+    if (!selectedPlan) {
+      alert("구독할 요금제를 선택해주세요.");
+      return;
+    }
+    if (subscribing) return;
+
+    // 이니시스 V2는 구매자 이름/휴대폰번호/이메일이 필수인데 우리 회원 정보엔 휴대폰번호가 없어서 모달에서 직접 받는다.
+    if (!/^01[0-9]{8,9}$/.test(subscribePhone.trim())) {
+      setSubscribePhoneError("올바른 휴대폰 번호를 입력해주세요. (예: 01012345678)");
+      setShowSubscribeModal(true);
+      return;
+    }
+    setSubscribePhoneError("");
+
+    setSubscribing(true);
     try {
-      const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
-      const res = await fetch(`${BACKEND_URL}/api/v1/subscriptions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-USER-ID": String(currentUserId),
-          ...(token && { Authorization: `Bearer ${token}` }),
+      const prepareRes = await prepareSubscription(mentorId, selectedPlan.id);
+
+      const paymentResult = await requestPayment({
+        storeId: prepareRes.storeId,
+        channelKey: prepareRes.channelKey,
+        paymentId: prepareRes.paymentId,
+        orderName: prepareRes.orderName,
+        totalAmount: prepareRes.totalAmount,
+        currency: prepareRes.currency,
+        payMethod: "CARD",
+        // 이니시스 V2 일반결제는 구매자 이름/휴대폰번호/이메일이 필수라 안 넣으면 결제창 자체가 안 열린다.
+        customer: {
+          fullName: authUser?.name,
+          phoneNumber: subscribePhone.trim(),
+          email: authUser?.email,
         },
-        body: JSON.stringify({ mentorId: Number(mentorId) }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
+      if (paymentResult?.code) {
+        // 사용자가 결제창을 닫았거나 PG 승인이 거부된 경우 — 서버 상태는 그대로 READY/PENDING으로 남는다.
+        alert(paymentResult.message || "결제가 취소되었습니다.");
+        return;
+      }
+
+      const completeRes = await completePayment(paymentResult.paymentId);
+
+      if (completeRes.subscriptionStatus === "ACTIVE") {
         setIsSubscribed(true);
-        setSubscriptionId(data.subscriptionId);
-        setSubscriptionStatus('ACTIVE');
-        setCurrentPeriodEnd(data.currentPeriodEnd || data.current_period_end);
-        
+        setSubscriptionId(completeRes.subscriptionId);
+        setSubscriptionStatus("ACTIVE");
+        setCurrentPeriodEnd(completeRes.currentPeriodEnd);
+
         // 구독 성공 시 구독자 수 +1 실시간 반영
-        setMentorInfo(prev => ({
+        setMentorInfo((prev) => ({
           ...prev,
-          subscriberCount: (prev.subscriberCount || 0) + 1
+          subscriberCount: (prev.subscriberCount || 0) + 1,
         }));
 
         setShowSubscribeModal(false);
+        setSubscribePhone("");
         alert("멘토 구독이 완료되었습니다!");
       } else {
-        const err = await res.json().catch(() => ({}));
-        alert(err.message || "구독에 실패했습니다.");
+        alert("결제 검증에 실패했습니다. 잠시 후 다시 시도해주세요.");
       }
     } catch (e) {
       console.error(e);
-      alert("서버 오류가 발생했습니다.");
+      alert(e.message || "구독 결제 중 오류가 발생했습니다.");
+    } finally {
+      setSubscribing(false);
     }
   };
 
@@ -327,12 +390,32 @@ export default function MentorProfilePage() {
     }
   };
 
+  const handleConsultRequest = async () => {
+    if (!isLoggedIn) {
+      alert("로그인이 필요한 서비스입니다.");
+      router.push("/login");
+      return;
+    }
+
+    if (!isAccessValid) {
+      setShowSubscribeModal(true);
+      return;
+    }
+
+    try {
+      setRequestingConsult(true);
+      const room = await getOrCreateChatRoom(mentorId);
+      router.push(`/chat/${room.chatRoomId}`);
+    } catch (err) {
+      alert(err.message || "채팅방을 시작하지 못했습니다.");
+    } finally {
+      setRequestingConsult(false);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setEditForm((prev) => ({
-      ...prev,
-      [name]: name === "subscriptionPrice" ? (value === "" ? "" : Number(value)) : value,
-    }));
+    setEditForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handlePostInputChange = (e) => {
@@ -341,7 +424,6 @@ export default function MentorProfilePage() {
   };
 
   const handleSaveProfile = async () => {
-    const price = Number(editForm.subscriptionPrice);
     if (!editForm.bio.trim()) {
       alert("소개글을 입력해주세요.");
       return;
@@ -359,7 +441,6 @@ export default function MentorProfilePage() {
       tags: editForm.tags.split(",").map((tag) => tag.trim()).filter(Boolean).join(", "),
       education: editForm.education.trim(),
       schedule: editForm.schedule.trim(),
-      subscriptionPrice: price,
     };
 
     try {
@@ -457,9 +538,9 @@ export default function MentorProfilePage() {
 
   const tagsArray = mentorInfo.tags ? mentorInfo.tags.split(",").map((t) => t.trim()).filter(Boolean) : [];
   const isAccessValid = isSubscribed || (subscriptionStatus === 'CANCEL_RESERVED' && (!currentPeriodEnd || new Date(currentPeriodEnd) > new Date()));
-  const currentPrice = mentorInfo.subscriptionPrice ? Number(mentorInfo.subscriptionPrice).toLocaleString() : "9,900";
-  const isAvailableNow = checkIsAvailable(mentorInfo.schedule);
-  const statusColor = isAvailableNow ? "#22c55e" : "#f97316";
+  const currentPrice = selectedPlan ? Number(selectedPlan.price).toLocaleString() : "-";
+ const isAvailableNow = checkIsAvailable(mentorInfo.schedule);
+  const statusColor = isAvailableNow ? "#22c55e" : "#94a3b8";
 
   const filteredArticles = [...articles]
     .filter((article) => {
@@ -558,9 +639,11 @@ export default function MentorProfilePage() {
                     )}
                   </div>
                 ) : (
-                  <button className={styles.subBtn} onClick={handleSubscribe}>구독하기</button>
+                  <button className={styles.subBtn} onClick={() => setShowSubscribeModal(true)}>구독하기</button>
                 )}
-                <button className={styles.consultBtn}>상담 신청</button>
+                <button className={styles.consultBtn} onClick={handleConsultRequest} disabled={requestingConsult}>
+                  {requestingConsult ? "연결 중..." : "상담 신청"}
+                </button>
               </>
             )}
           </div>
@@ -737,15 +820,72 @@ export default function MentorProfilePage() {
             <div className={styles.sidebarCard}>
               <div className={styles.sidebarTitleRow}>
                 <h3>구독 혜택</h3>
-                <span className={styles.sidebarPrice}>월 {currentPrice}원</span>
+                {selectedPlan && <span className={styles.sidebarPrice}>월 {currentPrice}원</span>}
               </div>
+
+              {plans.length === 0 ? (
+                <p style={{ fontSize: 12, color: "#7b8799", margin: "0 0 15px" }}>
+                  아직 등록된 요금제가 없습니다.
+                </p>
+              ) : (
+                <>
+                  <div className={styles.planSwitcher}>
+                    <button
+                      type="button"
+                      className={styles.planArrow}
+                      onClick={showPrevPlan}
+                      disabled={plans.length <= 1}
+                      aria-label="이전 요금제"
+                    >
+                      ‹
+                    </button>
+                    <div className={styles.planCard}>
+                      <strong className={styles.planName}>{selectedPlan.planName}</strong>
+                      <p className={styles.planDescription}>
+                        {selectedPlan.description || "설명이 등록되지 않았습니다."}
+                      </p>
+                      <span className={styles.planCycle}>{selectedPlan.billingCycle}개월마다 결제</span>
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.planArrow}
+                      onClick={showNextPlan}
+                      disabled={plans.length <= 1}
+                      aria-label="다음 요금제"
+                    >
+                      ›
+                    </button>
+                  </div>
+
+                  {plans.length > 1 && (
+                    <div className={styles.planDots}>
+                      {plans.map((p, i) => (
+                        <button
+                          type="button"
+                          key={p.id}
+                          className={`${styles.planDot} ${i === selectedPlanIndex ? styles.planDotActive : ""}`}
+                          onClick={() => setSelectedPlanIndex(i)}
+                          aria-label={`${p.planName} 선택`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+
               <ul className={styles.benefitList}>
                 <li><span>✓</span><div><strong>전체 피드 열람</strong><small>모든 게시글 무제한 열람</small></div></li>
                 <li><span>✓</span><div><strong>구독자 전용 콘텐츠</strong><small>실무 노하우와 심층 인사이트</small></div></li>
                 <li><span>✓</span><div><strong>자료 다운로드</strong><small>템플릿, 체크리스트, 가이드 제공</small></div></li>
                 <li><span>✓</span><div><strong>댓글 참여 및 질문</strong><small>멘토에게 직접 질문하고 답변 받기</small></div></li>
               </ul>
-              <button className={styles.sidebarSubscribeBtn} onClick={handleSubscribe}>구독하고 전체 보기</button>
+              <button
+                className={styles.sidebarSubscribeBtn}
+                onClick={() => setShowSubscribeModal(true)}
+                disabled={!selectedPlan || subscribing}
+              >
+                {subscribing ? "결제 진행 중..." : "구독하고 전체 보기"}
+              </button>
             </div>
           )}
 
@@ -770,8 +910,17 @@ export default function MentorProfilePage() {
               </li>
               {isEditing && (
                 <li>
-                  <strong>구독 월 이용료</strong>
-                  <input type="number" name="subscriptionPrice" value={editForm.subscriptionPrice} onChange={handleInputChange} className={styles.editInput} step="1000" min="0" />
+                  <strong>구독 요금제</strong>
+                  {plans.length === 0 ? (
+                    <span style={{ fontSize: 11, color: "#7b8799" }}>등록된 요금제가 없습니다.</span>
+                  ) : (
+                    <span style={{ fontSize: 11, color: "#526074" }}>
+                      {plans.map((p) => `${p.planName} 월 ${Number(p.price).toLocaleString()}원`).join(", ")}
+                    </span>
+                  )}
+                  <a href="/profile" style={{ display: "block", marginTop: 4, fontSize: 10, color: "#1261f5" }}>
+                    요금제 등록·수정은 내 프로필 &gt; 구독 플랜 관리에서 →
+                  </a>
                 </li>
               )}
             </ul>
@@ -883,11 +1032,48 @@ export default function MentorProfilePage() {
               <strong>월 {currentPrice}원</strong>
             </div>
 
+            <div style={{ textAlign: "left", marginTop: 12 }}>
+              <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 4 }}>
+                휴대폰 번호 <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <input
+                type="tel"
+                inputMode="numeric"
+                value={subscribePhone}
+                onChange={(e) => {
+                  setSubscribePhone(e.target.value.replace(/\D/g, ""));
+                  setSubscribePhoneError("");
+                }}
+                placeholder="01012345678"
+                maxLength={11}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  border: subscribePhoneError ? "1px solid #ef4444" : "1px solid #d1d5db",
+                  fontSize: 14,
+                  boxSizing: "border-box",
+                }}
+              />
+              <p style={{ fontSize: 12, color: "#6b7280", margin: "4px 0 0" }}>
+                결제창(PortOne)에 전달되는 용도로만 사용돼요.
+              </p>
+              {subscribePhoneError && (
+                <p style={{ fontSize: 12, color: "#ef4444", margin: "4px 0 0" }}>{subscribePhoneError}</p>
+              )}
+            </div>
+
             <div className={styles.modalActionBtns}>
-              <button className={styles.modalSubBtn} onClick={handleSubscribe}>
-                월 {currentPrice}원으로 구독하기
+              <button className={styles.modalSubBtn} onClick={handleSubscribe} disabled={!selectedPlan || subscribing}>
+                {subscribing ? "결제 진행 중..." : `월 ${currentPrice}원으로 구독하기`}
               </button>
-              <button className={styles.modalCloseBtn} onClick={() => setShowSubscribeModal(false)}>
+              <button
+                className={styles.modalCloseBtn}
+                onClick={() => {
+                  setShowSubscribeModal(false);
+                  setSubscribePhoneError("");
+                }}
+              >
                 닫기
               </button>
             </div>

@@ -20,8 +20,24 @@ export function useProfileActions() {
   const [subscriptions, setSubscriptions] = useState([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
 
+  // 활동 통계(팔로워/팔로잉/작성 질문/작성 답변) — 공개 프로필 페이지(users/[id])와 동일한 API를 재사용한다.
+  const [profileStats, setProfileStats] = useState({
+    followerCount: 0,
+    followingCount: 0,
+    questionCount: 0,
+    answerCount: 0,
+  });
+  const [loadingStats, setLoadingStats] = useState(false);
+
+  // 💡 이메일 인증 모달 상태 관리 추가
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [verifyStep, setVerifyStep] = useState(1);
+  const [verifyEmail, setVerifyEmail] = useState("");
+  const [verifyCode, setVerifyCode] = useState("");
+  const [verifyLoading, setVerifyLoading] = useState(false);
+
   const onChange = (field) => (e) =>
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+      setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
   // 내 구독 목록 조회
   const fetchSubscriptions = useCallback(async () => {
@@ -39,7 +55,31 @@ export function useProfileActions() {
     }
   }, []);
 
-  // 유저 정보 → 폼 동기화 + 멘토 신청 상태 복원 + 구독 목록 로드
+  // 내 활동 통계 로드 — 공개 프로필 페이지(users/[id]/page.jsx)가 쓰는 것과 같은 API 3개를 그대로 재사용한다.
+  const fetchProfileStats = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      setLoadingStats(true);
+      const [profileData, questionsData, answeredData] = await Promise.all([
+        usersApi.getPublicProfile(user.id),
+        usersApi.getQuestionsByUser(user.id),
+        usersApi.getAnsweredQuestionsByUser(user.id),
+      ]);
+      setProfileStats({
+        followerCount: profileData?.followerCount || 0,
+        followingCount: profileData?.followingCount || 0,
+        // Page 응답의 totalElements(전체 개수)를 우선 쓰고, 없으면 현재 페이지 길이로 대체한다.
+        questionCount: questionsData?.totalElements ?? questionsData?.content?.length ?? 0,
+        answerCount: answeredData?.totalElements ?? answeredData?.content?.length ?? 0,
+      });
+    } catch (err) {
+      console.error("활동 통계 조회 실패:", err);
+    } finally {
+      setLoadingStats(false);
+    }
+  }, [user]);
+
+  // 유저 정보 → 폼 동기화 + 멘토 신청 상태 복원 + 구독 목록/활동 통계 로드
   useEffect(() => {
     if (!user) return;
     let ignore = false;
@@ -49,6 +89,9 @@ export function useProfileActions() {
       email: user.email || "",
       interests: user.interests || "",
     });
+
+    //이메일 인증 모달 기본값 세팅
+    if (!verifyEmail) setVerifyEmail(user.email || "");
 
     (async () => {
       const token = getToken();
@@ -62,11 +105,50 @@ export function useProfileActions() {
     })();
 
     fetchSubscriptions();
+    fetchProfileStats();
 
     return () => {
       ignore = true;
     };
-  }, [user, fetchSubscriptions]);
+  }, [user, fetchSubscriptions, fetchProfileStats, verifyEmail]);
+
+  // 💡 이메일 인증 기능 함수들 추가
+  const closeEmailModal = () => {
+    setShowEmailModal(false);
+    setVerifyStep(1);
+    setVerifyCode("");
+  };
+
+  const handleSendCode = async () => {
+    if (!verifyEmail) return alert("이메일을 입력해주세요.");
+    const token = getToken();
+    setVerifyLoading(true);
+    try {
+      await usersApi.sendVerificationCode(verifyEmail, token);
+      alert("인증번호가 메일로 발송되었습니다. (최대 1~2분 소요)");
+      setVerifyStep(2);
+    } catch (err) {
+      alert(err.message || "인증번호 발송에 실패했습니다.");
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!verifyCode) return alert("인증번호를 입력해주세요.");
+    const token = getToken();
+    setVerifyLoading(true);
+    try {
+      await usersApi.verifyEmailCode(verifyEmail, verifyCode, token);
+      alert("이메일 인증이 완료되었습니다!");
+      closeEmailModal();
+      await refreshUser(); // 유저 정보 다시 불러와서 이메일 인증 완료 뱃지 즉시 업데이트
+    } catch (err) {
+      alert("인증번호가 올바르지 않거나 만료되었습니다.");
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
 
   // 구독 해지 핸들러 (인자로 subscriptionId를 넘겨받도록 명시)
   const handleUnsubscribe = async (subscriptionId, mentorName) => {
@@ -79,8 +161,8 @@ export function useProfileActions() {
     }
 
     const confirmMsg = mentorName
-      ? `'${mentorName}' 멘토 구독을 해지하시겠습니까?`
-      : "정말 구독을 해지하시겠습니까?";
+        ? `'${mentorName}' 멘토 구독을 해지하시겠습니까?`
+        : "정말 구독을 해지하시겠습니까?";
 
     if (!confirm(confirmMsg)) return;
 
@@ -100,7 +182,7 @@ export function useProfileActions() {
     try {
       const me = await usersApi.getMyProfile(token);
       alert(
-        `📌 [최신 회원 정보]\n` +
+          `📌 [최신 회원 정보]\n` +
           `• 이름: ${me.name}\n` +
           `• 이메일: ${me.email || "미등록"}\n` +
           `• 권한: ${me.role}\n` +
@@ -180,6 +262,8 @@ export function useProfileActions() {
     form,
     onChange,
     hasAppliedMentor,
+    profileStats,
+    loadingStats,
     handleViewInfo,
     handleSaveProfile,
     handleApplyMentor,
@@ -188,5 +272,18 @@ export function useProfileActions() {
     loadingSubs,
     handleUnsubscribe,
     fetchSubscriptions,
+    // 💡 이메일 모달 관련 값들 리턴 추가
+    showEmailModal,
+    setShowEmailModal,
+    verifyStep,
+    setVerifyStep,
+    verifyEmail,
+    setVerifyEmail,
+    verifyCode,
+    setVerifyCode,
+    verifyLoading,
+    closeEmailModal,
+    handleSendCode,
+    handleVerifyCode,
   };
 }

@@ -25,6 +25,9 @@ public class PaymentTransaction extends BaseTimeEntity {
     @Column(name = "transaction_id", nullable = false, unique = true, length = 100)
     private String transactionId; // payment와 1:1 아님
 
+    @Column(nullable = false)
+    private Long amount; // 이 거래 시도 시점에 PortOne이 응답한 결제 금액(amount.total) 스냅샷
+
     @Column(nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     private PaymentStatus paymentStatus;

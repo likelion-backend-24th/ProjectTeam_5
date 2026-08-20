@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Subscription extends BaseTimeEntity { // BaseTimeEntity 상속 추천
+public class Subscription extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -72,8 +72,10 @@ public class Subscription extends BaseTimeEntity { // BaseTimeEntity 상속 추�
         this.nextBillingAt = nextBillingAt;
     }
 
-    // 비즈니스 로직은 기존과 동일하게 유지
-    public void reserveCancellation() { this.status = SubscriptionStatus.CANCEL_RESERVED; }
+    // 비즈니스 로직
+    public void reserveCancellation() {
+        this.status = SubscriptionStatus.CANCEL_RESERVED;
+    }
 
     public void reactivate(LocalDateTime start, LocalDateTime end, Integer amount) {
         this.status = SubscriptionStatus.ACTIVE;
@@ -93,5 +95,15 @@ public class Subscription extends BaseTimeEntity { // BaseTimeEntity 상속 추�
         this.nextBillingAt = periodEnd;
     }
 
-    public void markPastDue() { this.status = SubscriptionStatus.PAST_DUE; }
+    // 회차 결제 실패 시
+    public void markPastDue() {
+        this.status = SubscriptionStatus.PAST_DUE;
+    }
+
+    // 만료된 구독 다시 결제할 때 PENDING 상태로 설정 (필드 타입에 맞춰 plan 객체 수신)
+    public void reserverForPayment(MentorPlan plan, Integer amount) {
+        this.status = SubscriptionStatus.PENDING;
+        this.plan = plan;
+        this.amount = amount;
+    }
 }

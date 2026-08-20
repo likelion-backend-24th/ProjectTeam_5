@@ -1,14 +1,9 @@
 package com.example.findAnswer.mentorbridge.service;
 
-import com.example.findAnswer.mentorbridge.constants.ErrorCode;
 import com.example.findAnswer.mentorbridge.constants.SubscriptionStatus;
 import com.example.findAnswer.mentorbridge.dto.subscription.SubscriptionCheckResponse;
 import com.example.findAnswer.mentorbridge.dto.subscription.SubscriptionResponse;
-import com.example.findAnswer.mentorbridge.entity.MentorPlan;
 import com.example.findAnswer.mentorbridge.entity.Subscription;
-import com.example.findAnswer.mentorbridge.entity.User;
-import com.example.findAnswer.mentorbridge.exception.CustomException;
-import com.example.findAnswer.mentorbridge.repository.MentorPlanRepository;
 import com.example.findAnswer.mentorbridge.repository.SubscriptionRepository;
 import com.example.findAnswer.mentorbridge.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,43 +20,8 @@ public class SubscriptionService {
 
     private final SubscriptionRepository subscriptionRepository;
     private final UserRepository userRepository;
-    private final MentorPlanRepository mentorPlanRepository;
 
-    @Transactional
-    public SubscriptionResponse subscribe(Long userId, Long mentorPlanId) {
-        LocalDateTime now = LocalDateTime.now();
-
-        MentorPlan mentorPlan = mentorPlanRepository.findById(mentorPlanId)
-                .orElseThrow(() -> new CustomException(ErrorCode.PLAN_NOT_FOUND));
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
-        User mentor = mentorPlan.getMentor();
-
-        Subscription subscription = subscriptionRepository.findByUserIdAndMentor_Id(userId, mentor.getId())
-                .map(sub -> {
-                    if (sub.hasActivePermission(now)) {
-                        throw new IllegalStateException("이미 진행 중인 구독이 존재합니다.");
-                    }
-                    sub.reactivate(now, now.plusMonths(1), mentorPlan.getPrice());
-                    return sub;
-                })
-                .orElseGet(() -> {
-                    return subscriptionRepository.save(
-                            Subscription.builder()
-                                    .user(user)
-                                    .mentor(mentor)
-                                    .status(SubscriptionStatus.ACTIVE)
-                                    .amount(mentorPlan.getPrice())
-                                    .currentPeriodStart(now)
-                                    .currentPeriodEnd(now.plusMonths(1))
-                                    .build()
-                    );
-                });
-
-        return SubscriptionResponse.of(subscription, mentor.getName());
-    }
+    // 구독 신청("바로 ACTIVE" 로직)은 PaymentPrepareService.prepare()로 대체됨 (결제 검증 후에만 ACTIVE)
 
     @Transactional
     public void cancelSubscription(Long userId, Long subscriptionId) {

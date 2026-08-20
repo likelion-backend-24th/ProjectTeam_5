@@ -11,13 +11,24 @@ export function getMySubscriptions() {
 }
 
 /**
- * 멘토 구독 신청 API
+ * 구독 결제 준비 — 요금제를 정해서 결제 시도(Payment READY)를 만든다.
+ * 성공하면 PortOne 결제창(requestPayment)에 그대로 넘길 값들을 받는다.
  */
-export function subscribeMentor(mentorId) {
-  return request("/api/v1/subscriptions", {
+export function prepareSubscription(mentorId, planId) {
+  return request(`/api/v1/subscriptions?planid=${planId}`, {
     method: "POST",
     body: { mentorId: Number(mentorId) },
     fallbackMessage: "구독 신청 처리에 실패했습니다.",
+  });
+}
+
+/**
+ * 결제창 완료 후 서버 검증 — 여기서 확정돼야 구독이 ACTIVE가 된다.
+ */
+export function completePayment(paymentId) {
+  return request(`/api/v1/payments/${paymentId}/complete`, {
+    method: "POST",
+    fallbackMessage: "결제 확인에 실패했습니다.",
   });
 }
 

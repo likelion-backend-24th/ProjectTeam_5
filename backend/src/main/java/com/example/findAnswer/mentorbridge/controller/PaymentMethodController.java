@@ -1,5 +1,6 @@
 package com.example.findAnswer.mentorbridge.controller;
 
+import com.example.findAnswer.mentorbridge.dto.billing.BillingKeyPrepareResponse;
 import com.example.findAnswer.mentorbridge.dto.payment.PaymentMethodRegisterRequest;
 import com.example.findAnswer.mentorbridge.dto.payment.PaymentMethodResponse;
 import com.example.findAnswer.mentorbridge.service.PaymentMethodService;
@@ -18,6 +19,14 @@ import java.util.List;
 public class PaymentMethodController {
 
     private final PaymentMethodService paymentMethodService;
+
+    // 빌링키 발급 준비 (POST /api/payment-methods/prepare) → 200 OK
+    @PostMapping("/prepare")
+    public ResponseEntity<BillingKeyPrepareResponse> prepareBillingKeyIssuance(
+            @AuthenticationPrincipal Long currentUserId
+    ) {
+        return ResponseEntity.ok(paymentMethodService.prepareBillingKeyIssuance(currentUserId));
+    }
 
     // POST /api/payment-methods → 201 Created
     @PostMapping

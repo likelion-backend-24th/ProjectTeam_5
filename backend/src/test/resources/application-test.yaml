@@ -45,6 +45,19 @@ spring:
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: id
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:testuser}
+    password: ${MAIL_PASSWORD:testpassword}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+
 jwt:
   secret: jwt-secret-key-dev-secret-unsafe-not-secure
   access-token-expiration-ms: 900000
@@ -64,3 +77,14 @@ kakao:
 cloudinary:
   url: ${CLOUDINARY_URL:cloudinary://key:secret@cloudname}          # cloudinary://key:secret@cloudname
   folder: findanswer/posts
+
+portone:
+  store-id: ${PORTONE_STORE_ID:store-test-0000}
+  channel-key-payment: ${PORTONE_CHANNEL_KEY_PAYMENT:channel-key-test-0000}
+  channel-key-billing: ${PORTONE_CHANNEL_KEY_BILLING:channel-key-test-0000}
+  api-secret: ${PORTONE_API_SECRET:portone-test-api-secret}
+  api-base-url: ${PORTONE_API_BASE_URL:https://api.portone.io}
+  payment-id-prefix: ${PORTONE_PAYMENT_ID_PREFIX:MB}
+  webhook-secret: ${PORTONE_WEBHOOK_SECRET:whsec_0poG6m2/caXMxIy8DbyBj1NaNC4R3OzpjQYoNE26cN0=*=}
+  billing-issue-id-prefix: ${PORTONE_BILLING_ISSUE_ID_PREFIX:MB-BK}   # ★ 추가
+

@@ -5,10 +5,12 @@ import com.example.findAnswer.mentorbridge.entity.MentorProfile;
 import com.example.findAnswer.mentorbridge.entity.User;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Getter
+@Setter
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserResponse {
 
@@ -17,9 +19,22 @@ public class UserResponse {
     private String name;
     private String interests;
     private Role role;
+    private String profileImageUrl;
     private boolean blocked;
     private LocalDateTime createdAt;
     private MentorProfileResponse mentorProfile;
+
+    // 💡 팔로우 통계 필드 추가
+    private long followers;
+    private long followings;
+    private boolean isFollowing;
+
+    // 💡 UserService에서 호출하는 setFollowStats 메서드 추가
+    public void setFollowStats(long followers, long followings, boolean isFollowing) {
+        this.followers = followers;
+        this.followings = followings;
+        this.isFollowing = isFollowing;
+    }
 
     public static UserResponse from(User user) {
         UserResponse response = new UserResponse();
@@ -28,6 +43,7 @@ public class UserResponse {
         response.name = user.getName();
         response.role = user.getRole();
         response.interests = user.getInterests();
+        response.profileImageUrl = user.getProfileImageUrl();
         response.blocked = user.isBlocked();
         response.createdAt = user.getCreatedAt();
 

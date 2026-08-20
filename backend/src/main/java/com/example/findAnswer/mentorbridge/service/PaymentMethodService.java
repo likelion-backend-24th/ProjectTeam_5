@@ -1,17 +1,23 @@
 package com.example.findAnswer.mentorbridge.service;
 
 import com.example.findAnswer.mentorbridge.client.billing.BillingClient;
+import com.example.findAnswer.mentorbridge.constants.BillingKeyIssuanceStatus;
 import com.example.findAnswer.mentorbridge.constants.ErrorCode;
 import com.example.findAnswer.mentorbridge.constants.PaymentMethodStatus;
+import com.example.findAnswer.mentorbridge.dto.billing.BillingKeyPrepareResponse;
 import com.example.findAnswer.mentorbridge.dto.billing.BillingRegisterResult;
 import com.example.findAnswer.mentorbridge.dto.payment.PaymentMethodRegisterRequest;
 import com.example.findAnswer.mentorbridge.dto.payment.PaymentMethodResponse;
+import com.example.findAnswer.mentorbridge.entity.BillingKeyIssuanceIntent;
 import com.example.findAnswer.mentorbridge.entity.PaymentMethod;
 import com.example.findAnswer.mentorbridge.entity.User;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
+import com.example.findAnswer.mentorbridge.repository.BillingKeyIssuanceIntentRepository;
 import com.example.findAnswer.mentorbridge.repository.PaymentMethodRepository;
 import com.example.findAnswer.mentorbridge.repository.UserRepository;
+import com.example.findAnswer.mentorbridge.util.ShortId;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,13 +31,61 @@ public class PaymentMethodService {
     private final PaymentMethodRepository paymentMethodRepository;
     private final UserRepository userRepository;
     private final BillingClient billingClient;
+    private final BillingKeyIssuanceIntentRepository billingKeyIssuanceIntentRepository;
+
+    @Value("${portone.store-id}")
+    private String storeId;
+
+    @Value("${portone.channel-key-billing}")
+    private String channelKeyBilling;
+
+    @Value("${portone.billing-issue-id-prefix}")
+    private String billingIssueIdPrefix;
+
+    // 빌링키 발급 준비 — 프론트가 PortOne requestIssueBillingKey()를 호출할 때 넘길 값들을 만들어준다.
+    @Transactional
+    public BillingKeyPrepareResponse prepareBillingKeyIssuance(Long userId) {
+        userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        // 이니시스 oid 제한(1~40자) 때문에 UUID를 통째로 못 붙인다.
+        String issueId = billingIssueIdPrefix + "-" + ShortId.generate();
+
+        billingKeyIssuanceIntentRepository.save(
+                BillingKeyIssuanceIntent.builder()
+                        .issueId(issueId)
+                        .userId(userId)
+                        .storeId(storeId)
+                        .channelKey(channelKeyBilling)
+                        .status(BillingKeyIssuanceStatus.PENDING)
+                        .build()
+        );
+
+        return new BillingKeyPrepareResponse(storeId, channelKeyBilling, issueId);
+    }
 
     @Transactional
     public PaymentMethodResponse registerPaymentMethod(Long userId, PaymentMethodRegisterRequest request) {
 
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        BillingRegisterResult result = billingClient.register(request); //mock은 그냥 통과, 포스원 실제 검증 필요
+        BillingKeyIssuanceIntent intent = billingKeyIssuanceIntentRepository.findByIssueId(request.issueId())
+                .orElseThrow(() -> new CustomException(ErrorCode.BILLING_KEY_ISSUANCE_NOT_FOUND));
+
+        if (!intent.isOwnedBy(userId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+        if (intent.getStatus() != BillingKeyIssuanceStatus.PENDING) {
+            throw new CustomException(ErrorCode.BILLING_KEY_ALREADY_USED);
+        }
+
+        BillingRegisterResult result;
+        try {
+            result = billingClient.register(request.billingKey());
+        } catch (CustomException e) {
+            intent.markFailed();
+            throw e;
+        }
+        intent.markIssued();
 
         boolean isFirst = !paymentMethodRepository.existsByUserAndPaymentMethodStatus(user, PaymentMethodStatus.ACTIVE);
 

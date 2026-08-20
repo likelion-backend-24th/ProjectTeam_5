@@ -234,4 +234,73 @@ export const handleReject = async (targetId) => {
     }
 };
 
+// 공개 프로필 조회
+export function getPublicProfile(userId) {
+    const token = getToken();
+    return request(`/api/users/${userId}`, {
+        method: "GET",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        fallbackMessage: "프로필 정보를 불러오지 못했습니다.",
+    });
+}
+
+// 공개 프로필 정보 업데이트
+export function updatePublicProfileData(data, token) {
+    return request("/api/users/me/public-profile", {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+        body: data,
+        fallbackMessage: "프로필 정보 수정에 실패했습니다.",
+    });
+}
+
+// 프로필 이미지 URL 업데이트
+export function updateProfileImageUrl(profileImageUrl, token) {
+    return request("/api/users/me/profile-image", {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+        body: { profileImageUrl },
+        fallbackMessage: "프로필 이미지 수정에 실패했습니다.",
+    });
+}
+
+// 유저가 답변한 질문 목록 조회
+export async function getAnsweredQuestionsByUser(userId, page = 0) {
+    const token = getToken();
+    return request(`/api/questions/user/${userId}/answered?page=${page}&size=10`, {
+        method: "GET",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        fallbackMessage: "유저가 답변한 질문 목록을 불러오지 못했습니다.",
+    });
+}
+
+//팔로우 토글 Api
+export function toggleFollowUser(userId, token) {
+    return request(`/api/users/${userId}/follow`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        fallbackMessage: "팔로우 처리에 실패했습니다.",
+    });
+}
+
+//인증번호 발송
+export function sendVerificationCode(email, token) {
+    return request("/api/users/me/email/verification-code", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: { email },
+        fallbackMessage: "인증번호 발송에 실패했습니다.",
+    });
+}
+
+//인증번호 확인
+export function verifyEmailCode(email, code, token) {
+    return request("/api/users/me/email/verify", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: { email, code },
+        fallbackMessage: "인증번호 확인에 실패했습니다.",
+    });
+}
+
 

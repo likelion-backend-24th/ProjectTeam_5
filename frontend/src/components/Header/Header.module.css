@@ -58,11 +58,35 @@
   font-size: 14px;
 }
 
+/* 유저 메뉴 컨테이너 (기준점) */
+.userMenuContainer {
+  position: relative;
+}
+
+/* 유저 닉네임 + 뱃지 + 화살표 클릭 영역 */
 .userInfo {
   display: flex;
   align-items: center;
   gap: 6px;
   color: #111827;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.userInfo:hover {
+  background-color: #f1f5f9;
+}
+
+.userNameText {
+  font-weight: 600;
+}
+
+.arrow {
+  font-size: 10px;
+  color: #64748b;
+  margin-left: 2px;
 }
 
 .authArea a {
@@ -70,13 +94,53 @@
   text-decoration: none;
 }
 
-.authArea button {
+/* 드롭다운 박스 스타일 */
+.dropdownMenu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-width: 170px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+/* 드롭다운 아이템 스타일 */
+.dropdownItem {
+  padding: 10px 16px;
+  font-size: 14px !important;
+  color: #334155 !important;
+  text-decoration: none;
+  text-align: left;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.dropdownItem:hover {
+  background-color: #f8fafc;
+  color: #2867e8 !important;
+  font-weight: 600;
+}
+
+/* 상단바의 로그아웃 버튼 스타일 */
+.logoutBtn {
   border: none;
   background: none;
   color: #526176;
   font-size: 14px;
   cursor: pointer;
   padding: 0;
+  transition: color 0.2s ease;
+}
+
+.logoutBtn:hover {
+  color: #111827;
+  text-decoration: underline;
 }
 
 .badge {

@@ -4,6 +4,7 @@ import com.example.findAnswer.mentorbridge.constants.Role;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,10 +37,18 @@ public class User extends BaseTimeEntity {
     @Column(nullable = false)
     private boolean blocked = false;
 
+    // 이메일 인증 여부
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified = false;
+
+    // 탈퇴 시각 (소프트 삭제 상태)
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @Column(name = "profile_image_url")
     private String profileImageUrl;
 
-    // 멘토 프로필과 1:1 관계 설정
+    // 멘토 프로필과 1:1 관계 설정 (정규화 유지)
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private MentorProfile mentorProfile;
 
@@ -49,6 +58,11 @@ public class User extends BaseTimeEntity {
     public void updateProfile(String name, String interests) {
         this.name = name;
         this.interests = interests;
+    }
+
+    // 프로필 이미지 업데이트
+    public void updateProfileImage(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
     }
 
     public void updatePassword(String encodedPassword) {
@@ -63,6 +77,10 @@ public class User extends BaseTimeEntity {
         this.role = Role.MENTOR;
     }
 
+    public void verifyEmail() {
+        this.emailVerified = true;
+    }
+
     public User(String email, String password, String name, Role role) {
         this.email = email;
         this.password = password;
@@ -74,7 +92,23 @@ public class User extends BaseTimeEntity {
         return new User(email, null, name, role);
     }
 
-    public void block() { this.blocked = true; }
-    public void unblock() { this.blocked = false; }
-    public boolean isBlocked() { return this.blocked; }
+    public void block() {
+        this.blocked = true;
+    }
+
+    public void unblock() {
+        this.blocked = false;
+    }
+
+    public boolean isBlocked() {
+        return this.blocked;
+    }
+
+    public void softDelete() {
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    public boolean isDeleted() {
+        return this.deletedAt != null;
+    }
 }

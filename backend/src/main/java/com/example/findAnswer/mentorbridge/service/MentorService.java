@@ -12,9 +12,11 @@ import com.example.findAnswer.mentorbridge.entity.User;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
 import com.example.findAnswer.mentorbridge.constants.ErrorCode;
 import com.example.findAnswer.mentorbridge.repository.MentorApplicationRepository;
+import com.example.findAnswer.mentorbridge.repository.MentorPlanRepository;
 import com.example.findAnswer.mentorbridge.repository.SubscriptionRepository;
 import com.example.findAnswer.mentorbridge.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -30,10 +33,15 @@ public class MentorService {
     private final MentorApplicationRepository mentorApplicationRepository;
     private final UserRepository userRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final MentorPlanRepository mentorPlanRepository;
 
     @Transactional
     public void applyForMentor(Long userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if (!user.isEmailVerified()) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
         if (user.getRole() != Role.USER) {
             throw new CustomException(ErrorCode.VALIDATION_ERROR);
         }
@@ -81,18 +89,32 @@ public class MentorService {
                 .toList();
     }
 
-    public Page<MentorResponse> getMentors(String keyword, Pageable pageable) {
-        List<SubscriptionStatus> activeStatuses = List.of(SubscriptionStatus.ACTIVE, SubscriptionStatus.CANCEL_RESERVED);
+    // 활성 플랜이 있는 멘토 목록 조회 및 검색
+    public Page<MentorResponse> getMentors(
+            String keyword,
+            Pageable pageable
+    ) {
+        List<SubscriptionStatus> activeStatuses = List.of(
+                SubscriptionStatus.ACTIVE,
+                SubscriptionStatus.CANCEL_RESERVED
+        );
+
         LocalDateTime now = LocalDateTime.now();
 
-        return userRepository.findMentors(keyword, pageable)
-                .map(user -> {
-                    long subscriberCount = subscriptionRepository.countByMentor_IdAndStatusInAndCurrentPeriodEndAfter(
-                            user.getId(), activeStatuses, now
-                    );
+        Page<User> mentors = userRepository.findActivePlanMentors(keyword, pageable);
 
-                    return MentorResponse.from(user, (int) subscriberCount);
-                });
+        return mentors.map(user -> {
+            long subscriberCount = subscriptionRepository.countByMentor_IdAndStatusInAndCurrentPeriodEndAfter(
+                    user.getId(),
+                    activeStatuses,
+                    now
+            );
+
+            return MentorResponse.from(
+                    user,
+                    (int) subscriberCount
+            );
+        });
     }
 
     public MentorResponse getMentorDetail(Long mentorId) {
