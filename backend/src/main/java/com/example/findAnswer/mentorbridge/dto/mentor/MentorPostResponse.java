@@ -1,8 +1,7 @@
 package com.example.findAnswer.mentorbridge.dto.mentor;
 
-import com.example.findAnswer.mentorbridge.dto.question.ImageResponse;
-import com.example.findAnswer.mentorbridge.dto.questionAttachedFile.FileResponse;
 import com.example.findAnswer.mentorbridge.entity.MentorPost;
+import com.example.findAnswer.mentorbridge.entity.MentorPostAttachmentFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,23 +13,39 @@ public record MentorPostResponse(
         String content,
         String category,
         Boolean isPublic,
-        List<ImageResponse> images,
-        List<FileResponse> files,
+        List<AttachmentResponse> attachments,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
-    public static MentorPostResponse from(MentorPost post, List<ImageResponse> images, List<FileResponse> files) {
+    public static MentorPostResponse from(MentorPost post) {
         return new MentorPostResponse(
                 post.getId(),
-                post.getMentorId(),
+                post.getMentor().getId(),
                 post.getTitle(),
                 post.getContent(),
                 post.getCategory(),
                 post.getIsPublic(),
-                images == null ? List.of() : images,
-                files == null ? List.of() : files,
+                post.getAttachments().stream()
+                        .map(AttachmentResponse::from)
+                        .toList(),
                 post.getCreatedAt(),
                 post.getUpdatedAt()
         );
+    }
+
+    public record AttachmentResponse(
+            Long id,
+            String storageKey,
+            String originalFileName,
+            Long size
+    ) {
+        public static AttachmentResponse from(MentorPostAttachmentFile file) {
+            return new AttachmentResponse(
+                    file.getId(),
+                    file.getStorageKey(),
+                    file.getOriginalFileName(),
+                    file.getSize()
+            );
+        }
     }
 }

@@ -40,49 +40,17 @@ public class User extends BaseTimeEntity {
     // 이메일 인증 여부
     @Column(name = "email_verified", nullable = false)
     private boolean emailVerified = false;
-    // null이면 활성 계정. 탈퇴(본인 또는 관리자 강제)한 시각이 찍히면 소프트 삭제 상태 — DB 행은 지우지 않는다.
+
+    // 탈퇴 시각 (소프트 삭제 상태)
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    // 멘토 프로필 관련 필드들
     @Column(name = "profile_image_url")
     private String profileImageUrl;
 
-    @Column(length = 1000)
-    private String bio;
-
-    @Column(length = 255)
-    private String tags;
-
-
-    @Column(length = 500)
-    private String careers;
-
-    @Column(columnDefinition = "TEXT")
-    private String description;
-
-    @Column(length = 100)
-    private String location;
-
-    @Column(length = 255)
-    private String company;
-
-    @Column(length = 255)
-    private String career;
-
-    @Column(length = 255)
-    private String education;
-
-    @Column(length = 255)
-    private String schedule;
-
-    // 카드 등록 시 받아서 저장 — 서버가 직접 트리거하는 결제(구독/정기결제)에 구매자 정보로 필요(이니시스 V2 필수값)
-    @Column(name = "phone_number", length = 20)
-    private String phoneNumber;
-
-    //멘토 구독 월 이용료 필드
-//     @Column(name = "subscription_price")
-//     private Integer subscriptionPrice = 9900;
+    // 멘토 프로필과 1:1 관계 설정 (정규화 유지)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private MentorProfile mentorProfile;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<MentorApplication> mentorApplications = new ArrayList<>();
@@ -92,33 +60,9 @@ public class User extends BaseTimeEntity {
         this.interests = interests;
     }
 
-    //공개 프로필 업데이트
-    public void updatePublicProfile(String bio, String careers, String description, String location, String tags) {
-        this.bio = bio;
-        this.careers = careers;
-        this.description = description;
-        this.location = location;
-        this.tags = tags;
-    }
-
-    //프로필 이미지 업데이트
+    // 프로필 이미지 업데이트
     public void updateProfileImage(String profileImageUrl) {
         this.profileImageUrl = profileImageUrl;
-    }
-
-    //멘토 프로필 업데이트
-    public void updateMentorProfile(String bio, String company, String career, String tags, String education, String schedule) {
-        this.bio = bio;
-        this.company = company;
-        this.career = career;
-        this.tags = tags;
-        this.education = education;
-        this.schedule = schedule;
-        //this.subscriptionPrice = (subscriptionPrice != null) ? subscriptionPrice : 9900;
-    }
-
-    public void updatePhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
     }
 
     public void updatePassword(String encodedPassword) {
@@ -133,7 +77,9 @@ public class User extends BaseTimeEntity {
         this.role = Role.MENTOR;
     }
 
-    public void verifyEmail() { this.emailVerified = true; }
+    public void verifyEmail() {
+        this.emailVerified = true;
+    }
 
     public User(String email, String password, String name, Role role) {
         this.email = email;

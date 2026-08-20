@@ -7,16 +7,15 @@ import lombok.*;
 @Table(name = "mentor_plan")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
 public class MentorPlan extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "mentor_id", nullable = false)
-    private Long mentorId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "mentor_id", nullable = false)
+    private User mentor;
 
     @Column(nullable = false, length = 50)
     private String planName;
@@ -33,12 +32,22 @@ public class MentorPlan extends BaseTimeEntity {
     @Column(name = "is_active", nullable = false)
     private boolean isActive;
 
+    @Builder
+    public MentorPlan(User mentor, String planName, String description, Integer price, int billingCycle) {
+        this.mentor = mentor;
+        this.planName = planName;
+        this.description = description;
+        this.price = price;
+        this.billingCycle = billingCycle;
+        this.isActive = true;
+    }
+
     public void deactivate() {
         this.isActive = false;
     }
 
     public boolean isOwnedByMentor(Long mentorId) {
-        return this.mentorId.equals(mentorId);
+        return this.mentor.getId().equals(mentorId);
     }
 
     public void update(String planName, String description, Integer price, int billingCycle) {
@@ -47,6 +56,4 @@ public class MentorPlan extends BaseTimeEntity {
         this.price = price;
         this.billingCycle = billingCycle;
     }
-
-
 }

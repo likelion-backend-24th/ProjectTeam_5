@@ -1,189 +1,108 @@
 package com.example.findAnswer.mentorbridge.service;
 
-import com.example.findAnswer.mentorbridge.constants.AttachmentFileType;
 import com.example.findAnswer.mentorbridge.constants.ErrorCode;
 import com.example.findAnswer.mentorbridge.dto.mentor.MentorPostRequest;
 import com.example.findAnswer.mentorbridge.dto.mentor.MentorPostResponse;
-import com.example.findAnswer.mentorbridge.dto.question.ImageResponse;
-import com.example.findAnswer.mentorbridge.dto.questionAttachedFile.FileResponse;
 import com.example.findAnswer.mentorbridge.entity.MentorPost;
-import com.example.findAnswer.mentorbridge.entity.QuestionAttachmentFile;
+import com.example.findAnswer.mentorbridge.entity.MentorPostAttachmentFile;
+import com.example.findAnswer.mentorbridge.entity.User;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
 import com.example.findAnswer.mentorbridge.repository.MentorPostRepository;
-import com.example.findAnswer.mentorbridge.repository.QuestionAttachmentFileRepository;
-import com.example.findAnswer.mentorbridge.storage.AttachmentStorage;
-import com.example.findAnswer.mentorbridge.storage.FileStorage;
+import com.example.findAnswer.mentorbridge.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class MentorPostService {
 
     private final MentorPostRepository mentorPostRepository;
-    private final QuestionAttachmentFileRepository questionAttachmentFileRepository;
-    private final AttachmentStorage attachmentStorage;
-    private final FileStorage fileStorage;
+    private final UserRepository userRepository;
 
-    private static final String IMAGE_TRANSFORM = "f_auto,q_auto";
-
-    // 게시글 작성 (멘토 본인)
     @Transactional
     public MentorPostResponse createPost(Long mentorId, MentorPostRequest request) {
+        User mentor = userRepository.findById(mentorId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
         MentorPost post = MentorPost.builder()
-                .mentorId(mentorId)
+                .mentor(mentor)
                 .title(request.title())
                 .content(request.content())
                 .category(request.category())
                 .isPublic(request.isPublic())
                 .build();
 
-        MentorPost savedPost = mentorPostRepository.save(post);
-
-        List<QuestionAttachmentFile> attached = new ArrayList<>();
-        for (Long attachmentId : safeIds(request.attachmentIds())) {
-            QuestionAttachmentFile file = questionAttachmentFileRepository.findById(attachmentId)
-                    .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
-
-            if (!file.isOwnedBy(mentorId)) {
-                throw new CustomException(ErrorCode.ACCESS_DENIED);
+        if (request.attachments() != null) {
+            for (MentorPostRequest.AttachmentRequest attachmentDto : request.attachments()) {
+                MentorPostAttachmentFile attachment = MentorPostAttachmentFile.builder()
+                        .storageKey(attachmentDto.storageKey())
+                        .originalFileName(attachmentDto.originalFileName())
+                        .size(attachmentDto.size())
+                        .build();
+                post.addAttachment(attachment);
             }
-
-            file.attachedToMentorPost(savedPost);
-            attached.add(file);
         }
 
-        return MentorPostResponse.from(savedPost, imagesOf(attached), filesOf(attached));
+        return MentorPostResponse.from(mentorPostRepository.save(post));
     }
 
-    // 게시글 수정 (멘토 본인)
     @Transactional
     public MentorPostResponse updatePost(Long mentorId, Long postId, MentorPostRequest request) {
         MentorPost post = mentorPostRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
 
-        if (!post.getMentorId().equals(mentorId)) {
+        if (!post.getMentor().getId().equals(mentorId)) {
             throw new IllegalArgumentException("본인의 게시글만 수정할 수 있습니다.");
         }
 
-        post.update(request.title(), request.content(), request.category(), request.isPublic());
-
-        List<QuestionAttachmentFile> current = questionAttachmentFileRepository.findByMentorPost(post);
-        Set<Long> editIds = new HashSet<>(safeIds(request.attachmentIds()));
-        Set<Long> currentIds = current.stream().map(QuestionAttachmentFile::getId).collect(Collectors.toSet());
-
-        List<QuestionAttachmentFile> lastFiles = new ArrayList<>();
-        for (QuestionAttachmentFile file : current) {
-            if (editIds.contains(file.getId())) {
-                lastFiles.add(file);
-            } else {
-                deleteAttachmentBlob(file);
-                questionAttachmentFileRepository.delete(file);
-            }
+        List<MentorPostAttachmentFile> newAttachments = null;
+        if (request.attachments() != null) {
+            newAttachments = request.attachments().stream()
+                    .map(attachmentDto -> MentorPostAttachmentFile.builder()
+                            .storageKey(attachmentDto.storageKey())
+                            .originalFileName(attachmentDto.originalFileName())
+                            .size(attachmentDto.size())
+                            .build())
+                    .toList();
         }
 
-        for (Long attachmentId : editIds) {
-            if (currentIds.contains(attachmentId)) {
-                continue;
-            }
+        post.update(
+                request.title(),
+                request.content(),
+                request.category(),
+                request.isPublic(),
+                newAttachments
+        );
 
-            QuestionAttachmentFile file = questionAttachmentFileRepository.findById(attachmentId)
-                    .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
-
-            if (!file.isOwnedBy(mentorId)) {
-                throw new CustomException(ErrorCode.ACCESS_DENIED);
-            }
-            if (file.isAttached()) {
-                throw new CustomException(ErrorCode.INVALID_REQUEST);
-            }
-
-            file.attachedToMentorPost(post);
-            lastFiles.add(file);
-        }
-
-        return MentorPostResponse.from(post, imagesOf(lastFiles), filesOf(lastFiles));
+        return MentorPostResponse.from(post);
     }
 
-    // 게시글 삭제 (멘토 본인)
     @Transactional
     public void deletePost(Long mentorId, Long postId) {
         MentorPost post = mentorPostRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
 
-        if (!post.getMentorId().equals(mentorId)) {
+        if (!post.getMentor().getId().equals(mentorId)) {
             throw new IllegalArgumentException("본인의 게시글만 삭제할 수 있습니다.");
         }
-
-        List<QuestionAttachmentFile> attachments = questionAttachmentFileRepository.findByMentorPost(post);
-        for (QuestionAttachmentFile file : attachments) {
-            deleteAttachmentBlob(file);
-        }
-        questionAttachmentFileRepository.deleteAll(attachments);
 
         mentorPostRepository.delete(post);
     }
 
     public MentorPostResponse getPost(Long mentorId, Long postId) {
-        MentorPost post = mentorPostRepository.findByIdAndMentorId(postId, mentorId)
+        MentorPost post = mentorPostRepository.findByIdAndMentor_Id(postId, mentorId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 멘토의 게시글을 찾을 수 없습니다."));
-
-        List<QuestionAttachmentFile> attachments = questionAttachmentFileRepository.findByMentorPost(post);
-        return MentorPostResponse.from(post, imagesOf(attachments), filesOf(attachments));
+        return MentorPostResponse.from(post);
     }
 
     public List<MentorPostResponse> getPostsByMentorId(Long mentorId) {
-        return mentorPostRepository.findByMentorIdOrderByCreatedAtDesc(mentorId)
+        return mentorPostRepository.findByMentor_IdOrderByCreatedAtDesc(mentorId)
                 .stream()
-                .map(post -> {
-                    List<QuestionAttachmentFile> attachments = questionAttachmentFileRepository.findByMentorPost(post);
-                    return MentorPostResponse.from(post, imagesOf(attachments), filesOf(attachments));
-                })
+                .map(MentorPostResponse::from)
                 .toList();
-    }
-
-    private List<Long> safeIds(List<Long> attachmentIds) {
-        return attachmentIds == null ? Collections.emptyList() : attachmentIds;
-    }
-
-    private List<ImageResponse> imagesOf(List<QuestionAttachmentFile> files) {
-        return files.stream()
-                .filter(QuestionAttachmentFile::isAttached)
-                .filter(f -> f.getAttachmentType() == AttachmentFileType.IMAGE)
-                .map(f -> new ImageResponse(f.getId(),
-                        attachmentStorage.publicUrl(f.getStorageKey(), IMAGE_TRANSFORM)))
-                .toList();
-    }
-
-    private List<FileResponse> filesOf(List<QuestionAttachmentFile> files) {
-        return files.stream()
-                .filter(QuestionAttachmentFile::isAttached)
-                .filter(f -> f.getAttachmentType() == AttachmentFileType.FILE)
-                .map(f -> new FileResponse(f.getId(), f.getOriginalFileName(), f.getSize(),
-                        "/api/attachments/files/" + f.getId() + "/download"))
-                .toList();
-    }
-
-    // 이미지는 Cloudinary, 일반 파일은 로컬 디스크에 저장돼서 삭제 방식이 다르다.
-    private void deleteAttachmentBlob(QuestionAttachmentFile file) {
-        try {
-            if (file.getAttachmentType() == AttachmentFileType.IMAGE) {
-                attachmentStorage.delete(file.getStorageKey());
-            } else {
-                fileStorage.delete(file.getStorageKey());
-            }
-        } catch (RuntimeException e) {
-            log.warn("첨부파일 삭제 실패(무시하고 진행): storageKey={}", file.getStorageKey(), e);
-        }
     }
 }

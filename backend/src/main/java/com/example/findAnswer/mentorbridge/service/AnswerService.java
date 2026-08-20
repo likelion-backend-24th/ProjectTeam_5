@@ -28,7 +28,6 @@ public class AnswerService {
     private final QuestionRepository questionRepository;
     private final UserRepository userRepository;
 
-    // 답변/대댓글 등록
     @Transactional
     public AnswerResponse createAnswer(Long questionId, Long userId, AnswerCreateRequest request) {
         Question question = questionRepository.findById(questionId)
@@ -42,7 +41,6 @@ public class AnswerService {
             parent = answerRepository.findById(request.getParentId())
                     .orElseThrow(() -> new CustomException(ErrorCode.ANSWER_NOT_FOUND));
 
-            // 검증 1: 부모 답변이 해당 질문에 속해 있는지 확인
             if (!parent.getQuestion().getId().equals(questionId)) {
                 throw new CustomException(ErrorCode.INVALID_REQUEST);
             }
@@ -59,14 +57,12 @@ public class AnswerService {
         return AnswerResponse.from(savedAnswer);
     }
 
-    // 특정 질문의 답변 및 대댓글 목록 조회 (등록순)
     public List<AnswerResponse> getAnswersByQuestionId(Long questionId) {
-        return answerRepository.findByQuestionIdOrderByCreatedAtAsc(questionId).stream()
+        return answerRepository.findByQuestion_IdOrderByCreatedAtAsc(questionId).stream()
                 .map(AnswerResponse::from)
                 .collect(Collectors.toList());
     }
 
-    // 답변 수정 (작성자 본인만 가능)
     @Transactional
     public AnswerResponse updateAnswer(Long answerId, Long userId, AnswerUpdateRequest request) {
         Answer answer = answerRepository.findById(answerId)
@@ -77,7 +73,6 @@ public class AnswerService {
         return AnswerResponse.from(answer);
     }
 
-    // 답변 삭제 (작성자 본인 또는 관리자 가능)
     @Transactional
     public void deleteAnswer(Long answerId, Long userId) {
         Answer answer = answerRepository.findById(answerId)
@@ -87,14 +82,12 @@ public class AnswerService {
         answerRepository.delete(answer);
     }
 
-    // 작성자 본인 검증
     private void validateAuthor(Long authorId, Long currentUserId) {
         if (!authorId.equals(currentUserId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
     }
 
-    // 작성자 본인 또는 관리자 검증
     private void validateAuthorOrAdmin(Long authorId, Long currentUserId) {
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));

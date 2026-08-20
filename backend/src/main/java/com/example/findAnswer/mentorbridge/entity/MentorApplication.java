@@ -12,9 +12,10 @@ public class MentorApplication extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "mentor_application_id")
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
@@ -22,12 +23,26 @@ public class MentorApplication extends BaseTimeEntity {
     @Column(nullable = false, length = 20)
     private MentorApplicationStatus status;
 
-    public MentorApplication(User user) {
+    // 💡 [추가] 멘토 지원 시 제출한 내용 (심사 이력 보존용 스냅샷)
+    @Column(columnDefinition = "TEXT")
+    private String introduction;
+
+    @Column(length = 255)
+    private String careerSummary;
+
+    @Builder
+    public MentorApplication(User user, String introduction, String careerSummary) {
         this.user = user;
+        this.introduction = introduction;
+        this.careerSummary = careerSummary;
         this.status = MentorApplicationStatus.PENDING;
     }
 
-    public void approve() {this.status = MentorApplicationStatus.APPROVED;}
+    public void approve() {
+        this.status = MentorApplicationStatus.APPROVED;
+    }
 
-    public void reject() {this.status = MentorApplicationStatus.REJECTED;}
+    public void reject() {
+        this.status = MentorApplicationStatus.REJECTED;
+    }
 }

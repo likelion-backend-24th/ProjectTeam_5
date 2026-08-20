@@ -1,13 +1,17 @@
 package com.example.findAnswer.mentorbridge.dto.user;
 
 import com.example.findAnswer.mentorbridge.constants.Role;
+import com.example.findAnswer.mentorbridge.entity.MentorProfile;
 import com.example.findAnswer.mentorbridge.entity.User;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Getter
+@Setter
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserResponse {
 
     private Long id;
@@ -16,26 +20,21 @@ public class UserResponse {
     private String interests;
     private Role role;
     private String profileImageUrl;
-    private String bio;
-    private String careers;
-    private String description;
-    private String location;
-    private String tags;
-    private long followerCount;
-    private long followingCount;
-
-    @JsonProperty("blocked")
     private boolean blocked;
+    private LocalDateTime createdAt;
+    private MentorProfileResponse mentorProfile;
 
-    @JsonProperty("isFollowing")
+    // 💡 팔로우 통계 필드 추가
+    private long followers;
+    private long followings;
     private boolean isFollowing;
 
-    @JsonProperty("emailVerified")
-    private boolean emailVerified;
-
-    private LocalDateTime createdAt;
-
-    public UserResponse() {}
+    // 💡 UserService에서 호출하는 setFollowStats 메서드 추가
+    public void setFollowStats(long followers, long followings, boolean isFollowing) {
+        this.followers = followers;
+        this.followings = followings;
+        this.isFollowing = isFollowing;
+    }
 
     public static UserResponse from(User user) {
         UserResponse response = new UserResponse();
@@ -44,21 +43,35 @@ public class UserResponse {
         response.name = user.getName();
         response.role = user.getRole();
         response.interests = user.getInterests();
+        response.profileImageUrl = user.getProfileImageUrl();
         response.blocked = user.isBlocked();
         response.createdAt = user.getCreatedAt();
-        response.profileImageUrl = user.getProfileImageUrl();
-        response.bio = user.getBio();
-        response.careers = user.getCareers();
-        response.description = user.getDescription();
-        response.location = user.getLocation();
-        response.tags = user.getTags();
-        response.emailVerified = user.isEmailVerified();
+
+        if (user.getMentorProfile() != null) {
+            response.mentorProfile = MentorProfileResponse.from(user.getMentorProfile());
+        }
+
         return response;
     }
 
-    public void setFollowStats(long followerCount, long followingCount, boolean isFollowing) {
-        this.followerCount = followerCount;
-        this.followingCount = followingCount;
-        this.isFollowing = isFollowing;
+    @Getter
+    public static class MentorProfileResponse {
+        private String bio;
+        private String company;
+        private String career;
+        private String tags;
+        private String education;
+        private String schedule;
+
+        public static MentorProfileResponse from(MentorProfile profile) {
+            MentorProfileResponse dto = new MentorProfileResponse();
+            dto.bio = profile.getBio();
+            dto.company = profile.getCompany();
+            dto.career = profile.getCareer();
+            dto.tags = profile.getTags();
+            dto.education = profile.getEducation();
+            dto.schedule = profile.getSchedule();
+            return dto;
+        }
     }
 }
