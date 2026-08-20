@@ -1,13 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { requestIssueBillingKey } from "@portone/browser-sdk/v2";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { prepareBillingKeyIssuance, registerPaymentMethod } from "@/lib/payments";
 
 export default function PaymentMethodNewPage() {
+  return (
+    <Suspense fallback={null}>
+      <PaymentMethodNewForm />
+    </Suspense>
+  );
+}
+
+function PaymentMethodNewForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/profile";
   const { user: authUser } = useAuth();
 
   const [cardNickname, setCardNickname] = useState("");
@@ -52,9 +62,10 @@ export default function PaymentMethodNewPage() {
         cardNickname: cardNickname.trim(),
         issueId: prepareRes.issueId,
         billingKey: issueResult.billingKey,
+        phoneNumber: phoneNumber.trim(),
       });
 
-      router.push("/profile"); // 등록 성공 → 프로필로 복귀
+      router.push(redirectTo); // 등록 성공 → 원래 있던 곳(없으면 프로필)으로 복귀
     } catch (err) {
       if (err.status === 401 || err.status === 403) {
         router.push("/login");

@@ -28,8 +28,8 @@ export default function ProfilePaymentSection() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleDelete = async (id) => {
@@ -114,6 +114,10 @@ export default function ProfilePaymentSection() {
       {/* + 결제 수단 추가 → 등록 페이지로 이동 */}
       <Link href="/profile/payment-methods/new" style={addBtn}>
         + 결제 수단 추가
+      </Link>
+
+      <Link href="/profile/subscriptions" style={{ ...addBtn, marginTop: 8, border: "1px solid #e5e7eb", color: "#374151" }}>
+        내 구독 관리 (해지 · 환불 요청)
       </Link>
     </section>
   );
