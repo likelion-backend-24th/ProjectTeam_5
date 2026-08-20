@@ -1,6 +1,7 @@
 package com.example.findAnswer.mentorbridge.controller;
 
-import com.example.findAnswer.mentorbridge.dto.payment.PaymentPrepareResponse;
+import com.example.findAnswer.mentorbridge.dto.payment.PaymentCompleteResponse;
+import com.example.findAnswer.mentorbridge.dto.payment.PaymentHistoryResponse;
 import com.example.findAnswer.mentorbridge.dto.subscription.SubscriptionCheckResponse;
 import com.example.findAnswer.mentorbridge.dto.subscription.SubscriptionRequest;
 import com.example.findAnswer.mentorbridge.dto.subscription.SubscriptionResponse;
@@ -22,14 +23,14 @@ public class SubscriptionController {
     private final SubscriptionService subscriptionService;
     private final PaymentPrepareService paymentPrepareService; // ★ 추가
 
-    // F-24: 구독 신청 → 결제 준비 (기존: 바로 ACTIVE 생성 → 변경: Payment(READY) 발급)
+    // F-24: 구독 신청 — 등록된 카드로 서버가 즉시 청구하고 결과까지 반환(결제창 팝업 없음)
     @PostMapping
-    public ResponseEntity<PaymentPrepareResponse> subscribe(
+    public ResponseEntity<PaymentCompleteResponse> subscribe(
             @RequestParam("planid") Long planId,
             @AuthenticationPrincipal Long currentUserId,       // ★ X-USER-ID → JWT
             @RequestBody SubscriptionRequest request) {
 
-        PaymentPrepareResponse response = paymentPrepareService.prepare(currentUserId, request.mentorId(), planId);
+        PaymentCompleteResponse response = paymentPrepareService.subscribe(currentUserId, request.mentorId(), planId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -58,5 +59,14 @@ public class SubscriptionController {
             @AuthenticationPrincipal Long currentUserId) {     // ★ X-USER-ID → JWT
 
         return ResponseEntity.ok(subscriptionService.getMySubscriptions(currentUserId));
+    }
+
+    // 구독 관리 화면 — 결제 이력(환불 요청 대상 선택용)
+    @GetMapping("/{subscriptionId}/payments")
+    public ResponseEntity<List<PaymentHistoryResponse>> getPaymentHistory(
+            @AuthenticationPrincipal Long currentUserId,
+            @PathVariable Long subscriptionId) {
+
+        return ResponseEntity.ok(subscriptionService.getPaymentHistory(currentUserId, subscriptionId));
     }
 }
