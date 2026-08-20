@@ -50,6 +50,12 @@ public class Payment extends BaseTimeEntity {
     @Column(name = "paid_at")
     private LocalDateTime paidAt;
 
+    // PortOne 예약결제 API가 돌려주는 예약 ID. 다음 회차가 예약된 READY 상태 Payment에만 값이 있다.
+    // 구독 해지 시 이 값으로 정확히 이 회차의 예약만 취소한다(billingKey 기준으로 취소하면 같은 카드의
+    // 다른 구독 예약까지 같이 취소될 위험이 있다).
+    @Column(name = "schedule_id", length = 100)
+    private String scheduleId;
+
     public void markPaidAt(LocalDateTime paidAt) {
         this.paidAt = paidAt;
         this.status = PaymentStatus.PAID;
@@ -57,6 +63,14 @@ public class Payment extends BaseTimeEntity {
 
     public void markFailed() {
         this.status = PaymentStatus.FAILED;
+    }
+
+    public void markCanceled() {
+        this.status = PaymentStatus.CANCELED;
+    }
+
+    public void markScheduled(String scheduleId) {
+        this.scheduleId = scheduleId;
     }
 
     public boolean isOfSubscription(Long subscriptionId) {

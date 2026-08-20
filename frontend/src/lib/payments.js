@@ -10,12 +10,13 @@ export function prepareBillingKeyIssuance() {
 }
 
 // 결제수단 등록 POST /api/payment-methods
-// 백엔드 PaymentMethodRegisterRequest: { cardNickname, issueId, billingKey }
+// 백엔드 PaymentMethodRegisterRequest: { cardNickname, issueId, billingKey, phoneNumber }
 // issueId/billingKey는 prepareBillingKeyIssuance() + requestIssueBillingKey() 결과로만 채운다.
-export function registerPaymentMethod({ cardNickname, issueId, billingKey }) {
+// phoneNumber는 서버가 나중에 이 카드로 직접 청구(구독/정기결제)할 때 구매자 정보로 필요해서 같이 저장한다.
+export function registerPaymentMethod({ cardNickname, issueId, billingKey, phoneNumber }) {
   return request("/api/payment-methods", {
     method: "POST",
-    body: { cardNickname, issueId, billingKey },
+    body: { cardNickname, issueId, billingKey, phoneNumber },
     fallbackMessage: "결제수단 등록에 실패했습니다.",
   });
 }
