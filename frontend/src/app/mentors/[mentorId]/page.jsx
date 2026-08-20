@@ -84,6 +84,8 @@ export default function MentorProfilePage() {
 
   // 구독 유도 모달 상태 추가
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
+  const [subscribePhone, setSubscribePhone] = useState("");
+  const [subscribePhoneError, setSubscribePhoneError] = useState("");
 
   const [isEditing, setIsEditing] = useState(false);
   const [profileSnapshot, setProfileSnapshot] = useState(null);
@@ -285,6 +287,14 @@ export default function MentorProfilePage() {
     }
     if (subscribing) return;
 
+    // 이니시스 V2는 구매자 이름/휴대폰번호/이메일이 필수인데 우리 회원 정보엔 휴대폰번호가 없어서 모달에서 직접 받는다.
+    if (!/^01[0-9]{8,9}$/.test(subscribePhone.trim())) {
+      setSubscribePhoneError("올바른 휴대폰 번호를 입력해주세요. (예: 01012345678)");
+      setShowSubscribeModal(true);
+      return;
+    }
+    setSubscribePhoneError("");
+
     setSubscribing(true);
     try {
       const prepareRes = await prepareSubscription(mentorId, selectedPlan.id);
@@ -297,6 +307,12 @@ export default function MentorProfilePage() {
         totalAmount: prepareRes.totalAmount,
         currency: prepareRes.currency,
         payMethod: "CARD",
+        // 이니시스 V2 일반결제는 구매자 이름/휴대폰번호/이메일이 필수라 안 넣으면 결제창 자체가 안 열린다.
+        customer: {
+          fullName: authUser?.name,
+          phoneNumber: subscribePhone.trim(),
+          email: authUser?.email,
+        },
       });
 
       if (paymentResult?.code) {
@@ -320,6 +336,7 @@ export default function MentorProfilePage() {
         }));
 
         setShowSubscribeModal(false);
+        setSubscribePhone("");
         alert("멘토 구독이 완료되었습니다!");
       } else {
         alert("결제 검증에 실패했습니다. 잠시 후 다시 시도해주세요.");
@@ -595,7 +612,7 @@ export default function MentorProfilePage() {
                     )}
                   </div>
                 ) : (
-                  <button className={styles.subBtn} onClick={handleSubscribe}>구독하기</button>
+                  <button className={styles.subBtn} onClick={() => setShowSubscribeModal(true)}>구독하기</button>
                 )}
                 <button className={styles.consultBtn}>상담 신청</button>
               </>
@@ -835,7 +852,7 @@ export default function MentorProfilePage() {
               </ul>
               <button
                 className={styles.sidebarSubscribeBtn}
-                onClick={handleSubscribe}
+                onClick={() => setShowSubscribeModal(true)}
                 disabled={!selectedPlan || subscribing}
               >
                 {subscribing ? "결제 진행 중..." : "구독하고 전체 보기"}
@@ -986,11 +1003,48 @@ export default function MentorProfilePage() {
               <strong>월 {currentPrice}원</strong>
             </div>
 
+            <div style={{ textAlign: "left", marginTop: 12 }}>
+              <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 4 }}>
+                휴대폰 번호 <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <input
+                type="tel"
+                inputMode="numeric"
+                value={subscribePhone}
+                onChange={(e) => {
+                  setSubscribePhone(e.target.value.replace(/\D/g, ""));
+                  setSubscribePhoneError("");
+                }}
+                placeholder="01012345678"
+                maxLength={11}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  border: subscribePhoneError ? "1px solid #ef4444" : "1px solid #d1d5db",
+                  fontSize: 14,
+                  boxSizing: "border-box",
+                }}
+              />
+              <p style={{ fontSize: 12, color: "#6b7280", margin: "4px 0 0" }}>
+                결제창(PortOne)에 전달되는 용도로만 사용돼요.
+              </p>
+              {subscribePhoneError && (
+                <p style={{ fontSize: 12, color: "#ef4444", margin: "4px 0 0" }}>{subscribePhoneError}</p>
+              )}
+            </div>
+
             <div className={styles.modalActionBtns}>
               <button className={styles.modalSubBtn} onClick={handleSubscribe} disabled={!selectedPlan || subscribing}>
                 {subscribing ? "결제 진행 중..." : `월 ${currentPrice}원으로 구독하기`}
               </button>
-              <button className={styles.modalCloseBtn} onClick={() => setShowSubscribeModal(false)}>
+              <button
+                className={styles.modalCloseBtn}
+                onClick={() => {
+                  setShowSubscribeModal(false);
+                  setSubscribePhoneError("");
+                }}
+              >
                 닫기
               </button>
             </div>

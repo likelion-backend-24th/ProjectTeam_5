@@ -25,7 +25,10 @@ public enum ErrorCode {
     ALREADY_SUBSCRIBED(HttpStatus.CONFLICT, "이미 진행 중인 구독이 존재합니다."),
     PAYMENT_VERIFICATION_FAILED(HttpStatus.BAD_REQUEST, "결제 검증에 실패했습니다."),
     WEBHOOK_SIGNATURE_INVALID(HttpStatus.BAD_REQUEST, "웹훅 서명 검증에 실패했습니다."),
-    WEBHOOK_PAYLOAD_INVALID(HttpStatus.BAD_REQUEST, "웹훅 페이로드를 해석할 수 없습니다.");
+    WEBHOOK_PAYLOAD_INVALID(HttpStatus.BAD_REQUEST, "웹훅 페이로드를 해석할 수 없습니다."),
+    BILLING_KEY_ISSUANCE_NOT_FOUND(HttpStatus.NOT_FOUND, "빌링키 발급 요청을 찾을 수 없습니다."),
+    BILLING_KEY_VERIFICATION_FAILED(HttpStatus.BAD_REQUEST, "빌링키 검증에 실패했습니다."),
+    BILLING_KEY_ALREADY_USED(HttpStatus.CONFLICT, "이미 처리된 카드 등록 요청입니다.");
 
 
     private final HttpStatus status;

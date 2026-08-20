@@ -1,11 +1,21 @@
 import { request } from "./client";
 
+// 빌링키 발급 준비 POST /api/payment-methods/prepare
+// PortOne requestIssueBillingKey()를 호출할 때 그대로 넘길 storeId/channelKey/issueId를 받는다.
+export function prepareBillingKeyIssuance() {
+  return request("/api/payment-methods/prepare", {
+    method: "POST",
+    fallbackMessage: "카드 등록 준비에 실패했습니다.",
+  });
+}
+
 // 결제수단 등록 POST /api/payment-methods
-// 백엔드 PaymentMethodRegisterRequest: { cardNickname, brand, last4 }
-export function registerPaymentMethod({ cardNickname, brand, last4 }) {
+// 백엔드 PaymentMethodRegisterRequest: { cardNickname, issueId, billingKey }
+// issueId/billingKey는 prepareBillingKeyIssuance() + requestIssueBillingKey() 결과로만 채운다.
+export function registerPaymentMethod({ cardNickname, issueId, billingKey }) {
   return request("/api/payment-methods", {
     method: "POST",
-    body: { cardNickname, brand, last4 },
+    body: { cardNickname, issueId, billingKey },
     fallbackMessage: "결제수단 등록에 실패했습니다.",
   });
 }
