@@ -34,10 +34,10 @@ public class PaymentCancellationService {
         Payment payment = paymentRepository.findByPaymentId(paymentId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PAYMENT_NOT_FOUND));
 
-        Subscription subscription = subscriptionRepository.findById(payment.getSubscriptionId())
+        Subscription subscription = subscriptionRepository.findById(payment.getSubscription().getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
 
-        if (!subscription.getUserId().equals(userId)) {
+        if (!subscription.getUser().getId().equals(userId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
         if (payment.getStatus() != PaymentStatus.PAID) {
@@ -91,7 +91,7 @@ public class PaymentCancellationService {
 
         cancellation.approve(null); // PortOne이 별도 취소 ID를 주지만 지금은 안 씀 — 필요해지면 응답 파싱 추가
 
-        subscriptionRepository.findById(payment.getSubscriptionId())
+        subscriptionRepository.findById(payment.getSubscription().getId())
                 .ifPresent(Subscription::reserveCancellation);
     }
 

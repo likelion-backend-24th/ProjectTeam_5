@@ -95,6 +95,17 @@ public class Subscription extends BaseTimeEntity {
         this.nextBillingAt = periodEnd;
     }
 
+    // 정기결제(N회차) 성공 시 기간만 연장 — 이미 ACTIVE인 상태이므로 상태 전이는 없음
+    public void renewPeriod(LocalDateTime periodEnd) {
+        this.currentPeriodEnd = periodEnd;
+        this.nextBillingAt = periodEnd;
+    }
+
+    // 결제에 사용한 결제수단을 연결 — 이게 있어야 정기결제(예약) 때 어느 카드로 청구할지 알 수 있다.
+    public void assignPaymentMethod(PaymentMethod paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+
     // 회차 결제 실패 시
     public void markPastDue() {
         this.status = SubscriptionStatus.PAST_DUE;
