@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository  extends JpaRepository<User, Long> {
@@ -21,6 +22,27 @@ public interface UserRepository  extends JpaRepository<User, Long> {
             "     LOWER(u.bio) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "     LOWER(u.tags) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<User> findMentors(
+            @Param("keyword") String keyword,
+            Pageable pageable
+    );
+
+
+    @Query("""
+    select u
+    from User u
+    where exists (
+        select 1
+        from MentorPlan mp
+        where mp.mentorId = u.id
+          and mp.isActive = true
+    )
+    and (
+        :keyword is null
+        or :keyword = ''
+        or lower(u.name) like lower(concat('%', :keyword, '%'))
+    )
+    """)
+    Page<User> findActivePlanMentors(
             @Param("keyword") String keyword,
             Pageable pageable
     );
