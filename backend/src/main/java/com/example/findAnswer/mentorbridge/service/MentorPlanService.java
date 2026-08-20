@@ -4,13 +4,14 @@ import com.example.findAnswer.mentorbridge.constants.ErrorCode;
 import com.example.findAnswer.mentorbridge.dto.mentorPlan.MentorPlanRequest;
 import com.example.findAnswer.mentorbridge.dto.mentorPlan.MentorPlanResponse;
 import com.example.findAnswer.mentorbridge.entity.MentorPlan;
+import com.example.findAnswer.mentorbridge.entity.User;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
 import com.example.findAnswer.mentorbridge.repository.MentorPlanRepository;
+import com.example.findAnswer.mentorbridge.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -19,6 +20,7 @@ import java.util.List;
 public class MentorPlanService {
 
     private final MentorPlanRepository mentorPlanRepository;
+    private final UserRepository userRepository;
 
     public MentorPlanResponse getMentorPlanById(Long mentorPlanId) {
         MentorPlan plan = mentorPlanRepository.findById(mentorPlanId).orElseThrow(() -> new CustomException(ErrorCode.PLAN_NOT_FOUND));
@@ -31,20 +33,22 @@ public class MentorPlanService {
     }
 
     public List<MentorPlanResponse> getMentorPlanByMentor(Long mentorId) {
-        List<MentorPlan> mentorPlans = mentorPlanRepository.findByMentorIdAndIsActiveTrue(mentorId);
+        List<MentorPlan> mentorPlans = mentorPlanRepository.findByMentor_IdAndIsActiveTrue(mentorId);
         return mentorPlans.stream().map(MentorPlanResponse::fromEntity).toList();
     }
 
     @Transactional
     public MentorPlanResponse createMentorPlan(Long mentorId, MentorPlanRequest request) {
+        User mentor = userRepository.findById(mentorId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
         MentorPlan plan = mentorPlanRepository.save(
                 MentorPlan.builder()
-                        .mentorId(mentorId)
+                        .mentor(mentor)
                         .planName(request.planName())
                         .description(request.description())
                         .price(request.price())
                         .billingCycle(request.billingCycle())
-                        .isActive(true)
                         .build()
         );
         return MentorPlanResponse.fromEntity(plan);
@@ -60,7 +64,6 @@ public class MentorPlanService {
         }
 
         plan.update(request.planName(), request.description(), request.price(), request.billingCycle());
-        // 더티 체킹
         return MentorPlanResponse.fromEntity(plan);
     }
 
@@ -73,7 +76,6 @@ public class MentorPlanService {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
 
-        // 비활성화
         plan.deactivate();
     }
 }

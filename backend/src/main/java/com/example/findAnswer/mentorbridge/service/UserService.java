@@ -1,14 +1,15 @@
 package com.example.findAnswer.mentorbridge.service;
 
-import com.example.findAnswer.mentorbridge.constants.ErrorCode;
 import com.example.findAnswer.mentorbridge.constants.Role;
 import com.example.findAnswer.mentorbridge.dto.oauth.OAuthAccountSnapshot;
 import com.example.findAnswer.mentorbridge.dto.oauth.UserDisconnectEvent;
 import com.example.findAnswer.mentorbridge.dto.user.*;
 import com.example.findAnswer.mentorbridge.entity.EmailVerification;
 import com.example.findAnswer.mentorbridge.entity.Follow;
+import com.example.findAnswer.mentorbridge.entity.MentorProfile;
 import com.example.findAnswer.mentorbridge.entity.User;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
+import com.example.findAnswer.mentorbridge.constants.ErrorCode;
 import com.example.findAnswer.mentorbridge.jwt.JwtTokenProvider;
 import com.example.findAnswer.mentorbridge.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -34,8 +35,8 @@ public class UserService {
     private final FollowRepository followRepository;
     private final EmailVerificationRepository emailVerificationRepository;
     private final EmailService emailService;
+    private final MentorApplicationRepository mentorApplicationRepository;
 
-    // 회원가입
     @Transactional
     public UserResponse signup(SignupRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -49,7 +50,6 @@ public class UserService {
         return UserResponse.from(user);
     }
 
-    // 로그인
     @Transactional
     public TokenResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
@@ -72,13 +72,11 @@ public class UserService {
         return refreshTokenService.issueTokens(user.getId(), user.getEmail(), user.getRole());
     }
 
-    // 프로필 조회
     public UserResponse getUserProfile(Long userId) {
         User user = getUserById(userId);
         return UserResponse.from(user);
     }
 
-    // 이메일 변경
     @Transactional
     public UserResponse updateEmail(Long userId, UserEmailUpdateRequest request) {
         User user = getUserById(userId);
@@ -89,7 +87,6 @@ public class UserService {
         return UserResponse.from(user);
     }
 
-    // 비밀번호 변경
     @Transactional
     public void updatePassword(Long userId, UserPasswordUpdateRequest request) {
         User user = getUserById(userId);
@@ -100,7 +97,6 @@ public class UserService {
         user.updatePassword(encodedNewPassword);
     }
 
-    // 이름/관심사 변경
     @Transactional
     public UserResponse updateProfile(Long userId, UserProfileUpdateRequest request) {
         User user = getUserById(userId);
@@ -108,13 +104,12 @@ public class UserService {
         return UserResponse.from(user);
     }
 
-    // 회원 탈퇴(본인) / 회원 강제 탈퇴(관리자) 공용 — 소프트 삭제.
-    // DB 행을 실제로 지우지 않으므로 질문/답변/구독 등 FK로 물려있는 데이터를 정리할 필요가 없고, FK 위반도 나지 않는다.
+    // 회원 탈퇴 (소프트 삭제 적용)
     @Transactional
     public void deleteUser(Long userId) {
         User user = getUserById(userId);
         if (user.isDeleted()) {
-            return; // 이미 탈퇴한 계정 — 중복 호출 방지
+            return; // 이미 탈퇴한 계정
         }
 
         List<OAuthAccountSnapshot> oAuthAccounts = oAuthAccountRepository.findAllByUserId(userId)
@@ -123,23 +118,9 @@ public class UserService {
                 .toList();
 
         user.softDelete();
-        refreshTokenRepository.deleteByUserId(userId); // 기존 토큰 즉시 무효화 (차단 처리와 동일한 패턴)
+        refreshTokenRepository.deleteByUserId(userId);
 
         applicationEventPublisher.publishEvent(new UserDisconnectEvent(userId, oAuthAccounts));
-    }
-
-    // 공개 프로필 정보 업데이트
-    @Transactional
-    public UserResponse updatePublicProfile(Long userId, PublicProfileUpdateRequest request) {
-        User user = getUserById(userId);
-        user.updatePublicProfile(
-                request.getBio(),
-                request.getCareers(),
-                request.getDescription(),
-                request.getLocation(),
-                request.getTags()
-        );
-        return UserResponse.from(user);
     }
 
     // 프로필 이미지 URL 업데이트
@@ -186,18 +167,15 @@ public class UserService {
     public void blockUser(Long userId) {
         User user = getUserById(userId);
         user.block();
-        // 즉시 로그아웃 효과 (토큰 재발급 방지)
         refreshTokenRepository.deleteByUserId(userId);
     }
 
-    // [관리자] 회원 차단 해제
     @Transactional
     public void unblockUser(Long userId) {
         User user = getUserById(userId);
         user.unblock();
     }
 
-    // 로그아웃
     @Transactional
     public void logout(String refreshToken) {
         if (refreshToken == null) {
@@ -212,7 +190,6 @@ public class UserService {
         refreshTokenRepository.deleteByUserId(userId);
     }
 
-    // 사용자 예외처리 공통 메서드
     private User getUserById(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -226,7 +203,6 @@ public class UserService {
         User follower = getUserById(followerId);
         User followee = getUserById(followeeId);
 
-        // 이미 팔로우 중이면 삭제, 아니면 생성
         followRepository.findByFollowerIdAndFolloweeId(followerId, followeeId)
                 .ifPresentOrElse(
                         followRepository::delete,
@@ -234,7 +210,7 @@ public class UserService {
                 );
     }
 
-    //인증 이메일 발송
+    // 인증 이메일 발송
     @Transactional
     public void sendVerificationCode(Long userId, EmailVerificationRequest request) {
         String email = request.email();
@@ -243,10 +219,10 @@ public class UserService {
 
         emailVerificationRepository.deleteByUserId(userId);
         emailVerificationRepository.save(new EmailVerification(userId, email, code, expiresAt));
-        emailService.sendVerificationEmail(email, code); // 실제 메일 발송!
+        emailService.sendVerificationEmail(email, code);
     }
 
-    //인증번호 확인
+    // 인증번호 확인
     @Transactional
     public UserResponse verifyEmailCode(Long userId, EmailVerificationSubmitRequest request) {
         EmailVerification verification = emailVerificationRepository.findByUserIdAndEmail(userId, request.email())
@@ -267,4 +243,26 @@ public class UserService {
         return UserResponse.from(user);
     }
 
+    // 공개 프로필(멘토 프로필) 텍스트 정보 업데이트
+    @Transactional
+    public UserResponse updatePublicProfile(Long userId, PublicProfileUpdateRequest request) {
+        User user = getUserById(userId);
+
+        // 멘토 프로필이 존재하지 않는 경우 처리
+        if (user.getMentorProfile() == null) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+
+        MentorProfile mentorProfile = user.getMentorProfile();
+        mentorProfile.update(
+                request.getBio(),
+                request.getCompany(),
+                request.getCareer(),
+                request.getTags(),
+                request.getEducation(),
+                request.getSchedule()
+        );
+
+        return UserResponse.from(user);
+    }
 }

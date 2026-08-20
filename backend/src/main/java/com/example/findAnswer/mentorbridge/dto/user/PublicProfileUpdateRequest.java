@@ -7,8 +7,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class PublicProfileUpdateRequest {
     private String bio;
-    private String careers;
-    private String description;
-    private String location;
+    private String company;
+    private String career;
     private String tags;
+    private String education;
+    private String schedule;
 }

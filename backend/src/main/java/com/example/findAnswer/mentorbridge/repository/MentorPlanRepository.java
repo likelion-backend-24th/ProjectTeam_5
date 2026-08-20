@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface MentorPlanRepository extends JpaRepository<MentorPlan, Long> {
-    List<MentorPlan> findByMentorIdAndIsActiveTrue(Long mentorId);
+
+    List<MentorPlan> findByMentor_IdAndIsActiveTrue(Long mentorId);
+
     Optional<MentorPlan> findByIdAndIsActiveTrue(Long id);
-
-
 }

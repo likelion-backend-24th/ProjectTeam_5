@@ -29,14 +29,15 @@ public class PaymentSyncService {
     private final PaymentRepository paymentRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final SubscriptionRepository subscriptionRepository;
-    private final PortOnePaymentClient  portOnePaymentClient;
+    private final PortOnePaymentClient portOnePaymentClient;
 
     @Transactional
     public PaymentCompleteResponse complete(String paymentId, Long userId) {
         Payment payment = findPaymentOrThrow(paymentId);
         Subscription subscription = findSubscriptionOrThrow(payment);
 
-        if (!subscription.getUserId().equals(userId)) {
+        // 수정: subscription.getUserId() -> subscription.getUser().getId()
+        if (!subscription.getUser().getId().equals(userId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
         return sync(payment, subscription);
@@ -76,7 +77,8 @@ public class PaymentSyncService {
     }
 
     private Subscription findSubscriptionOrThrow(Payment payment) {
-        return subscriptionRepository.findById(payment.getSubscriptionId())
+        // 수정: payment.getSubscriptionId() -> payment.getSubscription().getId()
+        return subscriptionRepository.findById(payment.getSubscription().getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
     }
 
@@ -85,7 +87,8 @@ public class PaymentSyncService {
             return PaymentCompleteResponse.from(payment, subscription);
         }
 
-        log.info("Payment {} has been synced. Store Id = {}", payment.getPaymentId(), payment.getSubscriptionId());
+        // 수정: payment.getSubscriptionId() -> payment.getSubscription().getId()
+        log.info("Payment {} has been synced. Subscription Id = {}", payment.getPaymentId(), payment.getSubscription().getId());
 
         PortOnePaymentSnapshot snapshot = portOnePaymentClient.getPayment(payment.getPaymentId());
 

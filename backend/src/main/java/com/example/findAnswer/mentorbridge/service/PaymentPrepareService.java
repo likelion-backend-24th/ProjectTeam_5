@@ -7,6 +7,7 @@ import com.example.findAnswer.mentorbridge.dto.payment.PaymentPrepareResponse;
 import com.example.findAnswer.mentorbridge.entity.MentorPlan;
 import com.example.findAnswer.mentorbridge.entity.Payment;
 import com.example.findAnswer.mentorbridge.entity.Subscription;
+import com.example.findAnswer.mentorbridge.entity.User;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
 import com.example.findAnswer.mentorbridge.repository.MentorPlanRepository;
 import com.example.findAnswer.mentorbridge.repository.PaymentRepository;
@@ -41,7 +42,12 @@ public class PaymentPrepareService {
 
     @Transactional
     public PaymentPrepareResponse prepare(Long userId, Long mentorId, Long planId) {
-        userRepository.findById(userId)
+        // 1. 유저 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        // 2. 멘토 조회 (MentorPlan이 속한 멘토 확인용)
+        User mentor = userRepository.findById(mentorId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         MentorPlan mentorPlan = mentorPlanRepository.findByIdAndIsActiveTrue(planId)
@@ -53,27 +59,24 @@ public class PaymentPrepareService {
 
         LocalDateTime now = LocalDateTime.now();
 
-        // 처음 구독하는 멘토라면 여기서 PENDING 구독을 새로 만든다.
-        // (SubscriptionController가 별도의 "구독 신청" 엔드포인트 없이 이 API 하나로 신청+결제 준비를 겸하기 때문에,
-        //  여기서 만들어두지 않으면 첫 구독자는 영원히 SUBSCRIPTION_NOT_FOUND만 받게 된다.)
-        Subscription subscription = subscriptionRepository.findByUserIdAndMentorId(userId, mentorId)
+
+        Subscription subscription = subscriptionRepository.findByUserIdAndMentor_Id(userId, mentorId)
                 .map(sub -> {
                     if (sub.hasActivePermission(now)) {
                         throw new CustomException(ErrorCode.ALREADY_SUBSCRIBED);
                     }
-                    // 기존(만료 등) 이력이 있으면 결제 확정 전 상태로 되돌리고 이번에 선택된 요금제·금액을 반영
-                    sub.reserverForPayment(mentorPlan.getId(), mentorPlan.getPrice());
+                    sub.reserverForPayment(mentorPlan, mentorPlan.getPrice());
                     return sub;
                 })
                 .orElseGet(() -> subscriptionRepository.save(
                         Subscription.builder()
-                                .userId(userId)
-                                .mentorId(mentorId)
-                                .planId(mentorPlan.getId())
+                                .user(user)       //[cite: 8] User 객체 주입
+                                .mentor(mentor)   //[cite: 8] 멘토 User 객체 주입
+                                .plan(mentorPlan) //[cite: 8] MentorPlan 객체 주입
                                 .status(SubscriptionStatus.PENDING)
                                 .amount(mentorPlan.getPrice())
                                 .currentPeriodStart(now)
-                                .currentPeriodEnd(now) // 결제 확정 전 임시값. activateAfterFirstPayment가 갱신한다.
+                                .currentPeriodEnd(now)
                                 .build()
                 ));
 
@@ -83,13 +86,12 @@ public class PaymentPrepareService {
                 .map(p -> p.getCycleNo() + 1)
                 .orElse(1);
 
-        // 이니시스 oid 제한(1~40자) 때문에 UUID를 통째로 못 붙인다.
         String paymentId = paymentIdPrefix + "-" + cycleNo + "-" + ShortId.generate();
 
         Payment payment = paymentRepository.save(
                 Payment.builder()
                         .paymentId(paymentId)
-                        .subscriptionId(subscription.getId())
+                        .subscription(subscription) //[cite: 7] Subscription 객체 주입
                         .cycleNo(cycleNo)
                         .attemptNo(1)
                         .currency("KRW")

@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,14 +13,15 @@ import java.util.List;
 @Table(name = "mentor_post")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class MentorPost {
+public class MentorPost extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "mentor_id", nullable = false)
-    private Long mentorId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "mentor_id", nullable = false)
+    private User mentor;
 
     @Column(nullable = false)
     private String title;
@@ -30,42 +30,39 @@ public class MentorPost {
     private String content;
 
     @Column(name = "category")
-    private String category; // 💡 [추가] 카테고리 컬럼
+    private String category;
 
     @Column(name = "is_public", nullable = false)
-    private Boolean isPublic = true; // 💡 [추가] 공개 여부 (기본값 전체공개)
+    private Boolean isPublic = true;
 
-    @ElementCollection
-    @CollectionTable(name = "mentor_post_attachments", joinColumns = @JoinColumn(name = "post_id"))
-    @Column(name = "attachment_id")
-    private List<Long> attachmentIds = new ArrayList<>();
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<MentorPostAttachmentFile> attachments = new ArrayList<>();
 
     @Builder
-    public MentorPost(Long mentorId, String title, String content, String category, Boolean isPublic, List<Long> attachmentIds) {
-        this.mentorId = mentorId;
+    public MentorPost(User mentor, String title, String content, String category, Boolean isPublic) {
+        this.mentor = mentor;
         this.title = title;
         this.content = content;
         this.category = category != null ? category : "일반";
         this.isPublic = isPublic != null ? isPublic : true;
-        this.attachmentIds = attachmentIds != null ? attachmentIds : new ArrayList<>();
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
     }
 
-    public void update(String title, String content, String category, Boolean isPublic, List<Long> attachmentIds) {
+    public void addAttachment(MentorPostAttachmentFile attachment) {
+        this.attachments.add(attachment);
+        attachment.setPost(this);
+    }
+
+    public void update(String title, String content, String category, Boolean isPublic, List<MentorPostAttachmentFile> newAttachments) {
         this.title = title;
         this.content = content;
         if (category != null) this.category = category;
         if (isPublic != null) this.isPublic = isPublic;
-        if (attachmentIds != null) {
-            this.attachmentIds = attachmentIds;
+
+        this.attachments.clear();
+        if (newAttachments != null) {
+            for (MentorPostAttachmentFile attachment : newAttachments) {
+                this.addAttachment(attachment);
+            }
         }
-        this.updatedAt = LocalDateTime.now();
     }
 }
