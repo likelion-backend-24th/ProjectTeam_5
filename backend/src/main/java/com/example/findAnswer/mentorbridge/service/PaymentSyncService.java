@@ -14,11 +14,13 @@ import com.example.findAnswer.mentorbridge.repository.PaymentRepository;
 import com.example.findAnswer.mentorbridge.repository.PaymentTransactionRepository;
 import com.example.findAnswer.mentorbridge.repository.SubscriptionRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -61,6 +63,7 @@ public class PaymentSyncService {
                 PaymentTransaction.builder()
                         .payment(payment)
                         .transactionId(remote.transactionId())
+                        .amount(remote.amount())
                         .paymentStatus(txStatus)
                         .approvedAt(LocalDateTime.now())
                         .build()
@@ -82,6 +85,8 @@ public class PaymentSyncService {
             return PaymentCompleteResponse.from(payment, subscription);
         }
 
+        log.info("Payment {} has been synced. Store Id = {}", payment.getPaymentId(), payment.getSubscriptionId());
+
         PortOnePaymentSnapshot snapshot = portOnePaymentClient.getPayment(payment.getPaymentId());
 
         boolean verified = payment.getStoreId().equals(snapshot.storeId())
@@ -92,6 +97,11 @@ public class PaymentSyncService {
         recordTransaction(payment, snapshot, verified);
 
         if (!verified || !"PAID".equals(snapshot.status())) {
+            log.warn("결제 검증 실패 paymentId={} : local(storeId={}, channelKey={}, currency={}, amount={}) "
+                            + "vs remote(storeId={}, channelKey={}, currency={}, amount={}, status={})",
+                    payment.getPaymentId(),
+                    payment.getStoreId(), payment.getChannelKey(), payment.getCurrency(), payment.getAmount(),
+                    snapshot.storeId(), snapshot.channelKey(), snapshot.currency(), snapshot.amount(), snapshot.status());
             payment.markFailed();
             throw new CustomException(ErrorCode.PAYMENT_VERIFICATION_FAILED);
         }

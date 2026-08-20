@@ -12,13 +12,13 @@ import com.example.findAnswer.mentorbridge.repository.MentorPlanRepository;
 import com.example.findAnswer.mentorbridge.repository.PaymentRepository;
 import com.example.findAnswer.mentorbridge.repository.SubscriptionRepository;
 import com.example.findAnswer.mentorbridge.repository.UserRepository;
+import com.example.findAnswer.mentorbridge.util.ShortId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -83,7 +83,8 @@ public class PaymentPrepareService {
                 .map(p -> p.getCycleNo() + 1)
                 .orElse(1);
 
-        String paymentId = paymentIdPrefix + "-" + cycleNo + "-" + UUID.randomUUID();
+        // 이니시스 oid 제한(1~40자) 때문에 UUID를 통째로 못 붙인다.
+        String paymentId = paymentIdPrefix + "-" + cycleNo + "-" + ShortId.generate();
 
         Payment payment = paymentRepository.save(
                 Payment.builder()

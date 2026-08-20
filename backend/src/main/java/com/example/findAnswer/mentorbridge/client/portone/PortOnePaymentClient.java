@@ -3,6 +3,7 @@ package com.example.findAnswer.mentorbridge.client.portone;
 import com.example.findAnswer.mentorbridge.constants.ErrorCode;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
 import lombok.extern.slf4j.Slf4j;
+import org.springdoc.api.ErrorMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -17,6 +18,9 @@ public class PortOnePaymentClient {
     @Value("${portone.api-base-url}")
     private String apiBaseUrl;
 
+    @Value("${portone.store-id}")
+    private String storeId;
+
     @Value("${portone.api-secret}")
     private String apiSecret;
 
@@ -24,13 +28,16 @@ public class PortOnePaymentClient {
 
     public PortOnePaymentSnapshot getPayment(String paymentId) {
         try{
+
+
             JsonNode body = restClient.get()
-                    .uri(apiBaseUrl + "/payments/{paymentId}", paymentId)
+                    .uri(apiBaseUrl + "/payments/{paymentId}?storeId={storeId}", paymentId, storeId)
                     .header("Authorization", "PortOne " + apiSecret)
                     .retrieve()
                     .body(JsonNode.class);
 
             if(body == null){
+                log.info(paymentId);
                 throw new CustomException(ErrorCode.PAYMENT_VERIFICATION_FAILED);
             }
             return PortOnePaymentSnapshot.from(body);

@@ -86,3 +86,5 @@ portone:
   api-base-url: ${PORTONE_API_BASE_URL:https://api.portone.io}
   payment-id-prefix: ${PORTONE_PAYMENT_ID_PREFIX:MB}
   webhook-secret: ${PORTONE_WEBHOOK_SECRET:whsec_0poG6m2/caXMxIy8DbyBj1NaNC4R3OzpjQYoNE26cN0=*=}
+  billing-issue-id-prefix: ${PORTONE_BILLING_ISSUE_ID_PREFIX:MB-BK}   # ★ 추가
+
