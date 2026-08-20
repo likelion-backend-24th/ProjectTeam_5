@@ -15,6 +15,7 @@ public enum ErrorCode {
     FILE_TOO_LARGE(HttpStatus.BAD_REQUEST, "파일이 너무 큽니다."),
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 요청입니다."),
     USER_BLOCKED(HttpStatus.FORBIDDEN, "차단된 계정입니다. 관리자에게 문의하세요."),
+    USER_DELETED(HttpStatus.FORBIDDEN, "탈퇴한 계정입니다."),
     FILE_STORAGE_ERROR(HttpStatus.BAD_REQUEST, "파일 저장소 설정이 잘못되었습니다."),
     FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다."),
     PAYMENT_METHOD_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 결제수단입니다."),
@@ -23,7 +24,9 @@ public enum ErrorCode {
     SUBSCRIPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 구독입니다."),
     PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 결제입니다."),
     ALREADY_SUBSCRIBED(HttpStatus.CONFLICT, "이미 진행 중인 구독이 존재합니다."),
-    PAYMENT_VERIFICATION_FAILED(HttpStatus.BAD_REQUEST, "결제 검증에 실패했습니다.");
+    PAYMENT_VERIFICATION_FAILED(HttpStatus.BAD_REQUEST, "결제 검증에 실패했습니다."),
+    WEBHOOK_SIGNATURE_INVALID(HttpStatus.BAD_REQUEST, "웹훅 서명 검증에 실패했습니다."),
+    WEBHOOK_PAYLOAD_INVALID(HttpStatus.BAD_REQUEST, "웹훅 페이로드를 해석할 수 없습니다.");
 
 
     private final HttpStatus status;
@@ -33,7 +36,6 @@ public enum ErrorCode {
         this.status = status;
         this.message = message;
     }
-
     public HttpStatus getStatus() { return status; }
     public String getMessage() { return message; }
 }

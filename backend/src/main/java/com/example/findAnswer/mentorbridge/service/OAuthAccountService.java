@@ -29,7 +29,7 @@ public class OAuthAccountService {
 
         User user = oAuthAccount.getUser();
 
-        return new AuthUser(user.getId(), user.getEmail(), user.getRole(), user.isBlocked());
+        return new AuthUser(user.getId(), user.getEmail(), user.getRole(), user.isBlocked(), user.isDeleted());
     }
 
     private OAuthAccount createAccount(Provider provider, OAuthUserInfo info) {

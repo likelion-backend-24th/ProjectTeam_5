@@ -30,46 +30,22 @@ public class PaymentSyncService {
     private final PortOnePaymentClient  portOnePaymentClient;
 
     @Transactional
-    public PaymentCompleteResponse complete(String paymentId, Long userId){
-        Payment payment = paymentRepository.findByPaymentId(paymentId)
-                .orElseThrow(() -> new CustomException(ErrorCode.PAYMENT_NOT_FOUND));
+    public PaymentCompleteResponse complete(String paymentId, Long userId) {
+        Payment payment = findPaymentOrThrow(paymentId);
+        Subscription subscription = findSubscriptionOrThrow(payment);
 
-        Subscription subscription = subscriptionRepository.findById(payment.getSubscriptionId())
-                .orElseThrow(() -> new CustomException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
-
-        if(!subscription.getUserId().equals(userId)){
+        if (!subscription.getUserId().equals(userId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
-
-        if(payment.getStatus() == PaymentStatus.PAID) {
-            return PaymentCompleteResponse.from(payment, subscription);
-        }
-
-        PortOnePaymentSnapshot snapshot = portOnePaymentClient.getPayment(paymentId);
-
-        boolean verified = payment.getStoreId().equals(snapshot.storeId())
-                && payment.getChannelKey().equals(snapshot.channelKey())
-                && payment.getCurrency().equals(snapshot.currency())
-                && payment.getAmount().equals(snapshot.amount());
-
-        recordTransaction(payment, snapshot, verified);
-
-        if (!verified || !"PAID".equals(snapshot.status())) {
-            payment.markFailed();
-            throw new CustomException(ErrorCode.PAYMENT_VERIFICATION_FAILED);
-        }
-
-        payment.markPaidAt(LocalDateTime.now());
-
-        // 최초 결제일 때만 구독을 활성화한다. 이미 ACTIVE면 다시 기간을 늘리지 않는다(멱등성).
-        if (subscription.getStatus() == SubscriptionStatus.PENDING) {
-            subscription.activateAfterFirstPayment(LocalDateTime.now().plusMonths(1));
-        }
-
-        return PaymentCompleteResponse.from(payment, subscription);
-
+        return sync(payment, subscription);
     }
 
+    @Transactional
+    public PaymentCompleteResponse syncFromWebhook(String paymentId) {
+        Payment payment = findPaymentOrThrow(paymentId);
+        Subscription subscription = findSubscriptionOrThrow(payment);
+        return sync(payment, subscription);
+    }
 
     private void recordTransaction(Payment payment, PortOnePaymentSnapshot remote, boolean verified) {
         if (remote.transactionId() == null
@@ -89,5 +65,43 @@ public class PaymentSyncService {
                         .approvedAt(LocalDateTime.now())
                         .build()
         );
+    }
+
+    private Payment findPaymentOrThrow(String paymentId) {
+        return paymentRepository.findByPaymentId(paymentId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PAYMENT_NOT_FOUND));
+    }
+
+    private Subscription findSubscriptionOrThrow(Payment payment) {
+        return subscriptionRepository.findById(payment.getSubscriptionId())
+                .orElseThrow(() -> new CustomException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
+    }
+
+    private PaymentCompleteResponse sync(Payment payment, Subscription subscription) {
+        if (payment.getStatus() == PaymentStatus.PAID) {
+            return PaymentCompleteResponse.from(payment, subscription);
+        }
+
+        PortOnePaymentSnapshot snapshot = portOnePaymentClient.getPayment(payment.getPaymentId());
+
+        boolean verified = payment.getStoreId().equals(snapshot.storeId())
+                && payment.getChannelKey().equals(snapshot.channelKey())
+                && payment.getCurrency().equals(snapshot.currency())
+                && payment.getAmount().equals(snapshot.amount());
+
+        recordTransaction(payment, snapshot, verified);
+
+        if (!verified || !"PAID".equals(snapshot.status())) {
+            payment.markFailed();
+            throw new CustomException(ErrorCode.PAYMENT_VERIFICATION_FAILED);
+        }
+
+        payment.markPaidAt(LocalDateTime.now());
+
+        if (subscription.getStatus() == SubscriptionStatus.PENDING) {
+            subscription.activateAfterFirstPayment(LocalDateTime.now().plusMonths(1));
+        }
+
+        return PaymentCompleteResponse.from(payment, subscription);
     }
 }
