@@ -15,8 +15,10 @@ public interface UserRepository  extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);// email로 회원 정보 조회
     boolean existsByEmail(String email); // 회원가입시 이메일 중복 확인
 
+    List<User> findAllByDeletedAtIsNull(); // 탈퇴(소프트 삭제)한 계정을 제외한 전체 목록
+
     //멘토조회
-    @Query("SELECT u FROM User u WHERE u.role = 'MENTOR' " +
+    @Query("SELECT u FROM User u WHERE u.role = 'MENTOR' AND u.deletedAt IS NULL " +
             "AND (:keyword IS NULL OR :keyword = '' OR " +
             "     LOWER(u.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "     LOWER(u.bio) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
@@ -30,7 +32,8 @@ public interface UserRepository  extends JpaRepository<User, Long> {
     @Query("""
     select u
     from User u
-    where exists (
+    where u.deletedAt is null
+    and exists (
         select 1
         from MentorPlan mp
         where mp.mentorId = u.id
