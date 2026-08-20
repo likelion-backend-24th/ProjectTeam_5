@@ -76,6 +76,10 @@ public class User extends BaseTimeEntity {
     @Column(length = 255)
     private String schedule;
 
+    // 카드 등록 시 받아서 저장 — 서버가 직접 트리거하는 결제(구독/정기결제)에 구매자 정보로 필요(이니시스 V2 필수값)
+    @Column(name = "phone_number", length = 20)
+    private String phoneNumber;
+
     //멘토 구독 월 이용료 필드
 //     @Column(name = "subscription_price")
 //     private Integer subscriptionPrice = 9900;
@@ -111,6 +115,10 @@ public class User extends BaseTimeEntity {
         this.education = education;
         this.schedule = schedule;
         //this.subscriptionPrice = (subscriptionPrice != null) ? subscriptionPrice : 9900;
+    }
+
+    public void updatePhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 
     public void updatePassword(String encodedPassword) {
