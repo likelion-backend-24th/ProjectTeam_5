@@ -2,10 +2,7 @@ package com.example.findAnswer.mentorbridge.entity;
 
 import com.example.findAnswer.mentorbridge.constants.PaymentStatus;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -14,6 +11,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
+@Builder
 public class Payment extends BaseTimeEntity {
 
     @Id
@@ -21,16 +19,17 @@ public class Payment extends BaseTimeEntity {
     private Long id;
 
     @Column(name = "payment_id", nullable = false, unique = true, length = 100)
-    private String paymentId; // portone 공유 결제 ID
+    private String paymentId;
 
-    @Column(name = "subscription_id", nullable = false)
-    private Long subscriptionId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subscription_id", nullable = false)
+    private Subscription subscription;
 
     @Column(name = "cycle_no", nullable = false)
-    private int cycleNo; // 몇 번째 결제인지 - 최초결제 = 1
+    private int cycleNo;
 
     @Column(name = "attempt_no", nullable = false)
-    private int attemptNo; // 결제 재시도 횟수
+    private int attemptNo;
 
     @Column(nullable = false)
     private String currency;
@@ -42,7 +41,6 @@ public class Payment extends BaseTimeEntity {
     @Column(name = "status", nullable = false, length = 20)
     private PaymentStatus status;
 
-    // portone 조회 결과 검증용 스냅샷
     @Column(name = "store_id", length = 100)
     private String storeId;
 
@@ -62,7 +60,6 @@ public class Payment extends BaseTimeEntity {
     }
 
     public boolean isOfSubscription(Long subscriptionId) {
-        return this.subscriptionId.equals(subscriptionId);
+        return this.subscription.getId().equals(subscriptionId);
     }
-
 }

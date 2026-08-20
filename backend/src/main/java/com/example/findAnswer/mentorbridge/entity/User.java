@@ -36,31 +36,12 @@ public class User extends BaseTimeEntity {
     @Column(nullable = false)
     private boolean blocked = false;
 
-    // 멘토 프로필 관련 필드들
     @Column(name = "profile_image_url")
     private String profileImageUrl;
 
-    @Column(length = 1000)
-    private String bio;
-
-    @Column(length = 255)
-    private String company;
-
-    @Column(length = 255)
-    private String career;
-
-    @Column(length = 255)
-    private String tags;
-
-    @Column(length = 255)
-    private String education;
-
-    @Column(length = 255)
-    private String schedule;
-
-//    // 💡 [추가] 멘토 구독 월 이용료 필드
-//    @Column(name = "subscription_price")
-//    private Integer subscriptionPrice = 9900;
+    // 멘토 프로필과 1:1 관계 설정
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private MentorProfile mentorProfile;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<MentorApplication> mentorApplications = new ArrayList<>();
@@ -93,26 +74,7 @@ public class User extends BaseTimeEntity {
         return new User(email, null, name, role);
     }
 
-    public void block() {
-        this.blocked = true;
-    }
-
-    public void unblock() {
-        this.blocked = false;
-    }
-
-    public boolean isBlocked() {
-        return this.blocked;
-    }
-
-    // 💡 [수정] 멘토 프로필 전체 수정 메서드 (subscriptionPrice 추가)
-    public void updateMentorProfile(String bio, String company, String career, String tags, String education, String schedule) { //Integer subscriptionPrice
-        this.bio = bio;
-        this.company = company;
-        this.career = career;
-        this.tags = tags;
-        this.education = education;
-        this.schedule = schedule;
-//        this.subscriptionPrice = (subscriptionPrice != null) ? subscriptionPrice : 9900;
-    }
+    public void block() { this.blocked = true; }
+    public void unblock() { this.blocked = false; }
+    public boolean isBlocked() { return this.blocked; }
 }

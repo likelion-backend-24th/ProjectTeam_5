@@ -10,14 +10,14 @@ public record SubscriptionResponse(
         Long mentorId,
         String mentorName,
         SubscriptionStatus status,
-        Integer amount, // 💡 [추가] 구독 금액
+        Integer amount,
         LocalDateTime currentPeriodStart,
         LocalDateTime currentPeriodEnd
 ) {
     public static SubscriptionResponse of(Subscription subscription, String mentorName) {
         return new SubscriptionResponse(
                 subscription.getId(),
-                subscription.getMentorId(),
+                subscription.getMentor().getId(),
                 mentorName,
                 subscription.getStatus(),
                 subscription.getAmount(),

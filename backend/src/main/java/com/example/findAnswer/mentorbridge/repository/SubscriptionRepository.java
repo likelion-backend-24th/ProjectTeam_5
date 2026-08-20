@@ -13,7 +13,7 @@ import java.util.Optional;
 
 public interface SubscriptionRepository extends JpaRepository<Subscription, Long> {
 
-    Optional<Subscription> findByUserIdAndMentorId(Long userId, Long mentorId);
+    Optional<Subscription> findByUserIdAndMentor_Id(Long userId, Long mentorId);
 
     List<Subscription> findByUserIdAndStatusInAndCurrentPeriodEndAfter(
             Long userId,
@@ -21,22 +21,18 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
             LocalDateTime now
     );
 
-    boolean existsByUserIdAndMentorIdAndStatusIn(Long userId, Long mentorId, List<SubscriptionStatus> statuses);
+    boolean existsByUserIdAndMentor_IdAndStatusIn(Long userId, Long mentorId, List<SubscriptionStatus> statuses);
 
-    // 💡 [수정] nativeQuery = true 사용으로 DB 테이블에 직접 UPDATE 실행
-    @Modifying(clearAutomatically = true) // 💡 영속성 컨텍스트 캐시 클리어 필수
+    @Modifying(clearAutomatically = true)
     @Query(value = "UPDATE subscription SET status = 'EXPIRED' " +
             "WHERE current_period_end <= :now " +
             "AND status IN ('ACTIVE', 'CANCEL_RESERVED')",
             nativeQuery = true)
     int updateExpiredSubscriptions(@Param("now") LocalDateTime now);
 
-
-    // 활성 상태인 구독자 수 조회
-    long countByMentorIdAndStatusInAndCurrentPeriodEndAfter(
+    long countByMentor_IdAndStatusInAndCurrentPeriodEndAfter(
             Long mentorId,
             List<SubscriptionStatus> statuses,
             LocalDateTime now
     );
-
 }

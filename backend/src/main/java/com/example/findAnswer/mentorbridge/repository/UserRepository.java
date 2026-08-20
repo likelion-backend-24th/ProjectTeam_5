@@ -9,17 +9,16 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
-public interface UserRepository  extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, Long> {
 
-    Optional<User> findByEmail(String email);// email로 회원 정보 조회
-    boolean existsByEmail(String email); // 회원가입시 이메일 중복 확인
+    Optional<User> findByEmail(String email);
+    boolean existsByEmail(String email);
 
-    //멘토조회
-    @Query("SELECT u FROM User u WHERE u.role = 'MENTOR' " +
+    @Query("SELECT u FROM User u LEFT JOIN u.mentorProfile p WHERE u.role = 'MENTOR' " +
             "AND (:keyword IS NULL OR :keyword = '' OR " +
             "     LOWER(u.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "     LOWER(u.bio) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "     LOWER(u.tags) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+            "     LOWER(p.bio) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "     LOWER(p.tags) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<User> findMentors(
             @Param("keyword") String keyword,
             Pageable pageable

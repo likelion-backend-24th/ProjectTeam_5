@@ -36,7 +36,7 @@ public class MentorPostController {
     @GetMapping("/{postId}")
     @RequireSubscription
     public ResponseEntity<MentorPostResponse> getPost(
-            @RequestHeader(value = "X-USER-ID", required = false) Long userId, // 💡 이 부분을 추가해 주세요!
+            @RequestHeader(value = "X-USER-ID", required = false) Long userId,
             @PathVariable Long mentorId,
             @PathVariable Long postId) {
 
@@ -51,7 +51,11 @@ public class MentorPostController {
             @PathVariable Long postId,
             @RequestBody MentorPostRequest request) {
 
-        return ResponseEntity.ok(mentorPostService.updatePost(userId, postId, request));
+        if (!userId.equals(mentorId)) {
+            throw new IllegalArgumentException("멘토 본인만 수정할 수 있습니다.");
+        }
+
+        return ResponseEntity.ok(mentorPostService.updatePost(mentorId, postId, request));
     }
 
     // F-41: 멘토 본인 게시글 삭제
@@ -61,7 +65,11 @@ public class MentorPostController {
             @PathVariable Long mentorId,
             @PathVariable Long postId) {
 
-        mentorPostService.deletePost(userId, postId);
+        if (!userId.equals(mentorId)) {
+            throw new IllegalArgumentException("멘토 본인만 삭제할 수 있습니다.");
+        }
+
+        mentorPostService.deletePost(mentorId, postId);
         return ResponseEntity.ok().build();
     }
 

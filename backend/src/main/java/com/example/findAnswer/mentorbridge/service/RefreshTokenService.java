@@ -36,10 +36,13 @@ public class RefreshTokenService {
 
         String hashedToken = hashToken(refreshToken);
 
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
         refreshTokenRepository.findByUserId(userId)
                 .ifPresentOrElse(
                         existing -> existing.updateToken(hashedToken, expiresAt),
-                        () -> refreshTokenRepository.save(new RefreshToken(userId, hashedToken, expiresAt))
+                        () -> refreshTokenRepository.save(new RefreshToken(user, hashedToken, expiresAt))
                 );
 
         return new TokenResponse(accessToken, refreshToken);

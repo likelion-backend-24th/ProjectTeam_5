@@ -1,9 +1,14 @@
 package com.example.findAnswer.mentorbridge.service;
 
+import com.example.findAnswer.mentorbridge.constants.ErrorCode;
 import com.example.findAnswer.mentorbridge.dto.mentor.MentorPostRequest;
 import com.example.findAnswer.mentorbridge.dto.mentor.MentorPostResponse;
 import com.example.findAnswer.mentorbridge.entity.MentorPost;
+import com.example.findAnswer.mentorbridge.entity.MentorPostAttachmentFile;
+import com.example.findAnswer.mentorbridge.entity.User;
+import com.example.findAnswer.mentorbridge.exception.CustomException;
 import com.example.findAnswer.mentorbridge.repository.MentorPostRepository;
+import com.example.findAnswer.mentorbridge.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,30 +21,53 @@ import java.util.List;
 public class MentorPostService {
 
     private final MentorPostRepository mentorPostRepository;
+    private final UserRepository userRepository;
 
-    // 게시글 작성 (멘토 본인)
     @Transactional
     public MentorPostResponse createPost(Long mentorId, MentorPostRequest request) {
+        User mentor = userRepository.findById(mentorId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
         MentorPost post = MentorPost.builder()
-                .mentorId(mentorId)
+                .mentor(mentor)
                 .title(request.title())
                 .content(request.content())
-                .category(request.category())     // 💡 [추가]
-                .isPublic(request.isPublic())     // 💡 [추가]
-                .attachmentIds(request.attachmentIds()) // 💡 [이미지 해결] 첨부파일 ID 반영
+                .category(request.category())
+                .isPublic(request.isPublic())
                 .build();
+
+        if (request.attachments() != null) {
+            for (MentorPostRequest.AttachmentRequest attachmentDto : request.attachments()) {
+                MentorPostAttachmentFile attachment = MentorPostAttachmentFile.builder()
+                        .storageKey(attachmentDto.storageKey())
+                        .originalFileName(attachmentDto.originalFileName())
+                        .size(attachmentDto.size())
+                        .build();
+                post.addAttachment(attachment);
+            }
+        }
 
         return MentorPostResponse.from(mentorPostRepository.save(post));
     }
 
-    // 게시글 수정 (멘토 본인)
     @Transactional
     public MentorPostResponse updatePost(Long mentorId, Long postId, MentorPostRequest request) {
         MentorPost post = mentorPostRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
 
-        if (!post.getMentorId().equals(mentorId)) {
+        if (!post.getMentor().getId().equals(mentorId)) {
             throw new IllegalArgumentException("본인의 게시글만 수정할 수 있습니다.");
+        }
+
+        List<MentorPostAttachmentFile> newAttachments = null;
+        if (request.attachments() != null) {
+            newAttachments = request.attachments().stream()
+                    .map(attachmentDto -> MentorPostAttachmentFile.builder()
+                            .storageKey(attachmentDto.storageKey())
+                            .originalFileName(attachmentDto.originalFileName())
+                            .size(attachmentDto.size())
+                            .build())
+                    .toList();
         }
 
         post.update(
@@ -47,19 +75,18 @@ public class MentorPostService {
                 request.content(),
                 request.category(),
                 request.isPublic(),
-                request.attachmentIds()
-        ); // 💡 [추가]
+                newAttachments
+        );
 
         return MentorPostResponse.from(post);
     }
 
-    // 게시글 삭제 (멘토 본인)
     @Transactional
     public void deletePost(Long mentorId, Long postId) {
         MentorPost post = mentorPostRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
 
-        if (!post.getMentorId().equals(mentorId)) {
+        if (!post.getMentor().getId().equals(mentorId)) {
             throw new IllegalArgumentException("본인의 게시글만 삭제할 수 있습니다.");
         }
 
@@ -67,13 +94,13 @@ public class MentorPostService {
     }
 
     public MentorPostResponse getPost(Long mentorId, Long postId) {
-        MentorPost post = mentorPostRepository.findByIdAndMentorId(postId, mentorId)
+        MentorPost post = mentorPostRepository.findByIdAndMentor_Id(postId, mentorId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 멘토의 게시글을 찾을 수 없습니다."));
         return MentorPostResponse.from(post);
     }
 
     public List<MentorPostResponse> getPostsByMentorId(Long mentorId) {
-        return mentorPostRepository.findByMentorIdOrderByCreatedAtDesc(mentorId)
+        return mentorPostRepository.findByMentor_IdOrderByCreatedAtDesc(mentorId)
                 .stream()
                 .map(MentorPostResponse::from)
                 .toList();

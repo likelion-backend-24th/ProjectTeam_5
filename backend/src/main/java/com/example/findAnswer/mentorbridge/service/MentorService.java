@@ -2,7 +2,7 @@ package com.example.findAnswer.mentorbridge.service;
 
 import com.example.findAnswer.mentorbridge.constants.MentorApplicationStatus;
 import com.example.findAnswer.mentorbridge.constants.Role;
-import com.example.findAnswer.mentorbridge.constants.SubscriptionStatus; // 💡 추가
+import com.example.findAnswer.mentorbridge.constants.SubscriptionStatus;
 import com.example.findAnswer.mentorbridge.dto.mentor.MentorApplicationResponse;
 import com.example.findAnswer.mentorbridge.dto.mentor.MentorResponse;
 import com.example.findAnswer.mentorbridge.dto.mentor.MentorUpdateDto;
@@ -12,7 +12,7 @@ import com.example.findAnswer.mentorbridge.entity.User;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
 import com.example.findAnswer.mentorbridge.constants.ErrorCode;
 import com.example.findAnswer.mentorbridge.repository.MentorApplicationRepository;
-import com.example.findAnswer.mentorbridge.repository.SubscriptionRepository; // 💡 추가
+import com.example.findAnswer.mentorbridge.repository.SubscriptionRepository;
 import com.example.findAnswer.mentorbridge.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,7 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime; // 💡 추가
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -29,9 +29,8 @@ import java.util.List;
 public class MentorService {
     private final MentorApplicationRepository mentorApplicationRepository;
     private final UserRepository userRepository;
-    private final SubscriptionRepository subscriptionRepository; // 💡 1. SubscriptionRepository 주입 추가
+    private final SubscriptionRepository subscriptionRepository;
 
-    // 멘토 신청
     @Transactional
     public void applyForMentor(Long userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -41,10 +40,16 @@ public class MentorService {
         if (mentorApplicationRepository.existsByUser_IdAndStatus(userId, MentorApplicationStatus.PENDING)) {
             throw new CustomException(ErrorCode.VALIDATION_ERROR);
         }
-        mentorApplicationRepository.save(new MentorApplication(user));
+
+        mentorApplicationRepository.save(
+                MentorApplication.builder()
+                        .user(user)
+                        .introduction(null)
+                        .careerSummary(null)
+                        .build()
+        );
     }
 
-    // 멘토 승인
     @Transactional
     public void approveMentor(Long userId) {
         MentorApplication application = mentorApplicationRepository.findByUser_IdAndStatus(userId, MentorApplicationStatus.PENDING)
@@ -53,7 +58,6 @@ public class MentorService {
         application.getUser().promoteToMentor();
     }
 
-    // 멘토 거절
     @Transactional
     public void rejectMentor(Long userId) {
         MentorApplication application = mentorApplicationRepository.findByUser_IdAndStatus(userId, MentorApplicationStatus.PENDING)
@@ -61,14 +65,12 @@ public class MentorService {
         application.reject();
     }
 
-    // 내 멘토 신청 상태 조회
     public MentorApplicationResponse getMyMentorApplication(Long userId) {
         MentorApplication application = mentorApplicationRepository.findFirstByUser_IdOrderByCreatedAtDesc(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
         return new MentorApplicationResponse(application.getStatus(), application.getCreatedAt());
     }
 
-    // 멘토 신청 목록 조회 (관리자용)
     public List<UserResponse> getMentorApplications(Long userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         if (user.getRole() != Role.ADMIN) {
@@ -79,24 +81,20 @@ public class MentorService {
                 .toList();
     }
 
-    // 멘토 목록 조회 및 검색
     public Page<MentorResponse> getMentors(String keyword, Pageable pageable) {
         List<SubscriptionStatus> activeStatuses = List.of(SubscriptionStatus.ACTIVE, SubscriptionStatus.CANCEL_RESERVED);
         LocalDateTime now = LocalDateTime.now();
 
         return userRepository.findMentors(keyword, pageable)
                 .map(user -> {
-                    // 💡 2. 각 멘토별 활성 구독자 수 카운트 조회
-                    long subscriberCount = subscriptionRepository.countByMentorIdAndStatusInAndCurrentPeriodEndAfter(
+                    long subscriberCount = subscriptionRepository.countByMentor_IdAndStatusInAndCurrentPeriodEndAfter(
                             user.getId(), activeStatuses, now
                     );
 
-                    // 💡 3. 구독자 수를 반영한 MentorResponse 생성
                     return MentorResponse.from(user, (int) subscriberCount);
                 });
     }
 
-    // 멘토 상세 단건 조회
     public MentorResponse getMentorDetail(Long mentorId) {
         User user = userRepository.findById(mentorId)
                 .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
@@ -104,33 +102,32 @@ public class MentorService {
         List<SubscriptionStatus> activeStatuses = List.of(SubscriptionStatus.ACTIVE, SubscriptionStatus.CANCEL_RESERVED);
         LocalDateTime now = LocalDateTime.now();
 
-        // 💡 4. 상세 조회 시에도 실제 구독자 수 카운트 후 전달
-        long subscriberCount = subscriptionRepository.countByMentorIdAndStatusInAndCurrentPeriodEndAfter(
+        long subscriberCount = subscriptionRepository.countByMentor_IdAndStatusInAndCurrentPeriodEndAfter(
                 mentorId, activeStatuses, now
         );
 
         return MentorResponse.from(user, (int) subscriberCount);
     }
 
-    // 멘토 프로필 수정
     @Transactional
     public MentorResponse updateMentorProfile(Long mentorId, MentorUpdateDto dto) {
         User user = userRepository.findById(mentorId)
                 .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
 
-        user.updateMentorProfile(
-                dto.getBio(),
-                dto.getCompany(),
-                dto.getCareer(),
-                dto.getTags(),
-                dto.getEducation(),
-                dto.getSchedule()
-//                dto.getSubscriptionPrice()
-        );
+        if (user.getMentorProfile() != null) {
+            user.getMentorProfile().update(
+                    dto.getBio(),
+                    dto.getCompany(),
+                    dto.getCareer(),
+                    dto.getTags(),
+                    dto.getEducation(),
+                    dto.getSchedule()
+            );
+        }
 
         List<SubscriptionStatus> activeStatuses = List.of(SubscriptionStatus.ACTIVE, SubscriptionStatus.CANCEL_RESERVED);
         LocalDateTime now = LocalDateTime.now();
-        long subscriberCount = subscriptionRepository.countByMentorIdAndStatusInAndCurrentPeriodEndAfter(
+        long subscriberCount = subscriptionRepository.countByMentor_IdAndStatusInAndCurrentPeriodEndAfter(
                 mentorId, activeStatuses, now
         );
 

@@ -17,8 +17,9 @@ public class RefreshToken extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(nullable = false, length = 255)
     private String token;
@@ -26,8 +27,8 @@ public class RefreshToken extends BaseTimeEntity {
     @Column(nullable = false)
     private LocalDateTime expiresAt;
 
-    public RefreshToken(Long userId, String token, LocalDateTime expiresAt) {
-        this.userId = userId;
+    public RefreshToken(User user, String token, LocalDateTime expiresAt) {
+        this.user = user;
         this.token = token;
         this.expiresAt = expiresAt;
     }
