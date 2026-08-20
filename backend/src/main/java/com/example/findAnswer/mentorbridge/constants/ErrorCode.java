@@ -29,7 +29,13 @@ public enum ErrorCode {
     WEBHOOK_PAYLOAD_INVALID(HttpStatus.BAD_REQUEST, "웹훅 페이로드를 해석할 수 없습니다."),
     BILLING_KEY_ISSUANCE_NOT_FOUND(HttpStatus.NOT_FOUND, "빌링키 발급 요청을 찾을 수 없습니다."),
     BILLING_KEY_VERIFICATION_FAILED(HttpStatus.BAD_REQUEST, "빌링키 검증에 실패했습니다."),
-    BILLING_KEY_ALREADY_USED(HttpStatus.CONFLICT, "이미 처리된 카드 등록 요청입니다.");
+    BILLING_KEY_ALREADY_USED(HttpStatus.CONFLICT, "이미 처리된 카드 등록 요청입니다."),
+    PAYMENT_METHOD_REQUIRED(HttpStatus.BAD_REQUEST, "구독하려면 결제수단을 먼저 등록해주세요."),
+    PAYMENT_SCHEDULE_FAILED(HttpStatus.BAD_REQUEST, "다음 회차 결제 예약에 실패했습니다."),
+    CANCELLATION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 취소/환불 요청입니다."),
+    CANCELLATION_ALREADY_PROCESSED(HttpStatus.CONFLICT, "이미 처리된 취소/환불 요청입니다."),
+    PAYMENT_CANCEL_FAILED(HttpStatus.BAD_REQUEST, "결제 취소에 실패했습니다."),
+    PAYMENT_NOT_CANCELLABLE(HttpStatus.BAD_REQUEST, "취소할 수 없는 결제 상태입니다.");
 
 
     private final HttpStatus status;
