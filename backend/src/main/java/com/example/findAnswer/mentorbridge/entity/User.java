@@ -37,6 +37,9 @@ public class User extends BaseTimeEntity {
     @Column(nullable = false)
     private boolean blocked = false;
 
+    // 이메일 인증 여부
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified = false;
     // null이면 활성 계정. 탈퇴(본인 또는 관리자 강제)한 시각이 찍히면 소프트 삭제 상태 — DB 행은 지우지 않는다.
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
@@ -121,6 +124,8 @@ public class User extends BaseTimeEntity {
     public void promoteToMentor() {
         this.role = Role.MENTOR;
     }
+
+    public void verifyEmail() { this.emailVerified = true; }
 
     public User(String email, String password, String name, Role role) {
         this.email = email;

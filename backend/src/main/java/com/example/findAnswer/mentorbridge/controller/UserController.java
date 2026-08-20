@@ -110,4 +110,22 @@ public class UserController {
         userService.toggleFollow(currentUserId, userId);
         return ResponseEntity.ok().build();
     }
+
+    //이메일 인증 발송 API
+    @PostMapping("/me/email/verification-code")
+    public ResponseEntity<Void> sendVerificationCode(
+            @AuthenticationPrincipal Long userId,
+            @RequestBody EmailVerificationRequest request) {
+        userService.sendVerificationCode(userId, request);
+        return ResponseEntity.ok().build();
+    }
+
+    //이메일 인증 확인 API
+    @PostMapping("/me/email/verify")
+    public ResponseEntity<UserResponse> verifyEmailCode(
+            @AuthenticationPrincipal Long userId,
+            @RequestBody EmailVerificationSubmitRequest request) {
+        UserResponse response = userService.verifyEmailCode(userId, request);
+        return ResponseEntity.ok(response);
+    }
 }

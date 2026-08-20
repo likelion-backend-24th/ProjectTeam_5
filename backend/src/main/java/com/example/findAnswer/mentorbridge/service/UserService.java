@@ -5,6 +5,7 @@ import com.example.findAnswer.mentorbridge.constants.Role;
 import com.example.findAnswer.mentorbridge.dto.oauth.OAuthAccountSnapshot;
 import com.example.findAnswer.mentorbridge.dto.oauth.UserDisconnectEvent;
 import com.example.findAnswer.mentorbridge.dto.user.*;
+import com.example.findAnswer.mentorbridge.entity.EmailVerification;
 import com.example.findAnswer.mentorbridge.entity.Follow;
 import com.example.findAnswer.mentorbridge.entity.User;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
@@ -31,6 +32,8 @@ public class UserService {
     private final OAuthAccountRepository oAuthAccountRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final FollowRepository followRepository;
+    private final EmailVerificationRepository emailVerificationRepository;
+    private final EmailService emailService;
 
     // 회원가입
     @Transactional
@@ -230,4 +233,38 @@ public class UserService {
                         () -> followRepository.save(new Follow(follower, followee))
                 );
     }
+
+    //인증 이메일 발송
+    @Transactional
+    public void sendVerificationCode(Long userId, EmailVerificationRequest request) {
+        String email = request.email();
+        String code = String.format("%06d", new java.util.Random().nextInt(1000000));
+        java.time.LocalDateTime expiresAt = java.time.LocalDateTime.now().plusMinutes(5);
+
+        emailVerificationRepository.deleteByUserId(userId);
+        emailVerificationRepository.save(new EmailVerification(userId, email, code, expiresAt));
+        emailService.sendVerificationEmail(email, code); // 실제 메일 발송!
+    }
+
+    //인증번호 확인
+    @Transactional
+    public UserResponse verifyEmailCode(Long userId, EmailVerificationSubmitRequest request) {
+        EmailVerification verification = emailVerificationRepository.findByUserIdAndEmail(userId, request.email())
+                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_REQUEST));
+
+        if (verification.getExpiresAt().isBefore(java.time.LocalDateTime.now())) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+        if (!verification.getCode().equals(request.code())) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+
+        User user = getUserById(userId);
+        user.updateEmail(request.email());
+        user.verifyEmail();
+
+        emailVerificationRepository.delete(verification);
+        return UserResponse.from(user);
+    }
+
 }

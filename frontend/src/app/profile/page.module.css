@@ -343,3 +343,113 @@
     text-align: center;
   }
 }
+
+/* ===== 인증 모달 및 뱃지 스타일 ===== */
+.modalOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background: #ffffff;
+  padding: 32px;
+  border-radius: 16px;
+  width: 420px;
+  max-width: 90%;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.modalTitle {
+  margin: 0 0 12px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.modalDesc {
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.modalInput {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  font-size: 15px;
+  outline: none;
+}
+
+.modalInput:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.modalBtns {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.modalCancelButton {
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modalSaveButton {
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: none;
+  background-color: #2563eb;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* 뱃지 및 제어 스타일 */
+.badgeSuccess {
+  background: #dcfce7;
+  color: #15803d;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.verifiedRow {
+  cursor: default !important;
+}
+
+.verifiedRow:hover {
+  background: #ffffff !important;
+}
+
+.disabledRow {
+  opacity: 0.6;
+  cursor: not-allowed !important;
+  background: #f8fafc !important;
+}
+
+.warningText {
+  color: #dc2626 !important;
+  font-weight: 500;
+  font-size: 13px !important;
+  margin-top: 4px !important;
+}

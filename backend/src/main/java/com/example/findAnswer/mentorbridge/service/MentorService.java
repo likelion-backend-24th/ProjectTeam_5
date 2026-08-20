@@ -39,6 +39,10 @@ public class MentorService {
     @Transactional
     public void applyForMentor(Long userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if (!user.isEmailVerified()) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
         if (user.getRole() != Role.USER) {
             throw new CustomException(ErrorCode.VALIDATION_ERROR);
         }
