@@ -48,7 +48,22 @@ public class PortOnePaymentClient {
         }
     }
 
+    // 결제 취소(환불). POST /payments/{paymentId}/cancel — reason 필수, amount 생략 시 전액 취소.
+    public void cancelPayment(String paymentId, String reason) {
+        try {
+            restClient.post()
+                    .uri(apiBaseUrl + "/payments/{paymentId}/cancel", paymentId)
+                    .header("Authorization", "PortOne " + apiSecret)
+                    .body(new CancelRequest(reason))
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (RestClientResponseException e) {
+            log.warn("PortOne 결제 취소 실패 {} : {}", paymentId, e.getMessage());
+            throw new CustomException(ErrorCode.PAYMENT_CANCEL_FAILED);
+        }
+    }
 
-
+    private record CancelRequest(String reason) {
+    }
 
 }
