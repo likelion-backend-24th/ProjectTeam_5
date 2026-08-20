@@ -35,6 +35,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         AuthUser authUser = oAuthAccountService.loginOrCreate(provider, info);
 
+        if (authUser.isDeleted()) {
+            throw new OAuth2AuthException(OAuth2ErrorCode.WITHDRAWN_USER);
+        }
 
         if (authUser.isBlocked()) {
             throw new OAuth2AuthException(OAuth2ErrorCode.USER_BLOCKED);

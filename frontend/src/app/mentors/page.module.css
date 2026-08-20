@@ -35,28 +35,28 @@
 .title {
   margin: 0 0 8px;
   color: #0f172a;
-  font-size: 32px;
-  line-height: 1.25;
-  font-weight: 800;
+  font-size: 30px; /* 기존 26px -> 확대 */
+  line-height: 1.2;
+  font-weight: 750;
   letter-spacing: -0.04em;
 }
 
 .subtitle {
   margin: 0;
   color: #64748b;
-  font-size: 15px;
+  font-size: 15px; /* 기존 13px -> 확대 */
   line-height: 1.5;
 }
 
 .searchBox {
   display: flex;
   align-items: center;
-  width: 360px;
-  min-width: 300px;
-  height: 46px;
-  padding: 0 14px;
-  border: 1px solid #cbd5e1;
-  border-radius: 10px;
+  width: 340px;
+  min-width: 280px;
+  height: 42px; /* 높이 약간 조정 */
+  padding: 0 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
   background: #ffffff;
   transition:
     border-color 0.15s ease,
@@ -85,8 +85,8 @@
   border: 0;
   outline: 0;
   background: transparent;
-  color: #1e293b;
-  font-size: 14px;
+  color: #334155;
+  font-size: 14px; /* 기존 12px -> 확대 */
 }
 
 .searchBox input::placeholder {
@@ -103,6 +103,8 @@
   justify-content: center;
   width: 22px;
   height: 22px;
+  width: 22px;
+  height: 22px;
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -116,16 +118,16 @@
 .contentLayout {
   display: flex;
   align-items: flex-start;
-  gap: 24px;
+  gap: 20px;
 }
 
 /* 왼쪽 필터 */
 .sidebar {
-  width: 240px;
-  flex: 0 0 240px;
-  padding: 20px 18px 18px;
+  width: 235px; /* 폭 약간 조정 */
+  flex: 0 0 235px;
+  padding: 18px 16px 16px;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #ffffff;
 }
 
@@ -136,8 +138,8 @@
   gap: 8px;
   padding-bottom: 12px;
   border-bottom: 1px solid #f1f5f9;
-  color: #0f172a;
-  font-size: 15px;
+  color: #1e293b;
+  font-size: 14px; /* 기존 12px -> 확대 */
   font-weight: 700;
 }
 
@@ -148,8 +150,8 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: #64748b;
-  font-size: 12px;
+  color: #94a3b8;
+  font-size: 12px; /* 기존 10px -> 확대 */
   cursor: pointer;
 }
 
@@ -158,24 +160,24 @@
 }
 
 .filterGroup {
-  margin-top: 20px;
+  margin: 18px 1px 0;
 }
 
 .groupTitle {
   margin-bottom: 10px;
-  color: #1e293b;
-  font-size: 13px;
+  color: #334155;
+  font-size: 13px; /* 기존 11px -> 확대 */
   font-weight: 700;
 }
 
 .checkboxLabel {
   display: flex;
   align-items: center;
-  gap: 9px;
-  min-height: 30px;
-  margin-bottom: 4px;
-  color: #475569;
-  font-size: 13px;
+  gap: 8px;
+  min-height: 26px;
+  margin-bottom: 3px;
+  color: #64748b;
+  font-size: 12px; /* 기존 10px -> 확대 */
   line-height: 1.4;
   cursor: pointer;
   user-select: none;
@@ -187,11 +189,12 @@
 
 .checkboxLabel input {
   appearance: none;
-  width: 15px;
-  height: 15px;
+  width: 13px; /* 체크박스 크기 소폭 확대 */
+  height: 13px;
   margin: 0;
-  flex: 0 0 15px;
+  flex: 0 0 13px;
   border: 1px solid #cbd5e1;
+  border-radius: 3px;
   border-radius: 3px;
   background: #ffffff;
   cursor: pointer;
@@ -205,14 +208,14 @@
 
 .applyBtn {
   width: 100%;
-  height: 40px;
-  margin-top: 18px;
-  padding: 0 12px;
+  height: 38px; /* 기존 34px -> 확대 */
+  margin-top: 16px;
+  padding: 0 10px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: #2563eb;
   color: #ffffff;
-  font-size: 13px;
+  font-size: 13px; /* 기존 11px -> 확대 */
   font-weight: 700;
   cursor: pointer;
   transition: background 0.15s ease;
@@ -232,13 +235,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 40px;
-  margin-bottom: 16px;
+  min-height: 36px;
+  margin-bottom: 14px;
 }
 
 .totalCount {
   color: #475569;
-  font-size: 14px;
+  font-size: 13px; /* 기존 11px -> 확대 */
 }
 
 .totalCount strong {
@@ -247,15 +250,15 @@
 }
 
 .sortSelect {
-  min-width: 110px;
-  height: 38px;
-  padding: 0 30px 0 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
+  min-width: 95px;
+  height: 34px; /* 기존 30px -> 확대 */
+  padding: 0 28px 0 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
   outline: 0;
   background: #ffffff;
-  color: #334155;
-  font-size: 13px;
+  color: #475569;
+  font-size: 12px; /* 기존 10px -> 확대 */
   cursor: pointer;
 }
 
@@ -267,15 +270,15 @@
 .mentorGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
+  gap: 12px; /* 간격 소폭 확대 */
 }
 
 .mentorCard {
   min-width: 0;
-  min-height: 250px;
-  padding: 18px 16px 16px;
+  min-height: 235px; /* 카드 최소 높이 상향 */
+  padding: 16px 14px 14px;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border-radius: 9px;
   background: #ffffff;
   color: inherit;
   text-decoration: none;
@@ -304,42 +307,55 @@
   justify-content: space-between;
   gap: 8px;
   min-height: 52px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .avatarWrapper {
   position: relative;
-  width: 50px;
+  width: 50px; /* 기존 44px -> 확대 */
   height: 50px;
   flex: 0 0 50px;
 }
 
 .avatar {
+  position: relative;
+  z-index: 1;
   display: block;
+  width: 50px;
+  height: 50px;
   width: 50px;
   height: 50px;
   border: 1px solid #e2e8f0;
   border-radius: 50%;
   object-fit: cover;
+  background: #f8fafc;
 }
 
 .avatarFallback {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  width: 50px;
+  height: 50px;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 16px; /* 기존 14px -> 확대 */
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f1f5f9;
-  color: #94a3b8;
-  font-size: 20px;
 }
 
 .onlineBadge {
   position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 11px;
-  height: 11px;
+  right: -1px;
+  bottom: -1px;
+  z-index: 2;
+  width: 13px; /* 기존 12px -> 확대 */
+  height: 13px;
   border: 2px solid #ffffff;
   border-radius: 50%;
   background: #22c55e;
@@ -374,12 +390,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 20px;
-  padding: 0 8px;
+  min-height: 18px;
+  padding: 0 6px;
   border-radius: 4px;
   background: #eff6ff;
   color: #2563eb;
-  font-size: 10px;
+  font-size: 9px; /* 기존 7px -> 확대 */
   font-weight: 800;
   line-height: 1;
 }
@@ -387,8 +403,9 @@
 .mentorName {
   overflow: hidden;
   margin: 0 0 6px;
+  margin: 0 0 6px;
   color: #0f172a;
-  font-size: 15px;
+  font-size: 15px; /* 기존 12px -> 대폭 확대 */
   line-height: 1.35;
   font-weight: 750;
   text-overflow: ellipsis;
@@ -397,11 +414,11 @@
 
 .mentorBio {
   display: -webkit-box;
-  height: 40px;
-  margin: 0 0 12px;
+  height: 38px;
+  margin: 0 0 10px;
   overflow: hidden;
   color: #64748b;
-  font-size: 12px;
+  font-size: 11px; /* 기존 9px -> 확대 */
   line-height: 1.5;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -421,27 +438,27 @@
   display: flex;
   flex-wrap: wrap;
   align-content: flex-start;
-  gap: 6px;
-  min-height: 24px;
-  margin-bottom: 14px;
+  gap: 5px;
+  min-height: 22px;
+  margin-bottom: 12px;
 }
 
 .tag {
   max-width: 100%;
   overflow: hidden;
-  padding: 3px 7px;
+  padding: 3px 6px;
   border-radius: 4px;
   background: #f1f5f9;
-  color: #475569;
-  font-size: 11px;
+  color: #64748b;
+  font-size: 9px; /* 기존 7px -> 확대 */
   line-height: 1.4;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .noTag {
-  color: #94a3b8;
-  font-size: 11px;
+  color: #cbd5e1;
+  font-size: 10px; /* 기존 8px -> 확대 */
 }
 
 .cardFooter {
@@ -449,8 +466,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-height: 28px;
+  min-height: 26px;
   margin-top: auto;
+  padding-top: 10px;
   padding-top: 10px;
   border-top: 1px solid #f1f5f9;
 }
@@ -460,13 +478,13 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #64748b;
-  font-size: 12px;
+  color: #94a3b8;
+  font-size: 10px; /* 기존 8px -> 확대 */
 }
 
 .star {
   color: #f59e0b;
-  font-size: 13px;
+  font-size: 12px; /* 기존 10px -> 확대 */
   line-height: 1;
 }
 
@@ -480,8 +498,8 @@
 }
 
 .chatIcon {
-  color: #64748b;
-  font-size: 13px;
+  color: #94a3b8;
+  font-size: 11px; /* 기존 10px -> 확대 */
   line-height: 1;
 }
 
@@ -502,48 +520,48 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   margin-bottom: 12px;
   border-radius: 50%;
   background: #f1f5f9;
-  color: #64748b;
-  font-size: 20px;
+  color: #94a3b8;
+  font-size: 18px;
   font-weight: 800;
 }
 
 .emptyState strong,
 .messageState strong {
-  color: #0f172a;
-  font-size: 16px;
+  color: #334155;
+  font-size: 15px; /* 기존 13px -> 확대 */
 }
 
 .emptyState p,
 .messageState p {
-  margin: 8px 0 0;
-  color: #64748b;
-  font-size: 13px;
+  margin: 6px 0 0;
+  color: #94a3b8;
+  font-size: 12px; /* 기존 10px -> 확대 */
 }
 
 .retryBtn {
-  height: 38px;
+  height: 36px;
   margin-top: 16px;
-  padding: 0 16px;
+  padding: 0 15px;
   border: 1px solid #dbeafe;
-  border-radius: 8px;
+  border-radius: 6px;
   background: #eff6ff;
   color: #2563eb;
-  font-size: 13px;
+  font-size: 12px; /* 기존 10px -> 확대 */
   font-weight: 700;
   cursor: pointer;
 }
 
 /* 스켈레톤 */
 .skeletonCard {
-  min-height: 250px;
-  padding: 18px 16px 16px;
+  min-height: 235px;
+  padding: 16px 14px 14px;
   border: 1px solid #eef2f7;
-  border-radius: 12px;
+  border-radius: 9px;
   background: #ffffff;
 }
 
@@ -574,44 +592,46 @@
 .skeletonAvatar {
   width: 50px;
   height: 50px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
 }
 
 .skeletonBadge {
-  width: 50px;
-  height: 18px;
+  width: 45px;
+  height: 15px;
   border-radius: 4px;
 }
 
 .skeletonLineWide {
   width: 50%;
-  height: 14px;
-  margin-bottom: 10px;
+  height: 12px;
+  margin-bottom: 8px;
   border-radius: 4px;
 }
 
 .skeletonLine {
-  width: 90%;
-  height: 11px;
+  width: 85%;
+  height: 10px;
   margin-bottom: 6px;
   border-radius: 4px;
 }
 
 .skeletonTags {
   display: flex;
-  gap: 6px;
-  margin-top: 14px;
+  gap: 5px;
+  margin-top: 12px;
 }
 
 .skeletonTags span {
-  width: 44px;
-  height: 16px;
+  width: 40px;
+  height: 14px;
   border-radius: 4px;
 }
 
 .skeletonFooter {
   width: 100%;
-  height: 28px;
+  height: 24px;
   margin-top: 28px;
   border-radius: 4px;
 }
@@ -648,7 +668,7 @@
   justify-content: center;
   align-items: center;
   gap: 6px;
-  margin-top: 32px;
+  margin-top: 28px;
 }
 
 .pageBtn,
@@ -656,14 +676,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 36px;
-  height: 36px;
-  padding: 0 10px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
+  min-width: 32px; /* 기존 28px -> 확대 */
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
   background: #ffffff;
-  color: #475569;
-  font-size: 13px;
+  color: #64748b;
+  font-size: 11px; /* 기존 9px -> 확대 */
   font-weight: 600;
   cursor: pointer;
 }
@@ -682,7 +702,7 @@
 }
 
 .pageArrow {
-  font-size: 18px;
+  font-size: 18px; /* 기존 16px -> 확대 */
   line-height: 1;
 }
 
@@ -738,11 +758,11 @@
   }
 
   .title {
-    font-size: 26px;
+    font-size: 24px;
   }
 
   .subtitle {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .mentorGrid {
@@ -750,6 +770,6 @@
   }
 
   .mentorCard {
-    min-height: 220px;
+    min-height: 210px;
   }
 }

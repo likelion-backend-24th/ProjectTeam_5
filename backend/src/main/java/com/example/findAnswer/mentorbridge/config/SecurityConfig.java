@@ -72,6 +72,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/questions/user/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/users/{userId}").permitAll()
+                        .requestMatchers("/api/v1/webhooks/**").permitAll() // 웹훅 설정 인증은 서명으로 대체
                         .anyRequest().authenticated()
                 )
                 //OAuth 로그인 설정
