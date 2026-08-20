@@ -4,9 +4,19 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 import { getQuestion, updateQuestion } from "@/lib/questions";
-import { uploadImage, validateImage } from "@/lib/attachments";
+import { uploadImage, validateImage, uploadFile, validateFile } from "@/lib/attachments";
 
 import styles from "../../new/form.module.css";
+
+const docRowStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  border: "1px solid #e5e7eb",
+  borderRadius: 6,
+  padding: "6px 10px",
+  fontSize: 13,
+};
 
 export default function EditQuestionPage() {
   const { id } = useParams();
@@ -21,6 +31,9 @@ export default function EditQuestionPage() {
 
   const [existingImages, setExistingImages] = useState([]); // [{ attachId, url }] 유지 대상
   const [newFiles, setNewFiles] = useState([]); // 새로 올릴 File[]
+
+  const [existingDocs, setExistingDocs] = useState([]); // [{ attachId, originalFileName, size, downloadUrl }] 유지 대상
+  const [newDocFiles, setNewDocFiles] = useState([]); // 새로 올릴 문서 File[]
 
   const contentRef = useRef(null);
 
@@ -50,6 +63,7 @@ export default function EditQuestionPage() {
         setCategory(question.category || "개발");
         setContent(question.content || "");
         setExistingImages(question.images || []); // ★ STEP 1에서 바뀐 형태
+        setExistingDocs(question.files || []);
       })
       .catch((error) => {
         if (!ignore) setErrorMessage(error.message);
@@ -82,10 +96,15 @@ export default function EditQuestionPage() {
       const uploaded = await Promise.all(newFiles.map((f) => uploadImage(f)));
       const newIds = uploaded.map((u) => u.attachId);
 
+      const uploadedDocs = await Promise.all(newDocFiles.map((f) => uploadFile(f)));
+      const newDocIds = uploadedDocs.map((u) => u.attachId);
+
       // 2) 유지할 기존 id + 새 id = 최종 목록
       const attachmentIds = [
         ...existingImages.map((img) => img.attachId),
         ...newIds,
+        ...existingDocs.map((doc) => doc.attachId),
+        ...newDocIds,
       ];
 
       // 3) 수정 요청
@@ -126,6 +145,23 @@ export default function EditQuestionPage() {
 
   const removeNewFile = (index) =>
     setNewFiles((prev) => prev.filter((_, i) => i !== index));
+
+  const removeExistingDoc = (attachId) =>
+    setExistingDocs((prev) => prev.filter((doc) => doc.attachId !== attachId));
+
+  const handleDocFileChange = (event) => {
+    const selected = Array.from(event.target.files || []);
+    event.target.value = "";
+    try {
+      selected.forEach(validateFile);
+      setNewDocFiles((prev) => [...prev, ...selected]);
+    } catch (err) {
+      setErrorMessage(err.message);
+    }
+  };
+
+  const removeNewDocFile = (index) =>
+    setNewDocFiles((prev) => prev.filter((_, i) => i !== index));
 
   if (loading) {
     return (
@@ -276,6 +312,44 @@ export default function EditQuestionPage() {
                       aria-label="삭제"
                       style={{ position: "absolute", top: 2, right: 2 }}
                     >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* 문서 첨부(이미지 아님) — PDF/ZIP, 최대 50MB */}
+          <div className={styles.field}>
+            <label htmlFor="docs">문서 첨부 (PDF, ZIP, 최대 50MB)</label>
+            <input
+              id="docs"
+              type="file"
+              accept=".pdf,.zip,application/pdf,application/zip"
+              multiple
+              onChange={handleDocFileChange}
+              disabled={submitting}
+            />
+
+            {(existingDocs.length > 0 || newDocFiles.length > 0) && (
+              <ul style={{ listStyle: "none", padding: 0, marginTop: 8, display: "grid", gap: 6 }}>
+                {existingDocs.map((doc) => (
+                  <li key={doc.attachId} style={docRowStyle}>
+                    <span>
+                      📎 {doc.originalFileName} ({(doc.size / 1024 / 1024).toFixed(2)}MB)
+                    </span>
+                    <button type="button" onClick={() => removeExistingDoc(doc.attachId)} aria-label="삭제">
+                      ×
+                    </button>
+                  </li>
+                ))}
+                {newDocFiles.map((file, index) => (
+                  <li key={`new-${index}`} style={docRowStyle}>
+                    <span>
+                      📎 {file.name} ({(file.size / 1024 / 1024).toFixed(2)}MB)
+                    </span>
+                    <button type="button" onClick={() => removeNewDocFile(index)} aria-label="삭제">
                       ×
                     </button>
                   </li>

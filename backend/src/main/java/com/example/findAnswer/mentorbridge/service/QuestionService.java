@@ -13,6 +13,9 @@ import com.example.findAnswer.mentorbridge.repository.QuestionAttachmentFileRepo
 import com.example.findAnswer.mentorbridge.repository.QuestionRepository;
 import com.example.findAnswer.mentorbridge.repository.UserRepository;
 import com.example.findAnswer.mentorbridge.storage.AttachmentStorage;
+import com.example.findAnswer.mentorbridge.storage.FileStorage;
+import com.example.findAnswer.mentorbridge.constants.AttachmentFileType;
+import com.example.findAnswer.mentorbridge.dto.questionAttachedFile.FileResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -35,6 +38,7 @@ public class QuestionService {
     private final QuestionLikeRepository questionLikeRepository;
     private final QuestionAttachmentFileRepository questionAttachmentFileRepository;
     private final AttachmentStorage attachmentStorage;
+    private final FileStorage fileStorage;
 
     private static final String IMAGE_TRANSFORM = "f_auto,q_auto";
 
@@ -52,7 +56,7 @@ public class QuestionService {
 
         Question savedQuestion = questionRepository.save(question);
 
-        List<ImageResponse> images = new ArrayList<>();
+        List<QuestionAttachmentFile> attached = new ArrayList<>();
         for (Long attachmentId : request.getAttachmentIds()) {
             QuestionAttachmentFile file = questionAttachmentFileRepository.findById(attachmentId)
                     .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
@@ -62,11 +66,9 @@ public class QuestionService {
             }
 
             file.attachedToQuestion(savedQuestion);
-
-            String url = attachmentStorage.publicUrl(file.getStorageKey(), IMAGE_TRANSFORM);
-            images.add(new ImageResponse(file.getId(), url));
+            attached.add(file);
         }
-        return QuestionResponse.from(savedQuestion, images, false);
+        return QuestionResponse.from(savedQuestion, imagesOf(attached), filesOf(attached), false);
     }
 
     public QuestionResponse getQuestion(Long questionId, Long currentUserId) {
@@ -77,7 +79,8 @@ public class QuestionService {
         if (currentUserId != null) {
             isLiked = questionLikeRepository.existsByQuestion_IdAndUser_Id(questionId, currentUserId);
         }
-        return QuestionResponse.from(question, imagesOf(questionAttachmentFileRepository.findByQuestion(question)), isLiked);
+        List<QuestionAttachmentFile> attachments = questionAttachmentFileRepository.findByQuestion(question);
+        return QuestionResponse.from(question, imagesOf(attachments), filesOf(attachments), isLiked);
     }
 
     //통합 질문 목록 조회 (검색어, 카테고리, 정렬 반영)
@@ -200,11 +203,7 @@ public class QuestionService {
             if(editFile.contains(file.getId())) {
                 lastFiles.add(file);
             } else {
-                try{
-                    attachmentStorage.delete(file.getStorageKey());
-                } catch (RuntimeException e) {
-                    log.warn("cloudinary 파일 삭제 실패 {}", file.getStorageKey());
-                }
+                deleteAttachmentBlob(file);
                 questionAttachmentFileRepository.delete(file);
             }
         }
@@ -228,15 +227,38 @@ public class QuestionService {
             lastFiles.add(file);
         }
 
-        return QuestionResponse.from(question, imagesOf(lastFiles), optionalLike.isPresent());
+        return QuestionResponse.from(question, imagesOf(lastFiles), filesOf(lastFiles), optionalLike.isPresent());
     }
 
     private List<ImageResponse> imagesOf(List<QuestionAttachmentFile> files) {
         return files.stream()
                 .filter(QuestionAttachmentFile::isAttached)
+                .filter(f -> f.getAttachmentType() == AttachmentFileType.IMAGE)
                 .map(f -> new ImageResponse(f.getId(),
                         attachmentStorage.publicUrl(f.getStorageKey(), IMAGE_TRANSFORM)))
                 .toList();
+    }
+
+    private List<FileResponse> filesOf(List<QuestionAttachmentFile> files) {
+        return files.stream()
+                .filter(QuestionAttachmentFile::isAttached)
+                .filter(f -> f.getAttachmentType() == AttachmentFileType.FILE)
+                .map(f -> new FileResponse(f.getId(), f.getOriginalFileName(), f.getSize(),
+                        "/api/attachments/files/" + f.getId() + "/download"))
+                .toList();
+    }
+
+    // 이미지는 Cloudinary, 일반 파일은 로컬 디스크에 저장돼서 삭제 방식이 다르다.
+    private void deleteAttachmentBlob(QuestionAttachmentFile file) {
+        try {
+            if (file.getAttachmentType() == AttachmentFileType.IMAGE) {
+                attachmentStorage.delete(file.getStorageKey());
+            } else {
+                fileStorage.delete(file.getStorageKey());
+            }
+        } catch (RuntimeException e) {
+            log.warn("첨부파일 삭제 실패(무시하고 진행): storageKey={}", file.getStorageKey(), e);
+        }
     }
 
     @Transactional
@@ -249,11 +271,7 @@ public class QuestionService {
         List<QuestionAttachmentFile> attachments =
                 questionAttachmentFileRepository.findByQuestion(question);
         for (QuestionAttachmentFile file : attachments) {
-            try {
-                attachmentStorage.delete(file.getStorageKey());
-            } catch (RuntimeException e) {
-                log.warn("Cloudinary 원본 삭제 실패(무시하고 진행): storageKey={}", file.getStorageKey(), e);
-            }
+            deleteAttachmentBlob(file);
         }
         questionAttachmentFileRepository.deleteAll(attachments);
 

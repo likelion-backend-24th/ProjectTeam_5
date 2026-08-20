@@ -1,5 +1,7 @@
 import { request } from "./client";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
+
 const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp"];
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB (백엔드와 동일하게)
 
@@ -12,6 +14,48 @@ export function validateImage(file) {
   if (file.size > MAX_IMAGE_SIZE) {
     throw new Error(`파일이 너무 큽니다(최대 5MB): ${file.name}`);
   }
+}
+
+// 이미지가 아닌 일반 첨부파일 — 백엔드 AttachmentService.ALLOWED_FILE_EXTENSIONS/MAX_FILE_SIZE와 동일한 규칙.
+const ALLOWED_FILE_EXTENSIONS = ["pdf", "zip"];
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
+export function validateFile(file) {
+  const ext = file.name.split(".").pop()?.toLowerCase();
+  if (!ext || !ALLOWED_FILE_EXTENSIONS.includes(ext)) {
+    throw new Error(`지원하지 않는 파일 형식입니다: ${file.name} (허용: ${ALLOWED_FILE_EXTENSIONS.join(", ")})`);
+  }
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error(`파일이 너무 큽니다(최대 50MB): ${file.name}`);
+  }
+}
+
+// 이미지와 달리 서명 후 직접 업로드가 아니라, 파일 자체를 우리 서버로 바로 올린다(멀티파트).
+export async function uploadFile(file) {
+  validateFile(file);
+
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("token") || localStorage.getItem("accessToken")
+      : null;
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API_URL}/api/attachments/files`, {
+    method: "POST",
+    credentials: "include",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.message || "파일 업로드에 실패했습니다.");
+  }
+
+  const data = await res.json(); // { attachId, originalFileName, size }
+  return { attachId: data.attachId, name: data.originalFileName, size: data.size };
 }
 
 // ① 백엔드에서 업로드 서명 발급

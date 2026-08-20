@@ -3,6 +3,8 @@ package com.example.findAnswer.mentorbridge.service;
 import com.example.findAnswer.mentorbridge.constants.AttachmentFileType;
 import com.example.findAnswer.mentorbridge.constants.AttachmentStatus;
 import com.example.findAnswer.mentorbridge.constants.ErrorCode;
+import com.example.findAnswer.mentorbridge.dto.questionAttachedFile.DownloadFile;
+import com.example.findAnswer.mentorbridge.dto.questionAttachedFile.FileUploadResponse;
 import com.example.findAnswer.mentorbridge.dto.questionAttachedFile.SignRequest;
 import com.example.findAnswer.mentorbridge.dto.questionAttachedFile.SignResponse;
 import com.example.findAnswer.mentorbridge.dto.questionAttachedFile.SignedUpload;
@@ -16,13 +18,16 @@ import com.example.findAnswer.mentorbridge.storage.AttachmentStorage;
 import com.example.findAnswer.mentorbridge.storage.FileStorage;
 import lombok.RequiredArgsConstructor;
 import org.apache.tomcat.util.http.fileupload.InvalidFileNameException;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -83,6 +88,57 @@ public class AttachmentService {
 
         String storageKey = "findanswer/profiles/user_" + userId + "_" + Instant.now().getEpochSecond();
         return attachmentStorage.createSignedUpload(storageKey);
+    }
+
+    private static final Map<String, String> FILE_CONTENT_TYPES = Map.of(
+            "pdf", "application/pdf",
+            "zip", "application/zip"
+    );
+
+    // 이미지와 달리 Cloudinary로 직접 업로드하는 방식이 아니라, 파일 바이트를 우리 서버가 받아서 로컬 디스크에 저장한다.
+    @Transactional
+    public FileUploadResponse uploadFile(Long userId, MultipartFile file) {
+        String originalFilename = file.getOriginalFilename();
+        String extension = extractExtension(originalFilename);
+
+        if (!ALLOWED_FILE_EXTENSIONS.contains(extension)) {
+            throw new UnsupportedFileTypeException(extension);
+        }
+        if (file.getSize() > MAX_FILE_SIZE) {
+            throw new CustomException(ErrorCode.FILE_TOO_LARGE);
+        }
+
+        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        String storageKey = "findanswer/files/"
+                + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM"))
+                + "/" + UUID.randomUUID() + "." + extension;
+
+        fileStorage.store(file, storageKey);
+
+        QuestionAttachmentFile attachment = questionAttachmentFileRepository.save(
+                QuestionAttachmentFile.builder()
+                        .uploader(user)
+                        .attachmentType(AttachmentFileType.FILE)
+                        .attachmentStatus(AttachmentStatus.PENDING)
+                        .storageKey(storageKey)
+                        .originalFileName(originalFilename)
+                        .size(file.getSize())
+                        .build()
+        );
+
+        return new FileUploadResponse(attachment.getId(), attachment.getOriginalFileName(), attachment.getSize());
+    }
+
+    public DownloadFile downloadFile(Long attachId) {
+        QuestionAttachmentFile attachment = questionAttachmentFileRepository.findById(attachId)
+                .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
+
+        Resource resource = fileStorage.loadAsResource(attachment.getStorageKey());
+        String extension = extractExtension(attachment.getOriginalFileName());
+        String contentType = FILE_CONTENT_TYPES.getOrDefault(extension, "application/octet-stream");
+
+        return new DownloadFile(resource, attachment.getOriginalFileName(), contentType);
     }
 
 
