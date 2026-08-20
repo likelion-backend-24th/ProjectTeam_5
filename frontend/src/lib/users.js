@@ -283,4 +283,24 @@ export function toggleFollowUser(userId, token) {
     });
 }
 
+//인증번호 발송
+export function sendVerificationCode(email, token) {
+    return request("/api/users/me/email/verification-code", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: { email },
+        fallbackMessage: "인증번호 발송에 실패했습니다.",
+    });
+}
+
+//인증번호 확인
+export function verifyEmailCode(email, code, token) {
+    return request("/api/users/me/email/verify", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: { email, code },
+        fallbackMessage: "인증번호 확인에 실패했습니다.",
+    });
+}
+
 

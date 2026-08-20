@@ -36,6 +36,10 @@ public class User extends BaseTimeEntity {
     @Column(nullable = false)
     private boolean blocked = false;
 
+    // 이메일 인증 여부
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified = false;
+
     // 멘토 프로필 관련 필드들
     @Column(name = "profile_image_url")
     private String profileImageUrl;
@@ -116,6 +120,8 @@ public class User extends BaseTimeEntity {
     public void promoteToMentor() {
         this.role = Role.MENTOR;
     }
+
+    public void verifyEmail() { this.emailVerified = true; }
 
     public User(String email, String password, String name, Role role) {
         this.email = email;
