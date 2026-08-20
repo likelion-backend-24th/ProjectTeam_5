@@ -86,6 +86,7 @@ public class PaymentMethodService {
             throw e;
         }
         intent.markIssued();
+        user.updatePhoneNumber(request.phoneNumber());
 
         boolean isFirst = !paymentMethodRepository.existsByUserAndPaymentMethodStatus(user, PaymentMethodStatus.ACTIVE);
 
