@@ -4,4 +4,5 @@ public enum WebhookEventStatus {
     RECEIVED,
     PROCESSED,
     IGNORED,
+    FAILED,
 }

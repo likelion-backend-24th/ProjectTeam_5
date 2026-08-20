@@ -37,5 +37,9 @@ public class WebhookEvent extends BaseTimeEntity{
         this.status = WebhookEventStatus.PROCESSED;
     }
 
+    public void markFailed(){
+        this.status = WebhookEventStatus.FAILED;
+    }
+
 
 }

@@ -20,7 +20,11 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class WebhookEventService {
 
-    private static final Set<String> HANDLED_TYPES = Set.of("Transaction.Paid", "Transaction.PayPending", "Transaction.Failed");
+    // PayPending(가상계좌 입금 대기 등)은 카드 결제만 지원하는 지금 단계에서 제외 — sync()가 PAID가 아니면
+    // 무조건 FAILED로 처리해서, 아직 진행중인 결제까지 실패로 마킹하는 문제가 있었음.
+    // 가상계좌 등 pending 상태가 실제로 필요해지면 PaymentSyncService.sync()에서 pending/failed를 구분하는
+    // 로직을 먼저 추가한 뒤 다시 넣을 것.
+    private static final Set<String> HANDLED_TYPES = Set.of("Transaction.Paid", "Transaction.Failed");
 
     private final WebhookEventRepository webhookEventRepository;
     private final PaymentRepository paymentRepository;
@@ -54,8 +58,8 @@ public class WebhookEventService {
         }
 
         JsonNode json = parse(rawBody);
+        String eventType = text(json, "type");
         String paymentId = extractPaymentId(json);
-        String eventType = json.get("eventType").asString();
 
         WebhookEvent webhookEvent = webhookEventRepository.save(
                 WebhookEvent.builder()
@@ -77,7 +81,7 @@ public class WebhookEventService {
             webhookEvent.markProcessed();
         } catch (CustomException e) {
             log.warn("웹훅 동기화 중 에러발생: webhookId={}, eventType={}, paymentId={}, errorCode={}", webhookId, eventType, paymentId, e.getErrorCode());
-            webhookEvent.markProcessed();
+            webhookEvent.markFailed();
         }
 
     }
