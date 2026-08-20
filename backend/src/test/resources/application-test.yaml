@@ -72,3 +72,4 @@ portone:
   api-secret: ${PORTONE_API_SECRET:portone-test-api-secret}
   api-base-url: ${PORTONE_API_BASE_URL:https://api.portone.io}
   payment-id-prefix: ${PORTONE_PAYMENT_ID_PREFIX:MB}
+  webhook-secret: ${PORTONE_WEBHOOK_SECRET:whsec_0poG6m2/caXMxIy8DbyBj1NaNC4R3OzpjQYoNE26cN0=*=}
