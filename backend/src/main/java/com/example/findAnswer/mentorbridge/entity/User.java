@@ -157,5 +157,4 @@ public class User extends BaseTimeEntity {
     public boolean isDeleted() {
         return this.deletedAt != null;
     }
-
 }

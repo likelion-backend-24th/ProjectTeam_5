@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { requestPayment } from "@portone/browser-sdk/v2";
 import { useAuth } from "@/app/contexts/AuthContext";
@@ -9,6 +9,7 @@ import styles from "./page.module.css";
 import { uploadImage, validateImage } from "@/lib/attachments";
 import { getMentorPlans } from "@/lib/mentorPlans";
 import { prepareSubscription, completePayment } from "@/lib/subscriptions";
+import { getOrCreateChatRoom } from "@/lib/chat";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 const MAX_BIO_LENGTH = 500;
@@ -58,10 +59,13 @@ const stringifyScheduleMap = (scheduleMap) => {
 
 export default function MentorProfilePage() {
   const params = useParams();
+  const router = useRouter();
   const mentorId = params?.mentorId || params?.id;
 
   const { user: authUser, isLoggedIn } = useAuth();
   const currentUserId = authUser?.id || authUser?.userId;
+
+  const [requestingConsult, setRequestingConsult] = useState(false);
 
   const [mentorInfo, setMentorInfo] = useState(null);
   const [articles, setArticles] = useState([]);
@@ -386,6 +390,29 @@ export default function MentorProfilePage() {
     }
   };
 
+  const handleConsultRequest = async () => {
+    if (!isLoggedIn) {
+      alert("로그인이 필요한 서비스입니다.");
+      router.push("/login");
+      return;
+    }
+
+    if (!isAccessValid) {
+      setShowSubscribeModal(true);
+      return;
+    }
+
+    try {
+      setRequestingConsult(true);
+      const room = await getOrCreateChatRoom(mentorId);
+      router.push(`/chat/${room.chatRoomId}`);
+    } catch (err) {
+      alert(err.message || "채팅방을 시작하지 못했습니다.");
+    } finally {
+      setRequestingConsult(false);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setEditForm((prev) => ({ ...prev, [name]: value }));
@@ -614,7 +641,9 @@ export default function MentorProfilePage() {
                 ) : (
                   <button className={styles.subBtn} onClick={() => setShowSubscribeModal(true)}>구독하기</button>
                 )}
-                <button className={styles.consultBtn}>상담 신청</button>
+                <button className={styles.consultBtn} onClick={handleConsultRequest} disabled={requestingConsult}>
+                  {requestingConsult ? "연결 중..." : "상담 신청"}
+                </button>
               </>
             )}
           </div>
