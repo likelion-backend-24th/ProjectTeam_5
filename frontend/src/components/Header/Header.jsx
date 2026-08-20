@@ -72,6 +72,18 @@ export default function Header() {
             </Link>
 
 
+            {!loading && isLoggedIn && (
+                <Link
+                    href="/chat"
+                    className={
+                      pathname?.startsWith("/chat") ? styles.navActive : undefined
+                    }
+                >
+                  채팅
+                </Link>
+            )}
+
+
             {!loading && isLoggedIn && user?.role === "ADMIN" && (
                 <Link
                     href="/users"
