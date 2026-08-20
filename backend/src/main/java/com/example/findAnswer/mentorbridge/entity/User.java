@@ -4,6 +4,7 @@ import com.example.findAnswer.mentorbridge.constants.Role;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,6 +40,9 @@ public class User extends BaseTimeEntity {
     // 이메일 인증 여부
     @Column(name = "email_verified", nullable = false)
     private boolean emailVerified = false;
+    // null이면 활성 계정. 탈퇴(본인 또는 관리자 강제)한 시각이 찍히면 소프트 삭제 상태 — DB 행은 지우지 않는다.
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     // 멘토 프로필 관련 필드들
     @Column(name = "profile_image_url")
@@ -144,6 +148,14 @@ public class User extends BaseTimeEntity {
 
     public boolean isBlocked() {
         return this.blocked;
+    }
+
+    public void softDelete() {
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    public boolean isDeleted() {
+        return this.deletedAt != null;
     }
 
 }

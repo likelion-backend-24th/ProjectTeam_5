@@ -1,7 +1,7 @@
 package com.example.findAnswer.mentorbridge.client.portone;
 
-import com.fasterxml.jackson.databind.JsonNode;
 
+import tools.jackson.databind.JsonNode;
 
 public record PortOnePaymentSnapshot(
         String paymentId,
@@ -13,16 +13,24 @@ public record PortOnePaymentSnapshot(
         String transactionId
 ) {
 
+    private static String text(JsonNode node, String field) {
+        JsonNode v = node.get(field);
+        return (v == null || v.isNull()) ? null : v.asString();
+    }
+
     public static PortOnePaymentSnapshot from(JsonNode body) {
+
         return new PortOnePaymentSnapshot(
-                body.get("id").asText(),
-                body.get("status").asText(),
+                text(body, "id"),
+                text(body, "status"),
                 body.path("amount").path("total").asLong(0),
-                body.get("currency").asText(),
-                body.get("storeId").asText(),
-                body.path("channel").path("key").asText(),
-                body.get("transactionId").asText()
+                text(body, "currency"),
+                text(body, "storeId"),
+                body.path("channel").path("key").asString(),
+                text(body, "transactionId")
         );
     }
+
+
 
 }
