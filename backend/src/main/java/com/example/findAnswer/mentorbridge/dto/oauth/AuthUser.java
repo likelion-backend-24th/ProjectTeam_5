@@ -6,5 +6,6 @@ public record AuthUser(
         Long id,
         String email,
         Role role,
-        boolean isBlocked
+        boolean isBlocked,
+        boolean isDeleted
 ) {}
