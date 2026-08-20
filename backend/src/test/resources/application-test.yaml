@@ -51,6 +51,19 @@ jwt:
   refresh-token-expiration-ms: 1209600000
 
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:testuser}
+    password: ${MAIL_PASSWORD:testpassword}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+
 app:
   oauth2:
     success-redirect-uri: https://like-lion-team5-find-answer.vercel.app/oauth/callback
