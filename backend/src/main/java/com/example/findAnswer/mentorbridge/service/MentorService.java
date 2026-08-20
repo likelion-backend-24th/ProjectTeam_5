@@ -8,13 +8,16 @@ import com.example.findAnswer.mentorbridge.dto.mentor.MentorResponse;
 import com.example.findAnswer.mentorbridge.dto.mentor.MentorUpdateDto;
 import com.example.findAnswer.mentorbridge.dto.user.UserResponse;
 import com.example.findAnswer.mentorbridge.entity.MentorApplication;
+import com.example.findAnswer.mentorbridge.entity.MentorPlan;
 import com.example.findAnswer.mentorbridge.entity.User;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
 import com.example.findAnswer.mentorbridge.constants.ErrorCode;
 import com.example.findAnswer.mentorbridge.repository.MentorApplicationRepository;
+import com.example.findAnswer.mentorbridge.repository.MentorPlanRepository;
 import com.example.findAnswer.mentorbridge.repository.SubscriptionRepository; // 💡 추가
 import com.example.findAnswer.mentorbridge.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -23,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime; // 💡 추가
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -80,20 +84,36 @@ public class MentorService {
     }
 
     // 멘토 목록 조회 및 검색
-    public Page<MentorResponse> getMentors(String keyword, Pageable pageable) {
-        List<SubscriptionStatus> activeStatuses = List.of(SubscriptionStatus.ACTIVE, SubscriptionStatus.CANCEL_RESERVED);
+    public Page<MentorResponse> getMentors(
+            String keyword,
+            Pageable pageable
+    ) {
+
+        List<SubscriptionStatus> activeStatuses = List.of(
+                SubscriptionStatus.ACTIVE,
+                SubscriptionStatus.CANCEL_RESERVED
+        );
+
         LocalDateTime now = LocalDateTime.now();
 
-        return userRepository.findMentors(keyword, pageable)
-                .map(user -> {
-                    // 💡 2. 각 멘토별 활성 구독자 수 카운트 조회
-                    long subscriberCount = subscriptionRepository.countByMentorIdAndStatusInAndCurrentPeriodEndAfter(
-                            user.getId(), activeStatuses, now
-                    );
+        Page<User> mentors =
+                userRepository.findActivePlanMentors(keyword, pageable);
 
-                    // 💡 3. 구독자 수를 반영한 MentorResponse 생성
-                    return MentorResponse.from(user, (int) subscriberCount);
-                });
+        return mentors.map(user -> {
+
+            long subscriberCount =
+                    subscriptionRepository
+                            .countByMentorIdAndStatusInAndCurrentPeriodEndAfter(
+                                    user.getId(),
+                                    activeStatuses,
+                                    now
+                            );
+
+            return MentorResponse.from(
+                    user,
+                    (int) subscriberCount
+            );
+        });
     }
 
     // 멘토 상세 단건 조회
