@@ -21,6 +21,11 @@ public class QuestionAttachmentFile extends BaseTimeEntity{
     @JoinColumn(name = "question_id")
     private Question question;
 
+    // 질문 첨부와 멘토 게시글 첨부가 이 엔티티 하나를 공유한다 — 둘 중 하나만 채워진다.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "mentor_post_id")
+    private MentorPost mentorPost;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "uploader_id")
     private User uploader;
@@ -47,8 +52,14 @@ public class QuestionAttachmentFile extends BaseTimeEntity{
         this.attachmentStatus = AttachmentStatus.ATTACHED;
     }
 
+    public void attachedToMentorPost(MentorPost mentorPost) {
+        this.mentorPost = mentorPost;
+        this.attachmentStatus = AttachmentStatus.ATTACHED;
+    }
+
     public void detached() {
         this.question = null;
+        this.mentorPost = null;
         this.attachmentStatus = AttachmentStatus.DELETED;
     }
 

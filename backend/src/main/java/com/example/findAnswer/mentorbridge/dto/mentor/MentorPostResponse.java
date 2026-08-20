@@ -1,6 +1,9 @@
 package com.example.findAnswer.mentorbridge.dto.mentor;
 
+import com.example.findAnswer.mentorbridge.dto.question.ImageResponse;
+import com.example.findAnswer.mentorbridge.dto.questionAttachedFile.FileResponse;
 import com.example.findAnswer.mentorbridge.entity.MentorPost;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -9,21 +12,23 @@ public record MentorPostResponse(
         Long mentorId,
         String title,
         String content,
-        String category,       // 💡 [추가]
-        Boolean isPublic,      // 💡 [추가]
-        List<Long> attachmentIds,
+        String category,
+        Boolean isPublic,
+        List<ImageResponse> images,
+        List<FileResponse> files,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
-    public static MentorPostResponse from(MentorPost post) {
+    public static MentorPostResponse from(MentorPost post, List<ImageResponse> images, List<FileResponse> files) {
         return new MentorPostResponse(
                 post.getId(),
                 post.getMentorId(),
                 post.getTitle(),
                 post.getContent(),
-                post.getCategory(),     // 💡 [추가]
-                post.getIsPublic(),     // 💡 [추가]
-                post.getAttachmentIds(),
+                post.getCategory(),
+                post.getIsPublic(),
+                images == null ? List.of() : images,
+                files == null ? List.of() : files,
                 post.getCreatedAt(),
                 post.getUpdatedAt()
         );

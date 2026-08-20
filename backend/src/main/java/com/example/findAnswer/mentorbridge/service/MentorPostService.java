@@ -1,21 +1,42 @@
 package com.example.findAnswer.mentorbridge.service;
 
+import com.example.findAnswer.mentorbridge.constants.AttachmentFileType;
+import com.example.findAnswer.mentorbridge.constants.ErrorCode;
 import com.example.findAnswer.mentorbridge.dto.mentor.MentorPostRequest;
 import com.example.findAnswer.mentorbridge.dto.mentor.MentorPostResponse;
+import com.example.findAnswer.mentorbridge.dto.question.ImageResponse;
+import com.example.findAnswer.mentorbridge.dto.questionAttachedFile.FileResponse;
 import com.example.findAnswer.mentorbridge.entity.MentorPost;
+import com.example.findAnswer.mentorbridge.entity.QuestionAttachmentFile;
+import com.example.findAnswer.mentorbridge.exception.CustomException;
 import com.example.findAnswer.mentorbridge.repository.MentorPostRepository;
+import com.example.findAnswer.mentorbridge.repository.QuestionAttachmentFileRepository;
+import com.example.findAnswer.mentorbridge.storage.AttachmentStorage;
+import com.example.findAnswer.mentorbridge.storage.FileStorage;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class MentorPostService {
 
     private final MentorPostRepository mentorPostRepository;
+    private final QuestionAttachmentFileRepository questionAttachmentFileRepository;
+    private final AttachmentStorage attachmentStorage;
+    private final FileStorage fileStorage;
+
+    private static final String IMAGE_TRANSFORM = "f_auto,q_auto";
 
     // 게시글 작성 (멘토 본인)
     @Transactional
@@ -24,12 +45,26 @@ public class MentorPostService {
                 .mentorId(mentorId)
                 .title(request.title())
                 .content(request.content())
-                .category(request.category())     // 💡 [추가]
-                .isPublic(request.isPublic())     // 💡 [추가]
-                .attachmentIds(request.attachmentIds()) // 💡 [이미지 해결] 첨부파일 ID 반영
+                .category(request.category())
+                .isPublic(request.isPublic())
                 .build();
 
-        return MentorPostResponse.from(mentorPostRepository.save(post));
+        MentorPost savedPost = mentorPostRepository.save(post);
+
+        List<QuestionAttachmentFile> attached = new ArrayList<>();
+        for (Long attachmentId : safeIds(request.attachmentIds())) {
+            QuestionAttachmentFile file = questionAttachmentFileRepository.findById(attachmentId)
+                    .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+
+            if (!file.isOwnedBy(mentorId)) {
+                throw new CustomException(ErrorCode.ACCESS_DENIED);
+            }
+
+            file.attachedToMentorPost(savedPost);
+            attached.add(file);
+        }
+
+        return MentorPostResponse.from(savedPost, imagesOf(attached), filesOf(attached));
     }
 
     // 게시글 수정 (멘토 본인)
@@ -42,15 +77,42 @@ public class MentorPostService {
             throw new IllegalArgumentException("본인의 게시글만 수정할 수 있습니다.");
         }
 
-        post.update(
-                request.title(),
-                request.content(),
-                request.category(),
-                request.isPublic(),
-                request.attachmentIds()
-        ); // 💡 [추가]
+        post.update(request.title(), request.content(), request.category(), request.isPublic());
 
-        return MentorPostResponse.from(post);
+        List<QuestionAttachmentFile> current = questionAttachmentFileRepository.findByMentorPost(post);
+        Set<Long> editIds = new HashSet<>(safeIds(request.attachmentIds()));
+        Set<Long> currentIds = current.stream().map(QuestionAttachmentFile::getId).collect(Collectors.toSet());
+
+        List<QuestionAttachmentFile> lastFiles = new ArrayList<>();
+        for (QuestionAttachmentFile file : current) {
+            if (editIds.contains(file.getId())) {
+                lastFiles.add(file);
+            } else {
+                deleteAttachmentBlob(file);
+                questionAttachmentFileRepository.delete(file);
+            }
+        }
+
+        for (Long attachmentId : editIds) {
+            if (currentIds.contains(attachmentId)) {
+                continue;
+            }
+
+            QuestionAttachmentFile file = questionAttachmentFileRepository.findById(attachmentId)
+                    .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+
+            if (!file.isOwnedBy(mentorId)) {
+                throw new CustomException(ErrorCode.ACCESS_DENIED);
+            }
+            if (file.isAttached()) {
+                throw new CustomException(ErrorCode.INVALID_REQUEST);
+            }
+
+            file.attachedToMentorPost(post);
+            lastFiles.add(file);
+        }
+
+        return MentorPostResponse.from(post, imagesOf(lastFiles), filesOf(lastFiles));
     }
 
     // 게시글 삭제 (멘토 본인)
@@ -63,19 +125,65 @@ public class MentorPostService {
             throw new IllegalArgumentException("본인의 게시글만 삭제할 수 있습니다.");
         }
 
+        List<QuestionAttachmentFile> attachments = questionAttachmentFileRepository.findByMentorPost(post);
+        for (QuestionAttachmentFile file : attachments) {
+            deleteAttachmentBlob(file);
+        }
+        questionAttachmentFileRepository.deleteAll(attachments);
+
         mentorPostRepository.delete(post);
     }
 
     public MentorPostResponse getPost(Long mentorId, Long postId) {
         MentorPost post = mentorPostRepository.findByIdAndMentorId(postId, mentorId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 멘토의 게시글을 찾을 수 없습니다."));
-        return MentorPostResponse.from(post);
+
+        List<QuestionAttachmentFile> attachments = questionAttachmentFileRepository.findByMentorPost(post);
+        return MentorPostResponse.from(post, imagesOf(attachments), filesOf(attachments));
     }
 
     public List<MentorPostResponse> getPostsByMentorId(Long mentorId) {
         return mentorPostRepository.findByMentorIdOrderByCreatedAtDesc(mentorId)
                 .stream()
-                .map(MentorPostResponse::from)
+                .map(post -> {
+                    List<QuestionAttachmentFile> attachments = questionAttachmentFileRepository.findByMentorPost(post);
+                    return MentorPostResponse.from(post, imagesOf(attachments), filesOf(attachments));
+                })
                 .toList();
+    }
+
+    private List<Long> safeIds(List<Long> attachmentIds) {
+        return attachmentIds == null ? Collections.emptyList() : attachmentIds;
+    }
+
+    private List<ImageResponse> imagesOf(List<QuestionAttachmentFile> files) {
+        return files.stream()
+                .filter(QuestionAttachmentFile::isAttached)
+                .filter(f -> f.getAttachmentType() == AttachmentFileType.IMAGE)
+                .map(f -> new ImageResponse(f.getId(),
+                        attachmentStorage.publicUrl(f.getStorageKey(), IMAGE_TRANSFORM)))
+                .toList();
+    }
+
+    private List<FileResponse> filesOf(List<QuestionAttachmentFile> files) {
+        return files.stream()
+                .filter(QuestionAttachmentFile::isAttached)
+                .filter(f -> f.getAttachmentType() == AttachmentFileType.FILE)
+                .map(f -> new FileResponse(f.getId(), f.getOriginalFileName(), f.getSize(),
+                        "/api/attachments/files/" + f.getId() + "/download"))
+                .toList();
+    }
+
+    // 이미지는 Cloudinary, 일반 파일은 로컬 디스크에 저장돼서 삭제 방식이 다르다.
+    private void deleteAttachmentBlob(QuestionAttachmentFile file) {
+        try {
+            if (file.getAttachmentType() == AttachmentFileType.IMAGE) {
+                attachmentStorage.delete(file.getStorageKey());
+            } else {
+                fileStorage.delete(file.getStorageKey());
+            }
+        } catch (RuntimeException e) {
+            log.warn("첨부파일 삭제 실패(무시하고 진행): storageKey={}", file.getStorageKey(), e);
+        }
     }
 }

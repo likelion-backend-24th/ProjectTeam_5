@@ -7,8 +7,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "mentor_post")
@@ -35,11 +33,6 @@ public class MentorPost {
     @Column(name = "is_public", nullable = false)
     private Boolean isPublic = true; // 💡 [추가] 공개 여부 (기본값 전체공개)
 
-    @ElementCollection
-    @CollectionTable(name = "mentor_post_attachments", joinColumns = @JoinColumn(name = "post_id"))
-    @Column(name = "attachment_id")
-    private List<Long> attachmentIds = new ArrayList<>();
-
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -47,25 +40,21 @@ public class MentorPost {
     private LocalDateTime updatedAt;
 
     @Builder
-    public MentorPost(Long mentorId, String title, String content, String category, Boolean isPublic, List<Long> attachmentIds) {
+    public MentorPost(Long mentorId, String title, String content, String category, Boolean isPublic) {
         this.mentorId = mentorId;
         this.title = title;
         this.content = content;
         this.category = category != null ? category : "일반";
         this.isPublic = isPublic != null ? isPublic : true;
-        this.attachmentIds = attachmentIds != null ? attachmentIds : new ArrayList<>();
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void update(String title, String content, String category, Boolean isPublic, List<Long> attachmentIds) {
+    public void update(String title, String content, String category, Boolean isPublic) {
         this.title = title;
         this.content = content;
         if (category != null) this.category = category;
         if (isPublic != null) this.isPublic = isPublic;
-        if (attachmentIds != null) {
-            this.attachmentIds = attachmentIds;
-        }
         this.updatedAt = LocalDateTime.now();
     }
 }

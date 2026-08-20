@@ -268,19 +268,47 @@ export default function MentorPostDetailPage() {
               </ReactMarkdown>
             </div>
 
-            {post.attachmentIds && post.attachmentIds.length > 0 && (
+            {post.images && post.images.length > 0 && (
               <div style={{ marginTop: "30px" }}>
                 <h4 style={{ marginBottom: "10px" }}>첨부 이미지</h4>
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                  {post.attachmentIds.map((attachId) => (
-                    <img 
-                      key={attachId}
-                      src={`/api/v1/attachments/${attachId}`} 
-                      alt="첨부파일"
+                  {post.images.map((img) => (
+                    <img
+                      key={img.attachId}
+                      src={img.url}
+                      alt="첨부 이미지"
                       style={{ width: "200px", borderRadius: "8px", border: "1px solid #ddd" }}
                     />
                   ))}
                 </div>
+              </div>
+            )}
+
+            {post.files && post.files.length > 0 && (
+              <div style={{ marginTop: "20px" }}>
+                <h4 style={{ marginBottom: "10px" }}>첨부 파일</h4>
+                <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 6 }}>
+                  {post.files.map((file) => (
+                    <li key={file.attachId}>
+                      <a
+                        href={`${process.env.NEXT_PUBLIC_API_URL}${file.downloadUrl}`}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                          padding: "8px 12px",
+                          border: "1px solid #e5e7eb",
+                          borderRadius: 8,
+                          fontSize: 14,
+                          textDecoration: "none",
+                          color: "#374151",
+                        }}
+                      >
+                        📎 {file.originalFileName} ({(file.size / 1024 / 1024).toFixed(2)}MB)
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </article>
