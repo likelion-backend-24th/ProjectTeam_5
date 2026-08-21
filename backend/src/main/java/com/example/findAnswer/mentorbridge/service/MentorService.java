@@ -153,9 +153,13 @@ public class MentorService {
     }
 
     @Transactional
-    public MentorResponse updateMentorProfile(Long mentorId, MentorUpdateDto dto) {
+    public MentorResponse updateMentorProfile(Long currentUserId, Long mentorId, MentorUpdateDto dto) {
         User user = userRepository.findById(mentorId)
                 .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+
+        if (!mentorId.equals(currentUserId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
 
         if (user.getMentorProfile() == null) {
             MentorProfile newProfile = MentorProfile.builder()
