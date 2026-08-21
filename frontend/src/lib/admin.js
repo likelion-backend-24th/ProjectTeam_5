@@ -103,3 +103,24 @@ export function rejectCancellation(id, adminNote) {
     fallbackMessage: "환불 거절 처리에 실패했습니다.",
   });
 }
+
+// 11. 1:1 문의 목록 조회 (추가됨)
+export function getInquiries() {
+  const token = getToken();
+  return request("/api/admin/inquiries", {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
+    fallbackMessage: "1:1 문의 목록을 불러오지 못했습니다.",
+  });
+}
+
+// 12. 1:1 문의 상태 변경 (추가됨)
+export function updateInquiryStatus(id, status) {
+  const token = getToken();
+  return request(`/api/admin/inquiries/${id}/status`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+    body: { status },
+    fallbackMessage: "문의 상태 변경에 실패했습니다.",
+  });
+}
