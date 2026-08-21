@@ -35,7 +35,12 @@ public class MentorPost extends BaseTimeEntity {
     @Column(name = "is_public", nullable = false)
     private Boolean isPublic = true;
 
-    // 질문 첨부와 첨부 인프라를 공유한다 — QuestionAttachmentFile.mentorPost 참고.
+    @Column(name = "view_count", nullable = false)
+    private long viewCount = 0;
+
+    @Column(name = "like_count", nullable = false)
+    private long likeCount = 0;
+
     @OneToMany(mappedBy = "mentorPost")
     private List<QuestionAttachmentFile> attachments = new ArrayList<>();
 
@@ -46,6 +51,8 @@ public class MentorPost extends BaseTimeEntity {
         this.content = content;
         this.category = category != null ? category : "일반";
         this.isPublic = isPublic != null ? isPublic : true;
+        this.viewCount = 0;
+        this.likeCount = 0;
     }
 
     public void update(String title, String content, String category, Boolean isPublic) {
@@ -53,5 +60,19 @@ public class MentorPost extends BaseTimeEntity {
         this.content = content;
         if (category != null) this.category = category;
         if (isPublic != null) this.isPublic = isPublic;
+    }
+
+    public void increaseViewCount() {
+        this.viewCount++;
+    }
+
+    public void increaseLikeCount() {
+        this.likeCount++;
+    }
+
+    public void decreaseLikeCount() {
+        if (this.likeCount > 0) {
+            this.likeCount--;
+        }
     }
 }

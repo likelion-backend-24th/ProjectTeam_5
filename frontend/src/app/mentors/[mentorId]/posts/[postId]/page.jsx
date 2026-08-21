@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { FaHeart, FaRegHeart } from "react-icons/fa";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { downloadFile } from "@/lib/attachments";
 import styles from "./page.module.css";
@@ -30,14 +31,15 @@ export default function MentorPostDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ title: "", content: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [isLikeLoading, setIsLikeLoading] = useState(false);
 
   const loadPost = useCallback(async () => {
-  if (!mentorId || !postId || mentorId === "undefined" || postId === "undefined") {
-    return;
-  }
-  setLoading(true);
-  setErrorMessage("");
-  setIsForbidden(false);
+    if (!mentorId || !postId || mentorId === "undefined" || postId === "undefined") {
+      return;
+    }
+    setLoading(true);
+    setErrorMessage("");
+    setIsForbidden(false);
 
     try {
       const token =
@@ -91,10 +93,10 @@ export default function MentorPostDetailPage() {
   }, [mentorId, postId, currentUserId]);
 
   useEffect(() => {
-  if (mentorId && postId) { 
-    loadPost();
-  }
-}, [loadPost, mentorId, postId]);
+    if (mentorId && postId) { 
+      loadPost();
+    }
+  }, [loadPost, mentorId, postId]);
 
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -164,6 +166,61 @@ export default function MentorPostDetailPage() {
       alert("서버 오류가 발생했습니다.");
     }
   };
+
+  const handleToggleLike = async () => {
+    if (!currentUserId) {
+      alert("로그인 후 이용 가능합니다.");
+      router.push("/login");
+      return;
+    }
+    if (isLikeLoading) return;
+
+    const prevIsLiked = post.isLiked ?? post.liked;
+    const prevLikeCount = post.likeCount ?? 0;
+
+    const nextIsLiked = !prevIsLiked;
+    const nextLikeCount = nextIsLiked
+      ? prevLikeCount + 1
+      : Math.max(0, prevLikeCount - 1);
+
+    setPost((prev) => ({
+      ...prev,
+      isLiked: nextIsLiked,
+      liked: nextIsLiked,
+      likeCount: nextLikeCount,
+    }));
+
+    try {
+      setIsLikeLoading(true);
+      const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
+      const headers = { "Content-Type": "application/json" };
+      if (currentUserId) headers["X-USER-ID"] = String(currentUserId);
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const method = prevIsLiked ? "DELETE" : "POST";
+      const res = await fetch(`${BACKEND_URL}/api/v1/mentors/${mentorId}/posts/${postId}/likes`, {
+        method,
+        headers,
+      });
+
+      if (!res.ok) {
+        throw new Error("좋아요 처리에 실패했습니다.");
+      }
+    } catch (err) {
+      console.error(err);
+      setPost((prev) => ({
+        ...prev,
+        isLiked: prevIsLiked,
+        liked: prevIsLiked,
+        likeCount: prevLikeCount,
+      }));
+      alert(err.message || "서버 오류가 발생했습니다.");
+    } finally {
+      setIsLikeLoading(false);
+    }
+  };
+
+  const isLikedState = post?.isLiked ?? post?.liked ?? false;
 
   return (
     <main className={styles.page}>
@@ -328,6 +385,27 @@ export default function MentorPostDetailPage() {
                 </ul>
               </div>
             )}
+
+            {/* 질문 상세 페이지와 동일한 좋아요 버튼 섹션 */}
+            <div className={styles.likeSection}>
+              <button
+                type="button"
+                className={styles.likeButton}
+                onClick={handleToggleLike}
+                disabled={isLikeLoading}
+              >
+                <div
+                  className={`${styles.likeIcon} ${
+                    isLikedState ? styles.likeIconActive : ""
+                  }`}
+                >
+                  {isLikedState ? <FaHeart /> : <FaRegHeart />}
+                </div>
+                <span className={styles.likeCount}>
+                  좋아요 {post.likeCount ?? 0}
+                </span>
+              </button>
+            </div>
           </article>
         )}
       </section>

@@ -864,18 +864,14 @@ export default function MentorProfilePage() {
                   <span>🔍</span>
                 </div>
               </div>
-
+            
               <div className={styles.articleArea}>
                 <div className={styles.articleList}>
                   {filteredArticles.length === 0 ? (
                     <div className={styles.empty}>등록된 게시글이 없습니다.</div>
                   ) : (
-                    filteredArticles.map((article, index) => {
+                    filteredArticles.map((article) => {
                       const isPostAccessible = isOwner || article.isPublic !== false || isAccessValid;
-
-                      const likeCount = article.likeCount ?? 128 - index * 8;
-                      const commentCount = article.commentCount ?? Math.max(0, 23 - index);
-                      const viewCount = article.viewCount ?? (index === 0 ? "1.2K" : index === 1 ? "892" : index === 2 ? "1.1K" : "731");
 
                       return (
                         <div key={article.id} className={styles.articleCardWrapper}>
@@ -894,10 +890,8 @@ export default function MentorProfilePage() {
                                 <h3 className={styles.articleTitle}>{article.title}</h3>
                                 <div className={styles.articleBottom}>
                                   <div className={styles.articleStats}>
-                                    <span>♡ {likeCount}</span>
-                                    <span>💬 {commentCount}</span>
-                                    <span>◉ {viewCount}</span>
-                                    <span className={styles.bookmark}>♡</span>
+                                    <span>♡ {article.likeCount ?? 0}</span>
+                                    <span>👁 {article.viewCount ?? 0}</span>
                                   </div>
                                 </div>
                               </div>
@@ -925,7 +919,6 @@ export default function MentorProfilePage() {
 
           {activeTab === "info" && (
             <div className={styles.empty}>
-              <h3>멘토 소개</h3>
               <p style={{ marginTop: '10px' }}>{mentorInfo.bio || '상세 소개 내용이 없습니다.'}</p>
             </div>
           )}
