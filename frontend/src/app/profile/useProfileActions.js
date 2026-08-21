@@ -140,11 +140,14 @@ export function useProfileActions() {
     setVerifyLoading(true);
     try {
       await usersApi.verifyEmailCode(verifyEmail, verifyCode, token);
-      alert("이메일 인증이 완료되었습니다!");
       closeEmailModal();
-      await refreshUser(); // 유저 정보 다시 불러와서 이메일 인증 완료 뱃지 즉시 업데이트
+      // 인증 성공 시 계정 이메일(=로그인 아이디)이 이 이메일로 바뀐다 — 다음부터는 이 이메일로
+      // 로그인해야 하니, 헷갈리지 않게 바로 로그아웃시키고 안내한다.
+      alert(`이메일 인증이 완료됐습니다.\n다음부터는 ${verifyEmail}(으)로 로그인해주세요.\n다시 로그인해주세요.`);
+      logout();
+      router.replace("/login");
     } catch (err) {
-      alert("인증번호가 올바르지 않거나 만료되었습니다.");
+      alert(err.message || "인증번호가 올바르지 않거나 만료되었습니다.");
     } finally {
       setVerifyLoading(false);
     }
