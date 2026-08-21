@@ -18,4 +18,11 @@ public interface PaymentCancellationRepository extends JpaRepository<PaymentCanc
     Optional<PaymentCancellation> findByIdAndRequestedByUserId(Long id, Long userId);
 
     List<PaymentCancellation> findByRequestedByUserId(Long userId);
+
+    // 멘토 대시보드 — 이 멘토 소속 결제 건에 대해 대기 중인 환불 요청
+    List<PaymentCancellation> findByPayment_Subscription_Mentor_IdAndStatusOrderByCreatedAtAsc(
+            Long mentorId, PaymentCancellationStatus status
+    );
+
+    long countByPayment_Subscription_Mentor_IdAndStatus(Long mentorId, PaymentCancellationStatus status);
 }

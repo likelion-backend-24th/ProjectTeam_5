@@ -35,4 +35,7 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
             List<SubscriptionStatus> statuses,
             LocalDateTime now
     );
+
+    // 멘토 대시보드 — 이 멘토의 전체 구독자 목록(최신 가입순)
+    List<Subscription> findByMentor_IdOrderByCreatedAtDesc(Long mentorId);
 }
