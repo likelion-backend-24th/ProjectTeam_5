@@ -8,6 +8,7 @@ import com.example.findAnswer.mentorbridge.dto.mentor.MentorResponse;
 import com.example.findAnswer.mentorbridge.dto.mentor.MentorUpdateDto;
 import com.example.findAnswer.mentorbridge.dto.user.UserResponse;
 import com.example.findAnswer.mentorbridge.entity.MentorApplication;
+import com.example.findAnswer.mentorbridge.entity.MentorProfile;
 import com.example.findAnswer.mentorbridge.entity.User;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
 import com.example.findAnswer.mentorbridge.constants.ErrorCode;
@@ -136,7 +137,20 @@ public class MentorService {
         User user = userRepository.findById(mentorId)
                 .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
 
-        if (user.getMentorProfile() != null) {
+        if (user.getMentorProfile() == null) {
+            MentorProfile newProfile = MentorProfile.builder()
+                    .user(user)
+                    .bio(dto.getBio())
+                    .company(dto.getCompany())
+                    .career(dto.getCareer())
+                    .tags(dto.getTags())
+                    .education(dto.getEducation())
+                    .schedule(dto.getSchedule())
+                    .build();
+
+            user.updateMentorProfile(newProfile);
+            userRepository.save(user);
+        } else {
             user.getMentorProfile().update(
                     dto.getBio(),
                     dto.getCompany(),
