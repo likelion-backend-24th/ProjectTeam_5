@@ -1,0 +1,80 @@
+.footer {
+  border-top: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  margin-top: 60px;
+}
+
+.inner {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #111827;
+  font-weight: 800;
+  text-decoration: none;
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background-color: #2867e8;
+  color: #ffffff;
+  font-size: 12px;
+}
+
+.description {
+  margin: 0 0 12px 0;
+  color: #526176;
+  font-size: 13px;
+}
+
+.copyright {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.links {
+  display: flex;
+  gap: 40px;
+}
+
+.linkGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.linkGroup h4 {
+  margin: 0 0 4px 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.linkGroup a {
+  color: #526176;
+  text-decoration: none;
+  font-size: 13px;
+  transition: color 0.2s ease;
+}
+
+.linkGroup a:hover {
+  color: #2867e8;
+}

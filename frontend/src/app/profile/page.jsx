@@ -43,12 +43,26 @@ export default function ProfilePage() {
     mentorTerms,
     setMentorTerms,
     submitMentorApplication,
-    // 💡 서류 안내 팝업 상태 가져오기
     showSuccessModal,
     setShowSuccessModal,
+    showPasswordModal,
+    setShowPasswordModal,
+    currentPassword,
+    setCurrentPassword,
+    newPassword,
+    setNewPassword,
+    newPasswordConfirm,
+    setNewPasswordConfirm,
+    passwordSubmitting,
+    closePasswordModal,
+    handleChangePassword,
+    // 프로필 이미지 변경
+    uploadingImage,
+    handleProfileImageChange,
   } = useProfileActions();
 
   const [activeTab, setActiveTab] = useState("프로필 정보");
+  const imageInputRef = useRef(null);
 
   if (loading) return <main className={styles.page} />;
 
@@ -82,10 +96,34 @@ export default function ProfilePage() {
         <section className={styles.hero}>
           <div className={styles.heroLeft}>
             <div className={styles.avatar} aria-hidden="true">
-              <FaUserLarge />
+              {user.profileImageUrl ? (
+                  <img
+                      src={user.profileImageUrl}
+                      alt=""
+                      style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }}
+                  />
+              ) : (
+                  <FaUserLarge />
+              )}
             </div>
-            <button type="button" className={styles.changeImgBtn} onClick={notReady}>
-              프로필 이미지 변경
+            <input
+                type="file"
+                ref={imageInputRef}
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  e.target.value = ""; // 같은 파일 다시 선택해도 onChange 발생하도록
+                  handleProfileImageChange(file);
+                }}
+                accept="image/png,image/jpeg,image/gif,image/webp"
+                hidden
+            />
+            <button
+                type="button"
+                className={styles.changeImgBtn}
+                onClick={() => imageInputRef.current?.click()}
+                disabled={uploadingImage}
+            >
+              {uploadingImage ? "업로드 중..." : "프로필 이미지 변경"}
             </button>
           </div>
 
@@ -205,7 +243,7 @@ export default function ProfilePage() {
             {/* 보안 설정 */}
             <section className={styles.card}>
               <h2 className={styles.cardTitle}>보안 설정</h2>
-              <button type="button" className={styles.rowLink} onClick={notReady}>
+              <button type="button" className={styles.rowLink} onClick={() => setShowPasswordModal(true)}>
                 <span className={styles.rowIcon}>🔒</span>
                 <span className={styles.rowText}>
                 <strong>비밀번호 변경</strong>
@@ -447,6 +485,45 @@ export default function ProfilePage() {
                       style={{ width: "100%", padding: "12px 0", fontSize: "15px" }}
                   >
                     확인
+                  </button>
+                </div>
+              </div>
+            </div>
+        )}
+
+        {/* ===== 비밀번호 변경 모달 ===== */}
+        {showPasswordModal && (
+            <div className={styles.modalOverlay}>
+              <div className={styles.modalContent}>
+                <h2 className={styles.modalTitle}>비밀번호 변경</h2>
+                <p className={styles.modalDesc}>현재 비밀번호와 새 비밀번호를 입력해주세요.</p>
+                <input
+                    type="password"
+                    className={styles.modalInput}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="현재 비밀번호"
+                />
+                <input
+                    type="password"
+                    className={styles.modalInput}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="새 비밀번호 (8자 이상)"
+                    style={{ marginTop: 8 }}
+                />
+                <input
+                    type="password"
+                    className={styles.modalInput}
+                    value={newPasswordConfirm}
+                    onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                    placeholder="새 비밀번호 확인"
+                    style={{ marginTop: 8 }}
+                />
+                <div className={styles.modalBtns}>
+                  <button onClick={closePasswordModal} className={styles.modalCancelButton}>취소</button>
+                  <button onClick={handleChangePassword} disabled={passwordSubmitting} className={styles.modalSaveButton}>
+                    {passwordSubmitting ? "변경 중..." : "변경하기"}
                   </button>
                 </div>
               </div>

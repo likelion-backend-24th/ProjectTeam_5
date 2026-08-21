@@ -6,6 +6,7 @@ import { useAuth } from "@/app/contexts/AuthContext";
 import * as usersApi from "@/lib/users";
 import { getToken } from "@/lib/users";
 import { getMySubscriptions, unsubscribeMentor } from "@/lib/subscriptions";
+import { uploadProfileImage, validateImage } from "@/lib/attachments";
 
 export function useProfileActions() {
   const router = useRouter();
@@ -45,6 +46,16 @@ export function useProfileActions() {
   const [verifyEmail, setVerifyEmail] = useState("");
   const [verifyCode, setVerifyCode] = useState("");
   const [verifyLoading, setVerifyLoading] = useState(false);
+
+  // 비밀번호 변경 모달 상태
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
+  const [passwordSubmitting, setPasswordSubmitting] = useState(false);
+
+  // 프로필 이미지 업로드 상태
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const onChange = (field) => (e) =>
       setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -160,6 +171,57 @@ export function useProfileActions() {
   };
 
   // 구독 해지 핸들러
+  // 비밀번호 변경 모달
+  const closePasswordModal = () => {
+    setShowPasswordModal(false);
+    setCurrentPassword("");
+    setNewPassword("");
+    setNewPasswordConfirm("");
+  };
+
+  const handleChangePassword = async () => {
+    if (!currentPassword) return alert("현재 비밀번호를 입력해주세요.");
+    if (newPassword.length < 8) return alert("새 비밀번호는 8자 이상이어야 합니다.");
+    if (newPassword !== newPasswordConfirm) return alert("새 비밀번호가 일치하지 않습니다.");
+
+    const token = getToken();
+    setPasswordSubmitting(true);
+    try {
+      await usersApi.updatePassword(currentPassword, newPassword, token);
+      closePasswordModal();
+      alert("비밀번호가 변경되었습니다.");
+    } catch (err) {
+      alert(err.message || "비밀번호 변경에 실패했습니다.");
+    } finally {
+      setPasswordSubmitting(false);
+    }
+  };
+
+  // 프로필 이미지 변경 — 선택 즉시 업로드(별도 저장 버튼 없이 바로 반영)
+  const handleProfileImageChange = async (file) => {
+    if (!file) return;
+    try {
+      validateImage(file);
+    } catch (err) {
+      alert(err.message);
+      return;
+    }
+
+    const token = getToken();
+    setUploadingImage(true);
+    try {
+      const imageUrl = await uploadProfileImage(file);
+      await usersApi.updateProfileImageUrl(imageUrl, token);
+      await refreshUser();
+      alert("프로필 이미지가 변경되었습니다.");
+    } catch (err) {
+      alert(err.message || "프로필 이미지 변경에 실패했습니다.");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // 구독 해지 핸들러 (인자로 subscriptionId를 넘겨받도록 명시)
   const handleUnsubscribe = async (subscriptionId, mentorName) => {
     const token = getToken();
     if (!token) return;
@@ -314,5 +376,18 @@ export function useProfileActions() {
     submitMentorApplication,
     showSuccessModal,
     setShowSuccessModal,
+    showPasswordModal,
+    setShowPasswordModal,
+    currentPassword,
+    setCurrentPassword,
+    newPassword,
+    setNewPassword,
+    newPasswordConfirm,
+    setNewPasswordConfirm,
+    passwordSubmitting,
+    closePasswordModal,
+    handleChangePassword,
+    uploadingImage,
+    handleProfileImageChange,
   };
 }
