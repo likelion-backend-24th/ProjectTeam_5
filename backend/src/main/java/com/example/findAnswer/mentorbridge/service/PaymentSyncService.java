@@ -4,6 +4,7 @@ import com.example.findAnswer.mentorbridge.client.billing.PortOneBillingClient;
 import com.example.findAnswer.mentorbridge.client.portone.PortOnePaymentClient;
 import com.example.findAnswer.mentorbridge.client.portone.PortOnePaymentSnapshot;
 import com.example.findAnswer.mentorbridge.constants.ErrorCode;
+import com.example.findAnswer.mentorbridge.constants.NotificationType;
 import com.example.findAnswer.mentorbridge.constants.PaymentMethodStatus;
 import com.example.findAnswer.mentorbridge.constants.PaymentStatus;
 import com.example.findAnswer.mentorbridge.constants.SubscriptionStatus;
@@ -37,6 +38,7 @@ public class PaymentSyncService {
     private final SubscriptionRepository subscriptionRepository;
     private final PortOnePaymentClient portOnePaymentClient;
     private final PortOneBillingClient portOneBillingClient;
+    private final NotificationService notificationService;
 
     @Value("${portone.payment-id-prefix}")
     private String paymentIdPrefix;
@@ -116,6 +118,8 @@ public class PaymentSyncService {
                     payment.getStoreId(), payment.getChannelKey(), payment.getCurrency(), payment.getAmount(),
                     snapshot.storeId(), snapshot.channelKey(), snapshot.currency(), snapshot.amount(), snapshot.status());
             payment.markFailed();
+            notificationService.notify(subscription.getUser().getId(), NotificationType.PAYMENT_FAILED,
+                    "결제에 실패했습니다.", "/profile");
             throw new CustomException(ErrorCode.PAYMENT_VERIFICATION_FAILED);
         }
 
@@ -132,6 +136,9 @@ public class PaymentSyncService {
         }
 
         scheduleNextCycle(payment, subscription);
+
+        notificationService.notify(subscription.getUser().getId(), NotificationType.PAYMENT_SUCCESS,
+                "결제가 완료되었습니다.", "/profile");
 
         return PaymentCompleteResponse.from(payment, subscription);
     }
