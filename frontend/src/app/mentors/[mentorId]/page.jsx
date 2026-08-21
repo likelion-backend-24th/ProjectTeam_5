@@ -925,7 +925,13 @@ export default function MentorProfilePage() {
           )}
 
           {activeTab === "review" && (
-            <div className={styles.empty} style={{ textAlign: "left" }}>
+            <div style={{ 
+              padding: "60px 40px", 
+              background: "#fff", 
+              border: "1px solid #cbd5e1", 
+              borderRadius: "12px", 
+              textAlign: "left" // 이제 원하는 대로 왼쪽 정렬 가능
+            }}>
               <h3>리뷰 ({mentorInfo.reviewCount || 0})</h3>
 
               {!isOwner && isLoggedIn && (
@@ -999,7 +1005,7 @@ export default function MentorProfilePage() {
               ) : (
                 <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
                   {reviews.map((r) => (
-                    <div key={r.id} style={{ border: "1px solid #f0f0f0", borderRadius: 10, padding: 14 }}>
+                    <div key={r.id} style={{ border: "1px solid #f0f0f0", borderRadius: 10, padding: 14, textAlign: "left" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <strong style={{ fontSize: 14 }}>{r.userName}</strong>
