@@ -84,7 +84,7 @@ export default function Header() {
             )}
 
 
-            {!loading && isLoggedIn && user?.role === "ADMIN" && (
+            {/* {!loading && isLoggedIn && user?.role === "ADMIN" && (
                 <Link
                     href="/users"
                     onClick={(e) =>
@@ -96,7 +96,7 @@ export default function Header() {
                 >
                   유저 목록
                 </Link>
-            )}
+            )} */}
 
 
 

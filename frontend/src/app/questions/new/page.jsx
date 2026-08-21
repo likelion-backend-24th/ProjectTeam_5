@@ -26,11 +26,14 @@ export default function NewQuestionPage() {
     const start = el.selectionStart;
     const end = el.selectionEnd;
     const selected = content.slice(start, end);
-    const snippet = "```java\n" + (selected || "여기에 코드") + "\n```\n";
+    // 코드펜스(```)는 줄 맨 앞에서 시작해야 마크다운으로 인식된다 — 커서 앞이 줄 시작이 아니면 개행을 먼저 넣는다.
+    const needsLeadingNewline = start > 0 && content[start - 1] !== "\n";
+    const prefix = needsLeadingNewline ? "\n" : "";
+    const snippet = prefix + "```java\n" + (selected || "여기에 코드") + "\n```\n";
     setContent(content.slice(0, start) + snippet + content.slice(end));
     requestAnimationFrame(() => {
       el.focus();
-      const pos = start + "```java\n".length;
+      const pos = start + prefix.length + "```java\n".length;
       el.setSelectionRange(pos, pos + (selected ? selected.length : 6));
     });
   };

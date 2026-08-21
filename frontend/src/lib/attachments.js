@@ -58,6 +58,37 @@ export async function uploadFile(file) {
   return { attachId: data.attachId, name: data.originalFileName, size: data.size };
 }
 
+// 첨부파일 다운로드 — 백엔드가 이 엔드포인트를 인증 필요로 막아놨다(anyRequest().authenticated()).
+// <a href={downloadUrl}>로 그냥 열면 브라우저가 Authorization 헤더 없이 GET을 보내서 401 →
+// 스프링 기본 Whitelabel 에러 페이지가 뜬다. fetch로 토큰을 실어 받은 뒤 blob을 직접 저장해야 한다.
+export async function downloadFile(attachId, filename = "download") {
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("token") || localStorage.getItem("accessToken")
+      : null;
+
+  const res = await fetch(`${API_URL}/api/attachments/files/${attachId}/download`, {
+    method: "GET",
+    credentials: "include",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.message || "파일 다운로드에 실패했습니다.");
+  }
+
+  const blob = await res.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = filename; // 서버가 넘겨준 originalFileName을 그대로 씀
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
+}
+
 // ① 백엔드에서 업로드 서명 발급
 function createSignature({ filename, fileSize }) {
   return request("/api/attachments/images/signature", {

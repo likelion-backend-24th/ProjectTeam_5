@@ -21,6 +21,7 @@ import { getPublicProfile, toggleFollowUser, getToken } from "@/lib/users";
 import AnswerForm from "../answers/AnswerForm";
 import AnswerList from "../answers/AnserList";
 import Markdown from "@/components/Markdown/Markdown";
+import { downloadFile } from "@/lib/attachments";
 import styles from "./page.module.css";
 
 export default function QuestionDetailPage() {
@@ -206,6 +207,17 @@ export default function QuestionDetailPage() {
     }
   };
 
+  const handleDownload = async (file) => {
+    try {
+      await downloadFile(file.attachId, file.originalFileName);
+    } catch (error) {
+      alert(error.message || "파일 다운로드에 실패했습니다.");
+      if (error.status === 401 || error.status === 403) {
+        router.push("/login");
+      }
+    }
+  };
+
   const handleUpdateAnswer = async (answerId, content) => {
     try {
       await updateAnswer(answerId, { content });
@@ -332,8 +344,9 @@ export default function QuestionDetailPage() {
                     <ul style={{ listStyle: "none", padding: 0, marginTop: 12, display: "grid", gap: 6 }}>
                       {question.files.map((file) => (
                           <li key={file.attachId}>
-                            <a
-                                href={`${process.env.NEXT_PUBLIC_API_URL}${file.downloadUrl}`}
+                            <button
+                                type="button"
+                                onClick={() => handleDownload(file)}
                                 style={{
                                   display: "inline-flex",
                                   alignItems: "center",
@@ -342,12 +355,13 @@ export default function QuestionDetailPage() {
                                   border: "1px solid #e5e7eb",
                                   borderRadius: 8,
                                   fontSize: 14,
-                                  textDecoration: "none",
+                                  background: "none",
+                                  cursor: "pointer",
                                   color: "#374151",
                                 }}
                             >
                               📎 {file.originalFileName} ({(file.size / 1024 / 1024).toFixed(2)}MB)
-                            </a>
+                            </button>
                           </li>
                       ))}
                     </ul>
