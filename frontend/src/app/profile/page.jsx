@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { FaUserLarge } from "react-icons/fa6";
 import { useProfileActions } from "./useProfileActions";
 import ProfilePaymentSection from "./ProfilePaymentSection";
