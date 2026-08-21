@@ -154,8 +154,6 @@ public class MentorPostService {
             }
         }
 
-        return MentorPostResponse.from(post);
-                .orElseThrow(() -> new IllegalArgumentException("해당 멘토의 게시글을 찾을 수 없습니다."));
         List<QuestionAttachmentFile> attachments = questionAttachmentFileRepository.findByMentorPost(post);
         return MentorPostResponse.from(post, imagesOf(attachments), filesOf(attachments));
     }
