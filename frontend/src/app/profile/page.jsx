@@ -37,7 +37,15 @@ export default function ProfilePage() {
     closeEmailModal,
     handleSendCode,
     handleVerifyCode,
-    setShowEmailModal
+    setShowEmailModal,
+    showMentorModal,
+    setShowMentorModal,
+    mentorTerms,
+    setMentorTerms,
+    submitMentorApplication,
+    // 💡 서류 안내 팝업 상태 가져오기
+    showSuccessModal,
+    setShowSuccessModal,
   } = useProfileActions();
 
   const [activeTab, setActiveTab] = useState("프로필 정보");
@@ -374,6 +382,73 @@ export default function ProfilePage() {
                       </div>
                     </>
                 )}
+              </div>
+            </div>
+        )}
+
+        {/* ===== 멘토 신청 약관 동의 모달 ===== */}
+        {showMentorModal && (
+            <div className={styles.modalOverlay}>
+              <div className={styles.modalContent}>
+                <h2 className={styles.modalTitle}>멘토 신청 약관 동의</h2>
+                <p className={styles.modalDesc}>전문가(MENTOR)로 활동하기 위해 아래 약관에 동의해 주세요.</p>
+
+                <div className={styles.termsContainer}>
+                  <label className={styles.termLabel}>
+                    <input
+                        type="checkbox"
+                        checked={mentorTerms.privacy}
+                        onChange={(e) => setMentorTerms({...mentorTerms, privacy: e.target.checked})}
+                    />
+                    <span>[필수] 개인정보 수집 및 이용 동의</span>
+                  </label>
+
+                  <label className={styles.termLabel}>
+                    <input
+                        type="checkbox"
+                        checked={mentorTerms.fee}
+                        onChange={(e) => setMentorTerms({...mentorTerms, fee: e.target.checked})}
+                    />
+                    <span>[필수] 구독료 정산 시 세금 포함 수수료 10% 공제 동의</span>
+                  </label>
+                </div>
+
+                <div className={styles.modalBtns}>
+                  <button onClick={() => setShowMentorModal(false)} className={styles.modalCancelButton}>취소</button>
+                  <button
+                      onClick={submitMentorApplication}
+                      className={styles.modalSaveButton}
+                      disabled={!mentorTerms.privacy || !mentorTerms.fee}
+                      style={{ opacity: (!mentorTerms.privacy || !mentorTerms.fee) ? 0.5 : 1 }}
+                  >
+                    신청 완료
+                  </button>
+                </div>
+              </div>
+            </div>
+        )}
+
+        {/* 💡 ===== 멘토 신청 완료 (서류 안내) 팝업 ===== 💡 */}
+        {showSuccessModal && (
+            <div className={styles.modalOverlay}>
+              <div className={styles.modalContent} style={{ textAlign: "center", padding: "40px 24px" }}>
+                <div style={{ fontSize: "48px", marginBottom: "16px" }}>🎉</div>
+                <h2 className={styles.modalTitle} style={{ fontSize: "22px", color: "#111827" }}>멘토 신청이 접수되었습니다!</h2>
+                <div style={{ marginTop: "20px", marginBottom: "28px", fontSize: "14px", color: "#475569", lineHeight: "1.6" }}>
+                  관리자 이메일(<strong>min1103317@gmail.com</strong>)으로<br />
+                  경력을 증명할 수 있는 <strong>증빙서류</strong>나<br />
+                  <strong>자격증 사본</strong>을 보내주세요.<br /><br />
+                  <span style={{ fontSize: "13px", color: "#64748b" }}>* 서류 확인 후 승인 처리가 진행됩니다.</span>
+                </div>
+                <div className={styles.modalBtns} style={{ justifyContent: "center" }}>
+                  <button
+                      onClick={() => setShowSuccessModal(false)}
+                      className={styles.modalSaveButton}
+                      style={{ width: "100%", padding: "12px 0", fontSize: "15px" }}
+                  >
+                    확인
+                  </button>
+                </div>
               </div>
             </div>
         )}

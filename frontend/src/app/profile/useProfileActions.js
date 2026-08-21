@@ -20,7 +20,7 @@ export function useProfileActions() {
   const [subscriptions, setSubscriptions] = useState([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
 
-  // 활동 통계(팔로워/팔로잉/작성 질문/작성 답변) — 공개 프로필 페이지(users/[id])와 동일한 API를 재사용한다.
+  // 활동 통계(팔로워/팔로잉/작성 질문/작성 답변)
   const [profileStats, setProfileStats] = useState({
     followerCount: 0,
     followingCount: 0,
@@ -29,7 +29,17 @@ export function useProfileActions() {
   });
   const [loadingStats, setLoadingStats] = useState(false);
 
-  // 💡 이메일 인증 모달 상태 관리 추가
+  // 💡 멘토 신청 약관 팝업 관련 상태
+  const [showMentorModal, setShowMentorModal] = useState(false);
+  const [mentorTerms, setMentorTerms] = useState({
+    privacy: false,
+    fee: false,
+  });
+
+  // 💡 멘토 신청 완료(서류 제출 안내) 팝업 관련 상태
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // 이메일 인증 모달 상태 관리
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [verifyStep, setVerifyStep] = useState(1);
   const [verifyEmail, setVerifyEmail] = useState("");
@@ -55,7 +65,7 @@ export function useProfileActions() {
     }
   }, []);
 
-  // 내 활동 통계 로드 — 공개 프로필 페이지(users/[id]/page.jsx)가 쓰는 것과 같은 API 3개를 그대로 재사용한다.
+  // 내 활동 통계 로드
   const fetchProfileStats = useCallback(async () => {
     if (!user?.id) return;
     try {
@@ -68,7 +78,6 @@ export function useProfileActions() {
       setProfileStats({
         followerCount: profileData?.followerCount || 0,
         followingCount: profileData?.followingCount || 0,
-        // Page 응답의 totalElements(전체 개수)를 우선 쓰고, 없으면 현재 페이지 길이로 대체한다.
         questionCount: questionsData?.totalElements ?? questionsData?.content?.length ?? 0,
         answerCount: answeredData?.totalElements ?? answeredData?.content?.length ?? 0,
       });
@@ -90,7 +99,6 @@ export function useProfileActions() {
       interests: user.interests || "",
     });
 
-    //이메일 인증 모달 기본값 세팅
     if (!verifyEmail) setVerifyEmail(user.email || "");
 
     (async () => {
@@ -112,7 +120,7 @@ export function useProfileActions() {
     };
   }, [user, fetchSubscriptions, fetchProfileStats, verifyEmail]);
 
-  // 💡 이메일 인증 기능 함수들 추가
+  // 이메일 인증 기능 함수들
   const closeEmailModal = () => {
     setShowEmailModal(false);
     setVerifyStep(1);
@@ -141,8 +149,6 @@ export function useProfileActions() {
     try {
       await usersApi.verifyEmailCode(verifyEmail, verifyCode, token);
       closeEmailModal();
-      // 인증 성공 시 계정 이메일(=로그인 아이디)이 이 이메일로 바뀐다 — 다음부터는 이 이메일로
-      // 로그인해야 하니, 헷갈리지 않게 바로 로그아웃시키고 안내한다.
       alert(`이메일 인증이 완료됐습니다.\n다음부터는 ${verifyEmail}(으)로 로그인해주세요.\n다시 로그인해주세요.`);
       logout();
       router.replace("/login");
@@ -153,7 +159,7 @@ export function useProfileActions() {
     }
   };
 
-  // 구독 해지 핸들러 (인자로 subscriptionId를 넘겨받도록 명시)
+  // 구독 해지 핸들러
   const handleUnsubscribe = async (subscriptionId, mentorName) => {
     const token = getToken();
     if (!token) return;
@@ -170,7 +176,6 @@ export function useProfileActions() {
     if (!confirm(confirmMsg)) return;
 
     try {
-      // lib/subscriptions 의 unsubscribeMentor 함수에 subscriptionId 전달
       await unsubscribeMentor(subscriptionId, token);
       alert("구독이 해지되었습니다.");
       fetchSubscriptions();
@@ -227,14 +232,29 @@ export function useProfileActions() {
     setIsEditing(false);
   };
 
-  const handleApplyMentor = async () => {
+  // 멘토 신청 버튼 클릭 -> 팝업 열기
+  const handleApplyMentor = () => {
     const token = getToken();
     if (!token) return;
-    if (!confirm("전문가(MENTOR) 권한을 신청하시겠습니까?")) return;
+    setMentorTerms({ privacy: false, fee: false });
+    setShowMentorModal(true);
+  };
+
+  // 약관 동의 후 실제 멘토 신청 전송
+  const submitMentorApplication = async () => {
+    const token = getToken();
+    if (!token) return;
+
+    if (!mentorTerms.privacy || !mentorTerms.fee) {
+      alert("모든 필수 약관에 동의해주세요.");
+      return;
+    }
+
     try {
       await usersApi.applyMentor(token);
       setHasAppliedMentor(true);
-      alert("멘토 신청이 완료되었습니다. 관리자 승인을 기다려주세요.");
+      setShowMentorModal(false); // 약관 모달 닫기
+      setShowSuccessModal(true); // 💡 서류 안내 팝업 띄우기 (alert 대체)
     } catch (err) {
       alert(err.message || "이미 신청되었거나 처리할 수 없는 상태입니다.");
     }
@@ -275,7 +295,6 @@ export function useProfileActions() {
     loadingSubs,
     handleUnsubscribe,
     fetchSubscriptions,
-    // 💡 이메일 모달 관련 값들 리턴 추가
     showEmailModal,
     setShowEmailModal,
     verifyStep,
@@ -288,5 +307,12 @@ export function useProfileActions() {
     closeEmailModal,
     handleSendCode,
     handleVerifyCode,
+    showMentorModal,
+    setShowMentorModal,
+    mentorTerms,
+    setMentorTerms,
+    submitMentorApplication,
+    showSuccessModal,
+    setShowSuccessModal,
   };
 }
