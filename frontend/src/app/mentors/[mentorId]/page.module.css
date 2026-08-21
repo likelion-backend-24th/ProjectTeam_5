@@ -363,7 +363,20 @@
 .bookmark { font-size: 14px; color: #94a3b8; cursor: pointer; transition: color 0.15s; }
 .bookmark:hover { color: #e11d48; }
 
-.empty { padding: 70px 20px; background: #fff; border: 1px solid #e5eaf2; border-radius: 10px; text-align: center; color: #94a3b8; font-size: 13px; }
+.empty { 
+  padding: 70px 20px; 
+  background: #fff; 
+  border: 1px solid #e5eaf2; 
+  border-radius: 10px; 
+  text-align: center; 
+  color: #94a3b8; 
+  font-size: 13px; 
+  
+  white-space: pre-wrap;       /* 줄바꿈(\n)을 유지하면서 칸을 넘어가면 자동 줄바꿈 */
+  word-break: break-all;       /* 단어가 너무 길 경우 강제로 줄바꿈 */
+  overflow-wrap: break-word;   /* 표준 단어 끊기 지원 */
+  box-sizing: border-box;      /* 패딩 포함 크기 계산 */
+}
 
 .sidebar { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .sidebarCard { padding: 17px; box-sizing: border-box; background: #fff; border: 1px solid #e3e8f0; border-radius: 10px; box-shadow: 0 1px 4px rgba(15, 23, 42, 0.025); }
@@ -633,4 +646,63 @@
 
 .modalCloseBtn:hover {
   color: #0f172a;
+}
+
+/* ==================================================
+   반응형 레이아웃 (태블릿 및 모바일 대응)
+================================================== */
+@media (max-width: 968px) {
+  .container {
+    padding: 16px;
+  }
+
+  /* 프로필 배너 구조를 세로로 전환 */
+  .profileBanner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+    padding: 20px;
+  }
+
+  .heroRight {
+    margin-left: 0;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .heroStats {
+    justify-content: space-between;
+  }
+
+  .statBox {
+    min-width: auto;
+    flex: 1;
+    padding: 0 10px;
+  }
+
+  .actionBtns {
+    width: 100%;
+    flex-direction: row;
+  }
+
+  .actionBtns button {
+    flex: 1;
+  }
+
+  /* 메인 그리드(본문 + 사이드바)를 1열로 변경 */
+  .mainGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* 검색바 크기 조정 */
+  .filterBar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .searchInput {
+    width: 100%;
+  }
 }

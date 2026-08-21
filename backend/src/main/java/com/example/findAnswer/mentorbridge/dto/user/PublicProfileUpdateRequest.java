@@ -12,4 +12,5 @@ public class PublicProfileUpdateRequest {
     private String tags;
     private String education;
     private String schedule;
+    private String portfolioUrl;
 }

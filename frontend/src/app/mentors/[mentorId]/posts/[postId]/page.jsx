@@ -32,11 +32,12 @@ export default function MentorPostDetailPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const loadPost = useCallback(async () => {
-    if (!mentorId || !postId) return;
-
-    setLoading(true);
-    setErrorMessage("");
-    setIsForbidden(false);
+  if (!mentorId || !postId || mentorId === "undefined" || postId === "undefined") {
+    return;
+  }
+  setLoading(true);
+  setErrorMessage("");
+  setIsForbidden(false);
 
     try {
       const token =
@@ -64,6 +65,9 @@ export default function MentorPostDetailPage() {
         setIsForbidden(true);
         return;
       }
+      if (res.status === 404) {
+        throw new Error("존재하지 않는 게시글입니다.");
+      }
 
       if (!res.ok) {
         const errorText = await res.text();
@@ -87,8 +91,10 @@ export default function MentorPostDetailPage() {
   }, [mentorId, postId, currentUserId]);
 
   useEffect(() => {
+  if (mentorId && postId) { 
     loadPost();
-  }, [loadPost]);
+  }
+}, [loadPost, mentorId, postId]);
 
   const handleUpdate = async (e) => {
     e.preventDefault();

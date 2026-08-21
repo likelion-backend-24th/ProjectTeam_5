@@ -273,7 +273,8 @@ public class UserService {
                 request.getCareer(),
                 request.getTags(),
                 request.getEducation(),
-                request.getSchedule()
+                request.getSchedule(),
+                request.getPortfolioUrl()
         );
 
         return UserResponse.from(user);
