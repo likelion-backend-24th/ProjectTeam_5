@@ -17,9 +17,12 @@ public record MentorPostResponse(
         List<ImageResponse> images,
         List<FileResponse> files,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        boolean liked,
+        long likeCount,
+        long viewCount
 ) {
-    public static MentorPostResponse from(MentorPost post, List<ImageResponse> images, List<FileResponse> files) {
+    public static MentorPostResponse from(MentorPost post, List<ImageResponse> images, List<FileResponse> files, boolean liked, long likeCount) {
         return new MentorPostResponse(
                 post.getId(),
                 post.getMentor().getId(),
@@ -30,7 +33,10 @@ public record MentorPostResponse(
                 images == null ? List.of() : images,
                 files == null ? List.of() : files,
                 post.getCreatedAt(),
-                post.getUpdatedAt()
+                post.getUpdatedAt(),
+                liked,
+                likeCount,
+                post.getViewCount()
         );
     }
 }
