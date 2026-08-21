@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useMemo, act } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/app/contexts/AuthContext";
@@ -15,6 +15,8 @@ import {
   getPendingCancellations,
   approveCancellation,
   rejectCancellation,
+  getInquiries,
+  updateInquiryStatus,
 } from "@/lib/admin";
 import { getQuestions, deleteQuestion } from "@/lib/questions";
 import { getQuestionsByUser } from "@/lib/users";
@@ -29,6 +31,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState([]);
   const [mentorApps, setMentorApps] = useState([]);
   const [questions, setQuestions] = useState([]);
+  const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -42,6 +45,8 @@ export default function AdminPage() {
 
   const [cancellations, setCancellations] = useState([]);
   const [cancelBusyId, setCancelBusyId] = useState(null);
+
+  const [selectedInquiry, setSelectedInquiry] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -65,6 +70,9 @@ export default function AdminPage() {
       } else if (activeTab === "refunds") {
         const data = await getPendingCancellations();
         setCancellations(data || []);
+      } else if (activeTab === "inquiries") {
+        const data = await getInquiries();
+        setInquiries(data || []);
       }
     } catch (error) {
       console.error(error);
@@ -92,6 +100,7 @@ export default function AdminPage() {
     setSortOption("latest");
     setRoleFilter("ALL");
     setExpandedUserId(null);
+    setSelectedInquiry(null);
   };
 
   const filteredUsers = useMemo(() => {
@@ -139,6 +148,28 @@ export default function AdminPage() {
 
     return list;
   }, [mentorApps, searchQuery, sortOption]);
+
+  const filteredInquiries = useMemo(() => {
+    let list = [...inquiries];
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (item) =>
+          (item.title || "").toLowerCase().includes(q) ||
+          (item.email || "").toLowerCase().includes(q) ||
+          (item.category || "").toLowerCase().includes(q)
+      );
+    }
+
+    list.sort((a, b) => {
+      const idA = Number(a.id || 0);
+      const idB = Number(b.id || 0);
+      return sortOption === "latest" ? idB - idA : idA - idB;
+    });
+
+    return list;
+  }, [inquiries, searchQuery, sortOption]);
 
   const authorSummary = useMemo(() => {
     const map = {};
@@ -205,7 +236,6 @@ export default function AdminPage() {
       const res = await getQuestionsByUser(userId);
       let list = res?.content || res || [];
 
-      // 📌 작성글 목록 최신순(등록일 및 ID 기준) 정렬 적용
       list.sort((a, b) => {
         const dateA = new Date(a.createdAt || 0).getTime();
         const dateB = new Date(b.createdAt || 0).getTime();
@@ -281,45 +311,23 @@ export default function AdminPage() {
     }
   };
 
-  const handleApproveCancellation = async (id, paymentId) => {
-    if (
-      !confirm(
-        `결제 ${paymentId}의 환불을 승인하시겠습니까? \n PortOne에 실제 취소 요청이 전송되며 되돌릴 수 없습니다.`,
-      )
-    )
-      return;
+  const handleStatusChange = async (id, currentStatus) => {
+    const nextStatus = currentStatus === "PENDING" ? "COMPLETED" : "PENDING";
+    const actionText = nextStatus === "COMPLETED" ? "완료" : "대기중";
 
-    setCancelBusyId(id);
+    if (!confirm(`해당 문의를 '${actionText}' 상태로 변경하시겠습니까?`)) return;
 
     try {
-      await approveCancellation(id);
-      alert("환불이 승인되었습니다.");
+      await updateInquiryStatus(id, nextStatus);
+      alert("상태가 변경되었습니다.");
       fetchData();
     } catch (error) {
-      alert(error.message || "승인 처리에 실패했습니다.");
-    } finally {
-      setCancelBusyId(null);
+      alert(error.message || "상태 변경에 실패했습니다.");
     }
   };
 
-  const handleRejectCancellation = async (id, paymentId) => {
-    const adminNote = window.prompt(`결제 ${paymentId} 건 환불을 거절합니다.`);
-    if (adminNote === null) return;
-
-    setCancelBusyId(id);
-    try {
-      await rejectCancellation(id, adminNote.trim());
-      alert("환불 요청이 거절되었습니다.");
-      fetchData();
-    } catch (error) {
-      alert(error.message || "거절 처리에 실패했습니다.");
-    } finally {
-      setCancelBusyId(null);
-    }
-
-    if (authLoading)
-      return <p className={styles.statusText}>권한 확인 중...</p>;
-  };
+  if (authLoading)
+    return <p className={styles.statusText}>권한 확인 중...</p>;
 
   return (
     <main className={styles.page}>
@@ -327,7 +335,7 @@ export default function AdminPage() {
         <div>
           <h1>관리자 페이지</h1>
           <p>
-            회원 정보, 멘토 신청 및 커뮤니티 게시글을 통합 관리할 수 있습니다.
+            회원 정보, 멘토 신청, 커뮤니티 게시글 및 1:1 고객 문의를 통합 관리할 수 있습니다.
           </p>
         </div>
       </div>
@@ -362,36 +370,32 @@ export default function AdminPage() {
           >
             환불 관리
           </button>
+          <button
+            type="button"
+            className={`${styles.tabButton} ${activeTab === "inquiries" ? styles.tabActive : ""}`}
+            onClick={() => handleTabChange("inquiries")}
+          >
+            1:1 문의/신고 관리
+          </button>
         </div>
 
-        {activeTab !== "refunds" && (
-          <div className={styles.controlsBar}>
-            <input
-              type="text"
-              placeholder={
-                activeTab === "questions"
-                  ? "작성자 이름 검색..."
-                  : "이름 또는 이메일 검색..."
-              }
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={styles.searchInput}
-            />
+        <div className={styles.controlsBar}>
+          <input
+            type="text"
+            placeholder={
+              activeTab === "questions"
+                ? "작성자 이름 검색..."
+                : activeTab === "inquiries"
+                ? "제목, 이메일, 유형 검색..."
+                : "이름 또는 이메일 검색..."
+            }
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={styles.searchInput}
+          />
 
-            <div className={styles.selectGroup}>
-              {activeTab === "users" && (
-                <select
-                  value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value)}
-                  className={styles.selectBox}
-                >
-                  <option value="ALL">모든 역할</option>
-                  <option value="USER">일반 사용자 (USER)</option>
-                  <option value="MENTOR">멘토 (MENTOR)</option>
-                  <option value="ADMIN">관리자 (ADMIN)</option>
-                </select>
-              )}
-
+          <div className={styles.selectGroup}>
+            {activeTab === "users" && (
               <select
                 value={sortOption}
                 onChange={(e) => setSortOption(e.target.value)}
@@ -423,86 +427,88 @@ export default function AdminPage() {
                   : "등록된 회원이 없습니다."}
               </p>
             ) : (
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th style={{ width: "50px", textAlign: "center" }}>ID</th>
-                    <th style={{ width: "180px" }}>이메일</th>
-                    <th style={{ width: "90px" }}>이름</th>
-                    <th style={{ width: "70px" }}>역할</th>
-                    <th style={{ width: "60px", textAlign: "center" }}>상태</th>
-                    <th style={{ width: "90px" }}>가입일</th>
-                    <th style={{ width: "110px", textAlign: "center" }}>
-                      관리
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredUsers.map((u) => {
-                    const isUserBlocked = Boolean(u.blocked ?? u.isBlocked);
+              <div className={styles.tableContainer}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={{ width: "50px", textAlign: "center" }}>ID</th>
+                      <th style={{ width: "180px" }}>이메일</th>
+                      <th style={{ width: "90px" }}>이름</th>
+                      <th style={{ width: "70px" }}>역할</th>
+                      <th style={{ width: "60px", textAlign: "center" }}>상태</th>
+                      <th style={{ width: "90px" }}>가입일</th>
+                      <th style={{ width: "110px", textAlign: "center" }}>
+                        관리
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredUsers.map((u) => {
+                      const isUserBlocked = Boolean(u.blocked ?? u.isBlocked);
 
-                    return (
-                      <tr key={u.id}>
-                        <td style={{ textAlign: "center" }}>{u.id}</td>
-                        <td className={styles.ellipsisCell}>
-                          {u.email || "OAuth 계정"}
-                        </td>
-                        <td
-                          className={styles.ellipsisCell}
-                          style={{ fontWeight: "bold", color: "#333" }}
-                        >
-                          {u.name}
-                        </td>
-                        <td>
-                          <span
-                            className={
-                              u.role === "ADMIN"
-                                ? styles.roleAdmin
-                                : u.role === "MENTOR"
-                                  ? styles.roleMentor
-                                  : styles.roleUser
-                            }
+                      return (
+                        <tr key={u.id}>
+                          <td style={{ textAlign: "center" }}>{u.id}</td>
+                          <td className={styles.ellipsisCell}>
+                            {u.email || "OAuth 계정"}
+                          </td>
+                          <td
+                            className={styles.ellipsisCell}
+                            style={{ fontWeight: "bold", color: "#333" }}
                           >
-                            {u.role}
-                          </span>
-                        </td>
-                        <td style={{ textAlign: "center" }}>
-                          {isUserBlocked ? (
-                            <span className={styles.badgeBlocked}>차단됨</span>
-                          ) : (
-                            <span className={styles.badgeActive}>정상</span>
-                          )}
-                        </td>
-                        <td>{formatDate(u.createdAt)}</td>
-                        <td style={{ textAlign: "center" }}>
-                          <div className={styles.actionButtons}>
-                            <button
-                              type="button"
+                            {u.name}
+                          </td>
+                          <td>
+                            <span
                               className={
-                                isUserBlocked
-                                  ? styles.unblockBtn
-                                  : styles.blockBtn
-                              }
-                              onClick={() =>
-                                handleBlockToggle(u.id, isUserBlocked)
+                                u.role === "ADMIN"
+                                  ? styles.roleAdmin
+                                  : u.role === "MENTOR"
+                                    ? styles.roleMentor
+                                    : styles.roleUser
                               }
                             >
-                              {isUserBlocked ? "해제" : "차단"}
-                            </button>
-                            <button
-                              type="button"
-                              className={styles.deleteBtn}
-                              onClick={() => handleDeleteUser(u.id, u.name)}
-                            >
-                              삭제
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                              {u.role}
+                            </span>
+                          </td>
+                          <td style={{ textAlign: "center" }}>
+                            {isUserBlocked ? (
+                              <span className={styles.badgeBlocked}>차단됨</span>
+                            ) : (
+                              <span className={styles.badgeActive}>정상</span>
+                            )}
+                          </td>
+                          <td>{formatDate(u.createdAt)}</td>
+                          <td style={{ textAlign: "center" }}>
+                            <div className={styles.actionButtons}>
+                              <button
+                                type="button"
+                                className={
+                                  isUserBlocked
+                                    ? styles.unblockBtn
+                                    : styles.blockBtn
+                                }
+                                onClick={() =>
+                                  handleBlockToggle(u.id, isUserBlocked)
+                                }
+                              >
+                                {isUserBlocked ? "해제" : "차단"}
+                              </button>
+                              <button
+                                type="button"
+                                className={styles.deleteBtn}
+                                onClick={() => handleDeleteUser(u.id, u.name)}
+                              >
+                                삭제
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
           </>
         )}
@@ -517,53 +523,55 @@ export default function AdminPage() {
                   : "대기 중인 멘토 신청이 없습니다."}
               </p>
             ) : (
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th style={{ width: "60px", textAlign: "center" }}>ID</th>
-                    <th style={{ width: "180px" }}>이메일</th>
-                    <th style={{ width: "100px" }}>이름</th>
-                    <th style={{ width: "140px" }}>관심 분야</th>
-                    <th style={{ width: "100px" }}>신청일</th>
-                    <th style={{ width: "120px", textAlign: "center" }}>
-                      승인 처리
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredMentorApps.map((app) => (
-                    <tr key={app.id}>
-                      <td style={{ textAlign: "center" }}>{app.id}</td>
-                      <td className={styles.ellipsisCell}>
-                        {app.email || "-"}
-                      </td>
-                      <td className={styles.ellipsisCell}>{app.name}</td>
-                      <td className={styles.ellipsisCell}>
-                        {app.interests || "-"}
-                      </td>
-                      <td>{formatDate(app.createdAt)}</td>
-                      <td style={{ textAlign: "center" }}>
-                        <div className={styles.actionButtons}>
-                          <button
-                            type="button"
-                            className={styles.approveBtn}
-                            onClick={() => handleApprove(app.id)}
-                          >
-                            승인
-                          </button>
-                          <button
-                            type="button"
-                            className={styles.rejectBtn}
-                            onClick={() => handleReject(app.id)}
-                          >
-                            거절
-                          </button>
-                        </div>
-                      </td>
+              <div className={styles.tableContainer}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={{ width: "60px", textAlign: "center" }}>ID</th>
+                      <th style={{ width: "180px" }}>이메일</th>
+                      <th style={{ width: "100px" }}>이름</th>
+                      <th style={{ width: "140px" }}>관심 분야</th>
+                      <th style={{ width: "100px" }}>신청일</th>
+                      <th style={{ width: "120px", textAlign: "center" }}>
+                        승인 처리
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {filteredMentorApps.map((app) => (
+                      <tr key={app.id}>
+                        <td style={{ textAlign: "center" }}>{app.id}</td>
+                        <td className={styles.ellipsisCell}>
+                          {app.email || "-"}
+                        </td>
+                        <td className={styles.ellipsisCell}>{app.name}</td>
+                        <td className={styles.ellipsisCell}>
+                          {app.interests || "-"}
+                        </td>
+                        <td>{formatDate(app.createdAt)}</td>
+                        <td style={{ textAlign: "center" }}>
+                          <div className={styles.actionButtons}>
+                            <button
+                              type="button"
+                              className={styles.approveBtn}
+                              onClick={() => handleApprove(app.id)}
+                            >
+                              승인
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.rejectBtn}
+                              onClick={() => handleReject(app.id)}
+                            >
+                              거절
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </>
         )}
@@ -578,241 +586,313 @@ export default function AdminPage() {
                   : "등록된 게시글이 없습니다."}
               </p>
             ) : (
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th style={{ width: "80px", textAlign: "center" }}>번호</th>
-                    <th style={{ width: "200px" }}>작성자 이름</th>
-                    <th style={{ width: "120px" }}>역할</th>
-                    <th style={{ width: "120px", textAlign: "center" }}>
-                      총 작성글 수
-                    </th>
-                    <th style={{ width: "150px", textAlign: "center" }}>
-                      작성글 보기
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {authorSummary.map((item, index) => {
-                    const isExpanded = expandedUserId === item.id;
-                    const userQuestions = userQuestionsMap[item.id] || [];
-                    const isSubLoading = subLoadingId === item.id;
+              <div className={styles.tableContainer}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={{ width: "80px", textAlign: "center" }}>번호</th>
+                      <th style={{ width: "200px" }}>작성자 이름</th>
+                      <th style={{ width: "120px" }}>역할</th>
+                      <th style={{ width: "120px", textAlign: "center" }}>
+                        총 작성글 수
+                      </th>
+                      <th style={{ width: "150px", textAlign: "center" }}>
+                        작성글 보기
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {authorSummary.map((item, index) => {
+                      const isExpanded = expandedUserId === item.id;
+                      const userQuestions = userQuestionsMap[item.id] || [];
+                      const isSubLoading = subLoadingId === item.id;
 
-                    return (
-                      <React.Fragment key={item.id}>
-                        <tr>
-                          <td style={{ textAlign: "center" }}>{index + 1}</td>
-                          <td>
-                            <span style={{ fontWeight: "bold", color: "#333" }}>
-                              {item.name}
-                            </span>
-                          </td>
-                          <td>
-                            <span
-                              className={
-                                item.role === "ADMIN"
-                                  ? styles.roleAdmin
-                                  : item.role === "MENTOR"
-                                    ? styles.roleMentor
-                                    : styles.roleUser
-                              }
-                            >
-                              {item.role}
-                            </span>
-                          </td>
-                          <td style={{ textAlign: "center" }}>
-                            <span
-                              style={{ fontWeight: "bold", color: "#2867e8" }}
-                            >
-                              {item.count}개
-                            </span>
-                          </td>
-                          <td style={{ textAlign: "center" }}>
-                            <button
-                              type="button"
-                              className={styles.askButton}
-                              style={{
-                                padding: "6px 12px",
-                                fontSize: "12px",
-                                cursor: "pointer",
-                              }}
-                              onClick={() => handleToggleExpand(item.id)}
-                            >
-                              {isExpanded ? "닫기 ▲" : "작성글 보기 ▼"}
-                            </button>
-                          </td>
-                        </tr>
-
-                        {/* 아코디언 펼쳐짐 영역 */}
-                        {isExpanded && (
+                      return (
+                        <React.Fragment key={item.id}>
                           <tr>
-                            <td
-                              colSpan="5"
-                              style={{
-                                backgroundColor: "#f9fbff",
-                                padding: "16px",
-                              }}
-                            >
-                              <div
+                            <td style={{ textAlign: "center" }}>{index + 1}</td>
+                            <td>
+                              <span style={{ fontWeight: "bold", color: "#333" }}>
+                                {item.name}
+                              </span>
+                            </td>
+                            <td>
+                              <span
+                                className={
+                                  item.role === "ADMIN"
+                                    ? styles.roleAdmin
+                                    : item.role === "MENTOR"
+                                      ? styles.roleMentor
+                                      : styles.roleUser
+                                }
+                              >
+                                {item.role}
+                              </span>
+                            </td>
+                            <td style={{ textAlign: "center" }}>
+                              <span
+                                style={{ fontWeight: "bold", color: "#2867e8" }}
+                              >
+                                {item.count}개
+                              </span>
+                            </td>
+                            <td style={{ textAlign: "center" }}>
+                              <button
+                                type="button"
+                                className={styles.askButton}
                                 style={{
-                                  border: "1px solid #d0e1fd",
-                                  borderRadius: "8px",
-                                  padding: "12px",
-                                  background: "#fff",
+                                  padding: "6px 12px",
+                                  fontSize: "12px",
+                                  cursor: "pointer",
+                                }}
+                                onClick={() => handleToggleExpand(item.id)}
+                              >
+                                {isExpanded ? "닫기 ▲" : "작성글 보기 ▼"}
+                              </button>
+                            </td>
+                          </tr>
+
+                          {isExpanded && (
+                            <tr>
+                              <td
+                                colSpan="5"
+                                style={{
+                                  backgroundColor: "#f9fbff",
+                                  padding: "16px",
                                 }}
                               >
-                                <p
+                                <div
                                   style={{
-                                    fontWeight: "bold",
-                                    marginBottom: "8px",
-                                    color: "#2867e8",
-                                    fontSize: "13px",
+                                    border: "1px solid #d0e1fd",
+                                    borderRadius: "8px",
+                                    padding: "12px",
+                                    background: "#fff",
                                   }}
                                 >
-                                  📌 {item.name} 님이 작성한 질문 목록
-                                </p>
-                                {isSubLoading ? (
                                   <p
                                     style={{
-                                      textAlign: "center",
-                                      padding: "12px",
-                                      color: "#666",
-                                    }}
-                                  >
-                                    불러오는 중...
-                                  </p>
-                                ) : userQuestions.length === 0 ? (
-                                  <p
-                                    style={{
-                                      textAlign: "center",
-                                      padding: "12px",
-                                      color: "#666",
-                                    }}
-                                  >
-                                    작성한 질문이 없습니다.
-                                  </p>
-                                ) : (
-                                  <table
-                                    style={{
-                                      width: "100%",
-                                      borderCollapse: "collapse",
+                                      fontWeight: "bold",
+                                      marginBottom: "8px",
+                                      color: "#2867e8",
                                       fontSize: "13px",
                                     }}
                                   >
-                                    <thead>
-                                      <tr
-                                        style={{
-                                          borderBottom: "1px solid #eee",
-                                          textAlign: "left",
-                                          color: "#555",
-                                        }}
-                                      >
-                                        <th
-                                          style={{
-                                            padding: "6px",
-                                            width: "80px",
-                                          }}
-                                        >
-                                          분류
-                                        </th>
-                                        <th style={{ padding: "6px" }}>제목</th>
-                                        <th
-                                          style={{
-                                            padding: "6px",
-                                            width: "60px",
-                                            textAlign: "center",
-                                          }}
-                                        >
-                                          답변
-                                        </th>
-                                        <th
-                                          style={{
-                                            padding: "6px",
-                                            width: "60px",
-                                            textAlign: "center",
-                                          }}
-                                        >
-                                          좋아요
-                                        </th>
-                                        <th
-                                          style={{
-                                            padding: "6px",
-                                            width: "90px",
-                                            textAlign: "center",
-                                          }}
-                                        >
-                                          등록일
-                                        </th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {userQuestions.map((q) => (
+                                    📌 {item.name} 님이 작성한 질문 목록
+                                  </p>
+                                  {isSubLoading ? (
+                                    <p
+                                      style={{
+                                        textAlign: "center",
+                                        padding: "12px",
+                                        color: "#666",
+                                      }}
+                                    >
+                                      불러오는 중...
+                                    </p>
+                                  ) : userQuestions.length === 0 ? (
+                                    <p
+                                      style={{
+                                        textAlign: "center",
+                                        padding: "12px",
+                                        color: "#666",
+                                      }}
+                                    >
+                                      작성한 질문이 없습니다.
+                                    </p>
+                                  ) : (
+                                    <table
+                                      style={{
+                                        width: "100%",
+                                        borderCollapse: "collapse",
+                                        fontSize: "13px",
+                                      }}
+                                    >
+                                      <thead>
                                         <tr
-                                          key={q.id}
                                           style={{
-                                            borderBottom: "1px solid #f2f2f2",
+                                            borderBottom: "1px solid #eee",
+                                            textAlign: "left",
+                                            color: "#555",
                                           }}
                                         >
-                                          <td
+                                          <th
                                             style={{
-                                              padding: "8px 6px",
-                                              color: "#2867e8",
-                                              fontWeight: "bold",
+                                              padding: "6px",
+                                              width: "80px",
                                             }}
                                           >
-                                            [{q.category || "기타"}]
-                                          </td>
-                                          <td style={{ padding: "8px 6px" }}>
-                                            <Link
-                                              href={`/questions/${q.id}`}
-                                              target="_blank"
+                                            분류
+                                          </th>
+                                          <th style={{ padding: "6px" }}>제목</th>
+                                          <th
+                                            style={{
+                                              padding: "6px",
+                                              width: "60px",
+                                              textAlign: "center",
+                                            }}
+                                          >
+                                            답변
+                                          </th>
+                                          <th
+                                            style={{
+                                              padding: "6px",
+                                              width: "60px",
+                                              textAlign: "center",
+                                            }}
+                                          >
+                                            좋아요
+                                          </th>
+                                          <th
+                                            style={{
+                                              padding: "6px",
+                                              width: "90px",
+                                              textAlign: "center",
+                                            }}
+                                          >
+                                            등록일
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {userQuestions.map((q) => (
+                                          <tr
+                                            key={q.id}
+                                            style={{
+                                              borderBottom: "1px solid #f2f2f2",
+                                            }}
+                                          >
+                                            <td
                                               style={{
-                                                color: "#333",
-                                                textDecoration: "none",
+                                                padding: "8px 6px",
+                                                color: "#2867e8",
+                                                fontWeight: "bold",
                                               }}
                                             >
-                                              {q.title}
-                                            </Link>
-                                          </td>
-                                          <td
-                                            style={{
-                                              padding: "8px 6px",
-                                              textAlign: "center",
-                                            }}
-                                          >
-                                            {q.answerCount ?? 0}
-                                          </td>
-                                          <td
-                                            style={{
-                                              padding: "8px 6px",
-                                              textAlign: "center",
-                                            }}
-                                          >
-                                            ❤️ {q.likeCount ?? 0}
-                                          </td>
-                                          <td
-                                            style={{
-                                              padding: "8px 6px",
-                                              textAlign: "center",
-                                              color: "#777",
-                                            }}
-                                          >
-                                            {q.createdAt?.slice(0, 10)}
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-                </tbody>
-              </table>
+                                              [{q.category || "기타"}]
+                                            </td>
+                                            <td style={{ padding: "8px 6px" }}>
+                                              <Link
+                                                href={`/questions/${q.id}`}
+                                                target="_blank"
+                                                style={{
+                                                  color: "#333",
+                                                  textDecoration: "none",
+                                                }}
+                                              >
+                                                {q.title}
+                                              </Link>
+                                            </td>
+                                            <td
+                                              style={{
+                                                padding: "8px 6px",
+                                                textAlign: "center",
+                                              }}
+                                            >
+                                              {q.answerCount ?? 0}
+                                            </td>
+                                            <td
+                                              style={{
+                                                padding: "8px 6px",
+                                                textAlign: "center",
+                                              }}
+                                            >
+                                              ❤️ {q.likeCount ?? 0}
+                                            </td>
+                                            <td
+                                              style={{
+                                                padding: "8px 6px",
+                                                textAlign: "center",
+                                                color: "#777",
+                                              }}
+                                            >
+                                              {q.createdAt?.slice(0, 10)}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* 4. 1:1 문의/신고 관리 탭 */}
+        {!loading && !errorMessage && activeTab === "inquiries" && (
+          <>
+            {filteredInquiries.length === 0 ? (
+              <p className={styles.statusText}>
+                {searchQuery
+                  ? "검색 결과가 없습니다."
+                  : "접수된 문의 및 신고 내역이 없습니다."}
+              </p>
+            ) : (
+              <div className={styles.tableContainer}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={{ width: "60px", textAlign: "center" }}>ID</th>
+                      <th style={{ width: "100px" }}>유형</th>
+                      <th style={{ width: "180px" }}>회신 이메일</th>
+                      <th style={{ width: "220px" }}>제목 (클릭하여 상세 보기)</th>
+                      <th style={{ width: "100px" }}>접수일</th>
+                      <th style={{ width: "130px", textAlign: "center" }}>상태 관리</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredInquiries.map((item) => (
+                      <tr key={item.id}>
+                        <td style={{ textAlign: "center" }}>{item.id}</td>
+                        <td>
+                          <span style={{ fontWeight: "bold", color: "#2867e8" }}>
+                            [{item.category}]
+                          </span>
+                        </td>
+                        <td className={styles.ellipsisCell}>{item.email}</td>
+                        <td
+                          className={styles.ellipsisCell}
+                          style={{ cursor: "pointer", color: "#2867e8", textDecoration: "underline" }}
+                          title="클릭하여 상세 내용 보기"
+                          onClick={() => setSelectedInquiry(item)}
+                        >
+                          {item.title}
+                        </td>
+                        <td>{formatDate(item.createdAt)}</td>
+                        <td style={{ textAlign: "center" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                            <span className={item.status === "PENDING" ? styles.badgeBlocked : styles.badgeActive}>
+                              {item.status === "PENDING" ? "대기중" : "완료"}
+                            </span>
+                            <button
+                              type="button"
+                              style={{
+                                padding: "4px 8px",
+                                fontSize: "11px",
+                                borderRadius: "4px",
+                                border: "1px solid #d1d5db",
+                                background: "#fff",
+                                cursor: "pointer",
+                              }}
+                              onClick={() => handleStatusChange(item.id, item.status)}
+                            >
+                              {item.status === "PENDING" ? "완료로 변경" : "대기로 변경"}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </>
         )}
@@ -880,6 +960,72 @@ export default function AdminPage() {
           </>
         )}
       </section>
+
+      {/* 1:1 문의 상세 내용 보기 모달 */}
+      {selectedInquiry && (
+        <div
+          style={{
+            position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+            backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000
+          }}
+          onClick={() => setSelectedInquiry(null)}
+        >
+          <div
+            style={{
+              background: "#fff", padding: "24px", borderRadius: "8px", width: "500px", maxWidth: "90%",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <h3 style={{ margin: 0, fontSize: "18px", color: "#111" }}>문의 상세 내용</h3>
+              <button
+                onClick={() => setSelectedInquiry(null)}
+                style={{ background: "none", border: "none", fontSize: "18px", cursor: "pointer" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ fontSize: "14px", color: "#374151", display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div>
+                <strong>유형:</strong> <span style={{ color: "#2867e8" }}>[{selectedInquiry.category}]</span>
+              </div>
+              <div>
+                <strong>회신 이메일:</strong> {selectedInquiry.email}
+              </div>
+              <div>
+                <strong>접수일:</strong> {formatDate(selectedInquiry.createdAt)}
+              </div>
+              <div>
+                <strong>상태:</strong> {selectedInquiry.status === "PENDING" ? "대기중" : "완료"}
+              </div>
+              <div>
+                <strong>제목:</strong> {selectedInquiry.title}
+              </div>
+              <div>
+                <strong>상세 내용:</strong>
+                <div style={{
+                  marginTop: "6px", padding: "12px", background: "#f9fafb", borderRadius: "6px",
+                  border: "1px solid #e5e7eb", whiteSpace: "pre-wrap", minHeight: "100px", maxHeight: "200px", overflowY: "auto"
+                }}>
+                  {selectedInquiry.content}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: "20px", textAlign: "right" }}>
+              <button
+                type="button"
+                onClick={() => setSelectedInquiry(null)}
+                style={{ padding: "8px 16px", background: "#2867e8", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer" }}
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
