@@ -42,8 +42,15 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
     // 멘토 대시보드 — 이 멘토의 전체 구독자 목록(최신 가입순)
     List<Subscription> findByMentor_IdOrderByCreatedAtDesc(Long mentorId);
 
-    // 멘토 대시보드 — 누적 구독 건수(상태 무관, 전월 대비 증감률 계산용)
-    long countByMentor_Id(Long mentorId);
-
     long countByMentor_IdAndCreatedAtBefore(Long mentorId, LocalDateTime before);
+
+    // 멘토 대시보드 — subscriberCount(countByMentor_IdAndStatusInAndCurrentPeriodEndAfter)와 같은 모집단(현재
+    // 유효한 구독) 중, 이번 달 시작 전에 가입한 사람 수. 증감률 기준선을 subscriberCount와 다른 모집단(상태 무관
+    // 누적 신청 건수)으로 잡으면 같은 카드에 "구독자 수"와 "증감률"이 서로 다른 걸 세고 있어서 숫자가 안 맞아 보인다.
+    long countByMentor_IdAndStatusInAndCurrentPeriodEndAfterAndCreatedAtBefore(
+            Long mentorId,
+            List<SubscriptionStatus> statuses,
+            LocalDateTime currentPeriodEndAfter,
+            LocalDateTime createdAtBefore
+    );
 }

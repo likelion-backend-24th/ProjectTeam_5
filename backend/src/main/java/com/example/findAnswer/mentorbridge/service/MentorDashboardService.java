@@ -63,9 +63,13 @@ public class MentorDashboardService {
         long subscriberCount = subscriptionRepository.countByMentor_IdAndStatusInAndCurrentPeriodEndAfter(
                 mentorId, ACTIVE_STATUSES, now
         );
-        long cumulativeNow = subscriptionRepository.countByMentor_Id(mentorId);
-        long cumulativeBeforeThisMonth = subscriptionRepository.countByMentor_IdAndCreatedAtBefore(mentorId, monthStart);
-        double subscriberGrowthRate = growthRate(cumulativeNow, cumulativeBeforeThisMonth);
+        // subscriberCount와 같은 모집단(현재 유효한 구독)을 이번 달 시작 시점 기준으로도 세서 비교한다 —
+        // 상태 무관 누적 신청 건수와 비교하면(해지·만료 포함) 같은 카드의 두 숫자가 서로 다른 걸 세게 된다.
+        long activeSubscribersBeforeThisMonth = subscriptionRepository
+                .countByMentor_IdAndStatusInAndCurrentPeriodEndAfterAndCreatedAtBefore(
+                        mentorId, ACTIVE_STATUSES, now, monthStart
+                );
+        double subscriberGrowthRate = growthRate(subscriberCount, activeSubscribersBeforeThisMonth);
 
         long monthlyRevenue = paymentRepository.sumPaidAmountByMentorSince(mentorId, PaymentStatus.PAID, monthStart);
         long lastMonthRevenue = paymentRepository.sumPaidAmountByMentorBetween(
