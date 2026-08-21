@@ -50,11 +50,22 @@
 .myMessageRow {
   display: flex;
   justify-content: flex-end;
+  align-items: flex-end;
+  gap: var(--spacing-2);
 }
 
 .otherMessageRow {
   display: flex;
   justify-content: flex-start;
+  align-items: flex-end;
+  gap: var(--spacing-2);
+}
+
+.messageTime {
+  flex-shrink: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
 .myBubble,

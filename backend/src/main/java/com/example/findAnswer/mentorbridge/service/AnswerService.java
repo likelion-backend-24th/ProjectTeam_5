@@ -1,5 +1,6 @@
 package com.example.findAnswer.mentorbridge.service;
 
+import com.example.findAnswer.mentorbridge.constants.NotificationType;
 import com.example.findAnswer.mentorbridge.dto.answer.AnswerCreateRequest;
 import com.example.findAnswer.mentorbridge.dto.answer.AnswerResponse;
 import com.example.findAnswer.mentorbridge.dto.answer.AnswerUpdateRequest;
@@ -27,6 +28,7 @@ public class AnswerService {
     private final AnswerRepository answerRepository;
     private final QuestionRepository questionRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public AnswerResponse createAnswer(Long questionId, Long userId, AnswerCreateRequest request) {
@@ -54,6 +56,17 @@ public class AnswerService {
                 .build();
 
         Answer savedAnswer = answerRepository.save(answer);
+
+        if (parent != null) {
+            if (!parent.getUser().getId().equals(userId)) {
+                notificationService.notify(parent.getUser().getId(), NotificationType.NEW_ANSWER,
+                        user.getName() + "님이 회원님의 답변에 댓글을 남겼습니다.", "/questions/" + questionId);
+            }
+        } else if (!question.getUser().getId().equals(userId)) {
+            notificationService.notify(question.getUser().getId(), NotificationType.NEW_ANSWER,
+                    user.getName() + "님이 회원님의 질문에 답변을 남겼습니다.", "/questions/" + questionId);
+        }
+
         return AnswerResponse.from(savedAnswer);
     }
 
