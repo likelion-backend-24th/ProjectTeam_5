@@ -28,3 +28,10 @@ export function getChatMessages(roomId) {
     fallbackMessage: "메시지를 불러오지 못했습니다.",
   });
 }
+
+export function endChatRoom(roomId) {
+  return request(`/api/v1/chat-rooms/${roomId}`, {
+    method: "DELETE",
+    fallbackMessage: "채팅방을 종료하지 못했습니다.",
+  });
+}

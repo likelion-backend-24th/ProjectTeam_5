@@ -49,19 +49,45 @@
 .roomCard {
   display: flex;
   align-items: center;
-  gap: var(--spacing-3);
+  gap: var(--spacing-2);
   width: 100%;
-  padding: var(--spacing-4);
+  padding: var(--spacing-2);
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  text-align: left;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .roomCard:hover {
   border-color: var(--color-primary-300);
   box-shadow: var(--shadow-sm);
+}
+
+.roomMain {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex: 1;
+  min-width: 0;
+  padding: var(--spacing-2);
+  text-align: left;
+}
+
+.endChatBtn {
+  flex-shrink: 0;
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+.endChatBtn:hover {
+  border-color: var(--color-error);
+  color: var(--color-error);
 }
 
 .avatar {
@@ -94,7 +120,7 @@
   color: var(--color-text-muted);
 }
 
-.chevron {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-lg);
+.roomEnded {
+  font-size: var(--font-size-xs);
+  color: var(--color-error);
 }
