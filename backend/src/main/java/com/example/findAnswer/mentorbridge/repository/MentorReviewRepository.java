@@ -18,4 +18,8 @@ public interface MentorReviewRepository extends JpaRepository<MentorReview, Long
 
     @Query("select coalesce(avg(r.rating), 0) from MentorReview r where r.mentor.id = :mentorId")
     double findAverageRatingByMentorId(@Param("mentorId") Long mentorId);
+
+    // 멘토 대시보드 — 별점 분포 히스토그램 (rating, count) 쌍 목록
+    @Query("select r.rating, count(r) from MentorReview r where r.mentor.id = :mentorId group by r.rating")
+    List<Object[]> countGroupedByRating(@Param("mentorId") Long mentorId);
 }

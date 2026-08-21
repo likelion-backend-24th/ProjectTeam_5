@@ -38,4 +38,9 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
 
     // 멘토 대시보드 — 이 멘토의 전체 구독자 목록(최신 가입순)
     List<Subscription> findByMentor_IdOrderByCreatedAtDesc(Long mentorId);
+
+    // 멘토 대시보드 — 누적 구독 건수(상태 무관, 전월 대비 증감률 계산용)
+    long countByMentor_Id(Long mentorId);
+
+    long countByMentor_IdAndCreatedAtBefore(Long mentorId, LocalDateTime before);
 }

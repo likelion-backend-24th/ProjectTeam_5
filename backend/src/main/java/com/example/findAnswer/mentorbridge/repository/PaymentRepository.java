@@ -37,4 +37,20 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             @Param("status") PaymentStatus status,
             @Param("periodStart") LocalDateTime periodStart
     );
+
+    // 멘토 대시보드 — 특정 기간(start~end)의 매출 합계(전월 매출, 월별 추이 계산용)
+    @Query("""
+            select coalesce(sum(p.amount), 0)
+            from Payment p
+            where p.subscription.mentor.id = :mentorId
+              and p.status = :status
+              and p.paidAt >= :periodStart
+              and p.paidAt < :periodEnd
+            """)
+    long sumPaidAmountByMentorBetween(
+            @Param("mentorId") Long mentorId,
+            @Param("status") PaymentStatus status,
+            @Param("periodStart") LocalDateTime periodStart,
+            @Param("periodEnd") LocalDateTime periodEnd
+    );
 }

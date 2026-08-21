@@ -2,7 +2,12 @@ package com.example.findAnswer.mentorbridge.controller;
 
 import com.example.findAnswer.mentorbridge.dto.mentor.MentorDashboardSummaryResponse;
 import com.example.findAnswer.mentorbridge.dto.mentor.MentorPaymentResponse;
+import com.example.findAnswer.mentorbridge.dto.mentor.MentorProfileCompletenessResponse;
+import com.example.findAnswer.mentorbridge.dto.mentor.MentorRatingHistogramResponse;
+import com.example.findAnswer.mentorbridge.dto.mentor.MentorRecentPostResponse;
+import com.example.findAnswer.mentorbridge.dto.mentor.MentorReviewResponse;
 import com.example.findAnswer.mentorbridge.dto.mentor.MentorSubscriberResponse;
+import com.example.findAnswer.mentorbridge.dto.mentor.MentorTrendPointResponse;
 import com.example.findAnswer.mentorbridge.dto.payment.PaymentCancellationResponse;
 import com.example.findAnswer.mentorbridge.service.MentorDashboardService;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +30,31 @@ public class MentorDashboardController {
     @GetMapping("/summary")
     public ResponseEntity<MentorDashboardSummaryResponse> getSummary(@AuthenticationPrincipal Long currentUserId) {
         return ResponseEntity.ok(mentorDashboardService.getSummary(currentUserId));
+    }
+
+    @GetMapping("/trend")
+    public ResponseEntity<List<MentorTrendPointResponse>> getTrend(@AuthenticationPrincipal Long currentUserId) {
+        return ResponseEntity.ok(mentorDashboardService.getTrend(currentUserId));
+    }
+
+    @GetMapping("/rating-histogram")
+    public ResponseEntity<MentorRatingHistogramResponse> getRatingHistogram(@AuthenticationPrincipal Long currentUserId) {
+        return ResponseEntity.ok(mentorDashboardService.getRatingHistogram(currentUserId));
+    }
+
+    @GetMapping("/profile-completeness")
+    public ResponseEntity<MentorProfileCompletenessResponse> getProfileCompleteness(@AuthenticationPrincipal Long currentUserId) {
+        return ResponseEntity.ok(mentorDashboardService.getProfileCompleteness(currentUserId));
+    }
+
+    @GetMapping("/recent-posts")
+    public ResponseEntity<List<MentorRecentPostResponse>> getRecentPosts(@AuthenticationPrincipal Long currentUserId) {
+        return ResponseEntity.ok(mentorDashboardService.getRecentPosts(currentUserId));
+    }
+
+    @GetMapping("/recent-reviews")
+    public ResponseEntity<List<MentorReviewResponse>> getRecentReviews(@AuthenticationPrincipal Long currentUserId) {
+        return ResponseEntity.ok(mentorDashboardService.getRecentReviews(currentUserId));
     }
 
     @GetMapping("/subscribers")
