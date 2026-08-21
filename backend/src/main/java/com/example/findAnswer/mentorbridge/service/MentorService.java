@@ -181,7 +181,8 @@ public class MentorService {
                     dto.getCareer(),
                     dto.getTags(),
                     dto.getEducation(),
-                    dto.getSchedule()
+                    dto.getSchedule(),
+                    dto.getPortfolioUrl()
             );
         }
 

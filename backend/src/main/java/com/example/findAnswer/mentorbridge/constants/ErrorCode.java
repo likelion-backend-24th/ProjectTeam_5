@@ -35,7 +35,9 @@ public enum ErrorCode {
     CANCELLATION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 취소/환불 요청입니다."),
     CANCELLATION_ALREADY_PROCESSED(HttpStatus.CONFLICT, "이미 처리된 취소/환불 요청입니다."),
     PAYMENT_CANCEL_FAILED(HttpStatus.BAD_REQUEST, "결제 취소에 실패했습니다."),
-    PAYMENT_NOT_CANCELLABLE(HttpStatus.BAD_REQUEST, "취소할 수 없는 결제 상태입니다.");
+    PAYMENT_NOT_CANCELLABLE(HttpStatus.BAD_REQUEST, "취소할 수 없는 결제 상태입니다."),
+    SUBSCRIPTION_REQUIRED(HttpStatus.FORBIDDEN, "구독자 전용 콘텐츠입니다."),
+    POST_NOT_FOUND(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다.");
 
 
     private final HttpStatus status;

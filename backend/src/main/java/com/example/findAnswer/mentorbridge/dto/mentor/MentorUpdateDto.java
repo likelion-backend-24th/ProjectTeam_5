@@ -15,4 +15,5 @@ public class MentorUpdateDto {
     private String education;
     private String schedule;
     private Integer subscriptionPrice;
+    private String portfolioUrl;
 }

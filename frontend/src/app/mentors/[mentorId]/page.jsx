@@ -114,6 +114,7 @@ export default function MentorProfilePage() {
     tags: "",
     education: "",
     schedule: "",
+    portfolioUrl: "",
   });
 
   const [isWritingPost, setIsWritingPost] = useState(false);
@@ -291,6 +292,7 @@ export default function MentorProfilePage() {
             tags: profileData.tags || "",
             education: profileData.education || "",
             schedule: profileData.schedule || "월(10:00 - 17:00), 수(10:00 - 17:00), 금(10:00 - 17:00)",
+            portfolioUrl: profileData.portfolioUrl || "",
           });
           setIsOwner(Boolean(isLoggedIn && currentUserId && profileData.mentorId && String(profileData.mentorId) === String(currentUserId)));
         }
@@ -1126,6 +1128,29 @@ export default function MentorProfilePage() {
               <li>
                 <strong>학력</strong>
                 {isEditing ? <input type="text" name="education" value={editForm.education} onChange={handleInputChange} className={styles.editInput} /> : <span>{mentorInfo.education || "멋사대학교 디자인과"}</span>}
+              </li>
+              <li>
+                <strong>포트폴리오 링크</strong>
+                {isEditing ? (
+                  <input
+                    type="url"
+                    name="portfolioUrl"
+                    value={editForm.portfolioUrl}
+                    onChange={handleInputChange}
+                    className={styles.editInput}
+                    placeholder="https://notion.so/... 또는 깃허브 주소"
+                  />
+                ) : (
+                  <span>
+                    {mentorInfo.portfolioUrl ? (
+                      <a href={mentorInfo.portfolioUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#1261f5', textDecoration: 'underline', wordBreak: 'break-all' }}>
+                        {mentorInfo.portfolioUrl}
+                      </a>
+                    ) : (
+                      "등록된 링크가 없습니다."
+                    )}
+                  </span>
+                )}
               </li>
               {isEditing && (
                 <li>
