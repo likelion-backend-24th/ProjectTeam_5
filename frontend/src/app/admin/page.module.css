@@ -131,6 +131,13 @@
   text-overflow: ellipsis;
 }
 
+/* 환불 사유 — 길 수 있어서 말줄임 대신 줄바꿈 */
+.reasonCell {
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
 /* 뱃지 스타일 */
 .roleUser {
   color: #526176;

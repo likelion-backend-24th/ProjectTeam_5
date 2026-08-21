@@ -13,6 +13,7 @@ import com.example.findAnswer.mentorbridge.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,6 +64,7 @@ public class ChatService {
     public ChatMessageResponse sendMessage(Long currentUserId, Long roomId, String content) {
         ChatRoom room = getRoomOrThrow(roomId);
         validateParticipant(room, currentUserId);
+        validateActiveSubscription(room);
 
         ChatMessage message = chatMessageRepository.save(
                 ChatMessage.builder()
@@ -91,6 +93,16 @@ public class ChatService {
     private void validateParticipant(ChatRoom room, Long userId) {
         if (!room.isParticipant(userId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+    }
+
+    // 방 생성 시에만 구독을 확인하고 그 뒤로는 계속 열려 있던 문제 — 구독이 끝난(환불/만료/일반 해지 후
+    // 기간 종료) 방은 과거 대화는 볼 수 있어도 새 메시지는 못 보내게 막는다. 멘토/구독자 어느 쪽이 보내든
+    // 이 방이 딸린 구독이 살아있는지로 판단한다(구독자 개인이 아니라 방 자체의 권한이므로).
+    private void validateActiveSubscription(ChatRoom room) {
+        SubscriptionCheckResponse check = subscriptionService.checkAccessPermission(room.getSubscriberId(), room.getMentorId());
+        if (!check.accessAllowed()) {
+            throw new AccessDeniedException("구독이 종료된 채팅방에는 메시지를 보낼 수 없습니다.");
         }
     }
 

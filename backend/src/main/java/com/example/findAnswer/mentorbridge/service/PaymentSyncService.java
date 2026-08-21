@@ -121,10 +121,14 @@ public class PaymentSyncService {
 
         payment.markPaidAt(LocalDateTime.now());
 
+        // 결제 주기는 고정 1개월이 아니라 멘토가 설정한 요금제(MentorPlan.billingCycle, 단위: 개월)를 따른다.
+        int billingCycleMonths = subscription.getPlan() != null ? subscription.getPlan().getBillingCycle() : 1;
+        LocalDateTime nextPeriodEnd = LocalDateTime.now().plusMonths(billingCycleMonths);
+
         if (subscription.getStatus() == SubscriptionStatus.PENDING) {
-            subscription.activateAfterFirstPayment(LocalDateTime.now().plusMonths(1));
+            subscription.activateAfterFirstPayment(nextPeriodEnd);
         } else if (subscription.getStatus() == SubscriptionStatus.ACTIVE) {
-            subscription.renewPeriod(LocalDateTime.now().plusMonths(1));
+            subscription.renewPeriod(nextPeriodEnd);
         }
 
         scheduleNextCycle(payment, subscription);
