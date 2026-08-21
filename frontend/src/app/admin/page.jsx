@@ -411,13 +411,16 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {activeTab !== "refunds" && activeTab !== "inquiries" && (
+        {/* 환불 관리 탭을 제외하고 검색/정렬 바 노출 (1:1 문의 탭 포함) */}
+        {activeTab !== "refunds" && (
           <div className={styles.controlsBar}>
             <input
               type="text"
               placeholder={
                 activeTab === "questions"
                   ? "작성자 이름 검색..."
+                  : activeTab === "inquiries"
+                  ? "제목, 이메일 또는 유형 검색..."
                   : "이름 또는 이메일 검색..."
               }
               value={searchQuery}
@@ -776,7 +779,9 @@ export default function AdminPage() {
         {!loading && !errorMessage && activeTab === "inquiries" && (
           <>
             {filteredInquiries.length === 0 ? (
-              <p className={styles.statusText}>접수된 1:1 문의 내역이 없습니다.</p>
+              <p className={styles.statusText}>
+                {searchQuery ? "검색 결과가 없습니다." : "접수된 1:1 문의 내역이 없습니다."}
+              </p>
             ) : (
               <table className={styles.table}>
                 <thead>
