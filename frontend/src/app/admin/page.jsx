@@ -353,7 +353,7 @@ export default function AdminPage() {
             className={`${styles.tabButton} ${activeTab === "questions" ? styles.tabActive : ""}`}
             onClick={() => handleTabChange("questions")}
           >
-            게시글 관리
+            질문 관리
           </button>
           <button
             type="button"
