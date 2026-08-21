@@ -51,8 +51,11 @@ public class AttachmentController {
     }
 
     @GetMapping("/files/{attachId}/download")
-    public ResponseEntity<Resource> downloadFile(@PathVariable Long attachId) {
-        DownloadFile download = attachmentService.downloadFile(attachId);
+    public ResponseEntity<Resource> downloadFile(
+            @AuthenticationPrincipal Long currentUserId,
+            @PathVariable Long attachId
+    ) {
+        DownloadFile download = attachmentService.downloadFile(currentUserId, attachId);
 
         String encodedFilename = URLEncoder.encode(download.originalFileName(), StandardCharsets.UTF_8)
                 .replace("+", "%20");

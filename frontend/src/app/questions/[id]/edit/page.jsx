@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import { getQuestion, updateQuestion } from "@/lib/questions";
 import { uploadImage, validateImage, uploadFile, validateFile } from "@/lib/attachments";
+import { getAccessToken } from "@/lib/tokenStore";
 
 import styles from "../../new/form.module.css";
 
@@ -85,7 +86,7 @@ export default function EditQuestionPage() {
     setErrorMessage("");
 
     // 1. 등록/수정 버튼을 누르는 순간 로컬토큰(로그인 상태) 체크
-    const token = localStorage.getItem("accessToken");
+    const token = getAccessToken();
     if (!token) {
       alert("로그인 후 이용 가능합니다.");
       router.push("/login");

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 
 import { getQuestions, getFollowingQuestions } from "@/lib/questions";
+import { getAccessToken } from "@/lib/tokenStore";
 
 import styles from "./page.module.css";
 
@@ -85,7 +86,7 @@ export default function QuestionsPage() {
   const handleCategoryChange = (newCategory) => {
 
     if (newCategory === "팔로잉") {
-      const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
+      const token = getAccessToken();
       if (!token) {
         alert("팔로우한 사람의 글을 보려면 로그인이 필요합니다.");
         router.push("/login");
@@ -117,9 +118,7 @@ export default function QuestionsPage() {
   const totalPages = Math.max(Math.ceil(totalElements / 10), 1);
 
   const handleAskClick = () => {
-    const isLoggedIn = Boolean(
-        localStorage.getItem("accessToken") || localStorage.getItem("token")
-    );
+    const isLoggedIn = Boolean(getAccessToken());
 
     if (!isLoggedIn) {
       alert("질문 등록은 로그인 후 이용 가능합니다.");
