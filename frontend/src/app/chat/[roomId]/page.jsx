@@ -10,6 +10,9 @@ import styles from "./page.module.css";
 // WebSocket 없이 폴링(3초 간격)으로 새 메시지를 확인한다. 실시간 알림(F-38)이 붙기 전까지의 임시 방식.
 const POLL_INTERVAL_MS = 3000;
 
+const formatMessageTime = (isoString) =>
+  new Date(isoString).toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit", hour12: true });
+
 export default function ChatRoomPage() {
   const { roomId } = useParams();
   const { isLoggedIn, loading: authLoading, userId } = useAuth();
@@ -24,6 +27,7 @@ export default function ChatRoomPage() {
 
   const pollingRef = useRef(null);
   const messageListRef = useRef(null);
+  const messageInputRef = useRef(null);
 
   const loadMessages = useCallback(async () => {
     try {
@@ -70,6 +74,13 @@ export default function ChatRoomPage() {
     messageListRef.current?.scrollTo({ top: messageListRef.current.scrollHeight });
   }, [messages]);
 
+  // 전송 직후(입력창이 disabled에서 풀리는 시점) 커서를 다시 입력창에 두어, 엔터로 연속 전송할 수 있게 한다.
+  useEffect(() => {
+    if (!sending) {
+      messageInputRef.current?.focus();
+    }
+  }, [sending]);
+
   const handleSend = async (e) => {
     e.preventDefault();
     const content = messageInput.trim();
@@ -113,9 +124,11 @@ export default function ChatRoomPage() {
               key={msg.messageId}
               className={mine ? styles.myMessageRow : styles.otherMessageRow}
             >
+              {mine && <span className={styles.messageTime}>{formatMessageTime(msg.createdAt)}</span>}
               <div className={mine ? styles.myBubble : styles.otherBubble}>
                 {msg.content}
               </div>
+              {!mine && <span className={styles.messageTime}>{formatMessageTime(msg.createdAt)}</span>}
             </li>
           );
         })}
@@ -123,6 +136,7 @@ export default function ChatRoomPage() {
 
       <form className={styles.sendForm} onSubmit={handleSend}>
         <input
+          ref={messageInputRef}
           type="text"
           className={styles.sendInput}
           placeholder="메시지를 입력하세요"

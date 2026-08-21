@@ -1,6 +1,7 @@
 package com.example.findAnswer.mentorbridge.service;
 
 import com.example.findAnswer.mentorbridge.constants.MentorApplicationStatus;
+import com.example.findAnswer.mentorbridge.constants.NotificationType;
 import com.example.findAnswer.mentorbridge.constants.Role;
 import com.example.findAnswer.mentorbridge.constants.SubscriptionStatus;
 import com.example.findAnswer.mentorbridge.dto.mentor.MentorApplicationResponse;
@@ -35,6 +36,7 @@ public class MentorService {
     private final UserRepository userRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final MentorPlanRepository mentorPlanRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public void applyForMentor(Long userId) {
@@ -57,6 +59,10 @@ public class MentorService {
                         .careerSummary(null)
                         .build()
         );
+
+        List<Long> adminIds = userRepository.findAllByRole(Role.ADMIN).stream().map(User::getId).toList();
+        notificationService.notifyAll(adminIds, NotificationType.MENTOR_APPLICATION_SUBMITTED,
+                user.getName() + "님이 멘토 신청을 보냈습니다.", "/admin");
     }
 
     @Transactional
@@ -65,6 +71,9 @@ public class MentorService {
                 .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
         application.approve();
         application.getUser().promoteToMentor();
+
+        notificationService.notify(userId, NotificationType.MENTOR_APPROVED,
+                "멘토 신청이 승인되었습니다.", "/profile");
     }
 
     @Transactional
@@ -72,6 +81,9 @@ public class MentorService {
         MentorApplication application = mentorApplicationRepository.findByUser_IdAndStatus(userId, MentorApplicationStatus.PENDING)
                 .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
         application.reject();
+
+        notificationService.notify(userId, NotificationType.MENTOR_REJECTED,
+                "멘토 신청이 거절되었습니다.", "/profile");
     }
 
     public MentorApplicationResponse getMyMentorApplication(Long userId) {

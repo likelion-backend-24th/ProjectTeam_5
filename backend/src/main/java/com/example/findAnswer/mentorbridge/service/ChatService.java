@@ -1,6 +1,7 @@
 package com.example.findAnswer.mentorbridge.service;
 
 import com.example.findAnswer.mentorbridge.constants.ErrorCode;
+import com.example.findAnswer.mentorbridge.constants.NotificationType;
 import com.example.findAnswer.mentorbridge.dto.chat.ChatMessageResponse;
 import com.example.findAnswer.mentorbridge.dto.chat.ChatRoomResponse;
 import com.example.findAnswer.mentorbridge.dto.subscription.SubscriptionCheckResponse;
@@ -28,6 +29,7 @@ public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
     private final SubscriptionService subscriptionService;
+    private final NotificationService notificationService;
 
 
     @Transactional
@@ -73,6 +75,10 @@ public class ChatService {
                         .content(content)
                         .build()
         );
+
+        Long recipientId = room.getMentorId().equals(currentUserId) ? room.getSubscriberId() : room.getMentorId();
+        notificationService.notify(recipientId, NotificationType.NEW_CHAT_MESSAGE,
+                "새 메시지가 도착했습니다.", "/chat/" + roomId);
 
         return ChatMessageResponse.from(message);
     }

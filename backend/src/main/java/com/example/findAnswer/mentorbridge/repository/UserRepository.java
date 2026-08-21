@@ -1,5 +1,6 @@
 package com.example.findAnswer.mentorbridge.repository;
 
+import com.example.findAnswer.mentorbridge.constants.Role;
 import com.example.findAnswer.mentorbridge.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,6 +17,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmail(String email);
 
     List<User> findAllByDeletedAtIsNull();
+
+    List<User> findAllByRole(Role role);
 
     @Query("SELECT u FROM User u LEFT JOIN u.mentorProfile p WHERE u.role = 'MENTOR' AND u.deletedAt IS NULL " +
             "AND (:keyword IS NULL OR :keyword = '' OR " +
