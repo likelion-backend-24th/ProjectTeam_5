@@ -178,19 +178,26 @@ public class MentorPostService {
     }
 
     @Transactional
-    public void toggleLike(Long userId, Long mentorId, Long postId) {
+    public void likePost(Long userId, Long mentorId, Long postId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         MentorPost post = mentorPostRepository.findByIdAndMentor_Id(postId, mentorId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
-        // 이미 좋아요를 눌렀는지 확인 후 토글
+        if (!mentorPostLikeRepository.existsByUserIdAndMentorPostId(userId, postId)) {
+            mentorPostLikeRepository.save(new MentorPostLike(user, post));
+            post.increaseLikeCount();
+        }
+    }
+
+    @Transactional
+    public void unlikePost(Long userId, Long mentorId, Long postId) {
+        MentorPost post = mentorPostRepository.findByIdAndMentor_Id(postId, mentorId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+
         if (mentorPostLikeRepository.existsByUserIdAndMentorPostId(userId, postId)) {
             mentorPostLikeRepository.deleteByUserIdAndMentorPostId(userId, postId);
-            post.decreaseLikeCount(); // 좋아요 취소 (-1)
-        } else {
-            mentorPostLikeRepository.save(new MentorPostLike(user, post));
-            post.increaseLikeCount(); // 좋아요 등록 (+1)
+            post.decreaseLikeCount();
         }
     }
 

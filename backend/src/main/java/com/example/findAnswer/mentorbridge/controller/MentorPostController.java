@@ -73,22 +73,22 @@ public class MentorPostController {
     }
 
     @PostMapping("/{postId}/likes")
-    public ResponseEntity<Void> toggleLike(
+    public ResponseEntity<Void> likePost(
             @RequestHeader("X-USER-ID") Long userId,
             @PathVariable Long mentorId,
             @PathVariable Long postId) {
 
-        mentorPostService.toggleLike(userId, mentorId, postId);
+        mentorPostService.likePost(userId, mentorId, postId);
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{postId}/likes")
-    public ResponseEntity<Void> cancelLike(
+    public ResponseEntity<Void> unlikePost(
             @RequestHeader("X-USER-ID") Long userId,
             @PathVariable Long mentorId,
             @PathVariable Long postId) {
 
-        mentorPostService.toggleLike(userId, mentorId, postId);
+        mentorPostService.unlikePost(userId, mentorId, postId);
         return ResponseEntity.ok().build();
     }
 }
