@@ -70,7 +70,8 @@ export default function ProfilePaymentSection() {
 
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600 }}>
-                  {m.brand} •••• {m.last4}
+                  {/* 카드가 아닌 간편결제(카카오페이 등)는 last4가 "0000" 자리표시자라 마스킹 숫자를 안 붙인다. */}
+                  {m.last4 && m.last4 !== "0000" ? `${m.brand} •••• ${m.last4}` : m.brand}
                 </div>
                 {m.cardNickname && (
                   <div style={{ color: "#6b7280", fontSize: 13 }}>{m.cardNickname}</div>

@@ -52,6 +52,11 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     implementation "org.jetbrains.kotlin:kotlin-stdlib"
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
+	// PortOne 공식 서버 SDK — BillingKeyClient(빌링키 조회)에 사용. Maven Central에 실제 게시된 걸 확인함(io/portone/server-sdk).
+	implementation 'io.portone:server-sdk:0.24.0'
+	// BillingKeyClient의 XxxFuture() 메서드(CompletableFuture 반환, Java용)가 내부적으로 필요로 함 —
+	// server-sdk의 POM에는 명시돼 있지 않아서 직접 추가하지 않으면 런타임에 NoClassDefFoundError 위험.
+	implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.11.0'
 }
 
 tasks.named('test') {

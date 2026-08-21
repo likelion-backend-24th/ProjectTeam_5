@@ -4,6 +4,15 @@ import com.example.findAnswer.mentorbridge.constants.ErrorCode;
 import com.example.findAnswer.mentorbridge.constants.PaymentProvider;
 import com.example.findAnswer.mentorbridge.dto.billing.BillingRegisterResult;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
+import io.portone.sdk.server.common.Card;
+import io.portone.sdk.server.payment.billingkey.BillingKeyClient;
+import io.portone.sdk.server.payment.billingkey.BillingKeyInfo;
+import io.portone.sdk.server.payment.billingkey.BillingKeyPaymentMethod;
+import io.portone.sdk.server.payment.billingkey.BillingKeyPaymentMethodCard;
+import io.portone.sdk.server.payment.billingkey.BillingKeyPaymentMethodEasyPay;
+import io.portone.sdk.server.payment.billingkey.IssuedBillingKeyInfo;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
@@ -16,6 +25,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 // PortOnePaymentClient와 같은 패턴: 프론트가 넘긴 값을 그대로 믿지 않고 PortOne 서버에 재조회해서 확정한다.
 @Slf4j
@@ -33,59 +44,98 @@ public class PortOneBillingClient implements BillingClient {
 
     private final RestClient restClient = RestClient.create();
 
+    // 빌링키 조회(단건)만 PortOne 공식 서버 SDK(io.portone:server-sdk)로 뺐다 — 나머지(결제 실행/예약)는
+    // 그 SDK에 PaymentClient/PaymentScheduleClient가 따로 있어서 지금 범위 밖. 내부에 OkHttp 기반 HttpClient를
+    // 들고 있는 Closeable이라 요청마다 새로 만들지 않고 하나만 만들어 재사용 + 종료 시 close() 한다.
+    private BillingKeyClient billingKeyClient;
+
+    @PostConstruct
+    private void initBillingKeyClient() {
+        billingKeyClient = new BillingKeyClient(apiSecret, apiBaseUrl, storeId);
+    }
+
+    @PreDestroy
+    public void closeBillingKeyClient() {
+        if (billingKeyClient != null) {
+            billingKeyClient.close();
+        }
+    }
+
     @Override
     public BillingRegisterResult register(String billingKey) {
-        JsonNode body;
+        BillingKeyInfo info;
         try {
-            body = restClient.get()
-                    .uri(apiBaseUrl + "/billing-keys/{billingKey}", billingKey)
-                    .header("Authorization", "PortOne " + apiSecret)
-                    .retrieve()
-                    .body(JsonNode.class);
-        } catch (RestClientResponseException e) {
-            log.warn("PortOne 빌링키 조회 실패: {}", e.getMessage());
+            info = billingKeyClient.getBillingKeyInfo(billingKey).get();
+        } catch (ExecutionException e) {
+            log.warn("PortOne 빌링키 조회 실패: {}", e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
+            throw new CustomException(ErrorCode.BILLING_KEY_VERIFICATION_FAILED);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new CustomException(ErrorCode.BILLING_KEY_VERIFICATION_FAILED);
         }
 
-        if (body == null) {
+        // status가 "ISSUED"(=IssuedBillingKeyInfo)가 아니면 삭제됐거나(DeletedBillingKeyInfo) SDK가 모르는
+        // 응답(Unrecognized)이다 — 발급 인증이 실패해서 애초에 존재하지 않는 빌링키였다면 위 get()에서
+        // BillingKeyNotFoundException으로 이미 걸러졌을 것.
+        if (!(info instanceof IssuedBillingKeyInfo issued)) {
+            log.warn("빌링키 검증 실패: 발급 완료 상태가 아님 (info={})", info);
             throw new CustomException(ErrorCode.BILLING_KEY_VERIFICATION_FAILED);
         }
 
-        String status = text(body, "status");
-        String remoteStoreId = text(body, "storeId");
-
-        // ⚠️ status 값("ISSUED")과 storeId 필드 위치는 PortOne 공식 문서에 상세 스키마가 없어 결제 단건조회
-        // 응답(PortOnePaymentSnapshot)과 같은 구조라고 가정하고 짠 것 — 실제 빌링키 발급 테스트 후 로그로 재확인 필요.
-        boolean verified = "ISSUED".equals(status) && storeId.equals(remoteStoreId);
-
-        if (!verified) {
-            log.warn("빌링키 검증 실패: status={}, remoteStoreId={}", status, remoteStoreId);
+        if (!storeId.equals(issued.getStoreId())) {
+            log.warn("빌링키 검증 실패: storeId 불일치 remoteStoreId={}", issued.getStoreId());
             throw new CustomException(ErrorCode.BILLING_KEY_VERIFICATION_FAILED);
         }
 
         return new BillingRegisterResult(
                 PaymentProvider.PORTONE,
                 billingKey,
-                extractCardBrand(body),
-                extractLast4(body)
+                extractCardBrand(issued),
+                extractLast4(issued)
         );
     }
 
-    // ⚠️ 카드사명/마지막 4자리가 담기는 정확한 필드 경로는 실제 발급 응답을 로그로 찍어서 재확인 필요.
-    // methods[0].card.name 형태로 추정 — 없으면 화면 표시용 기본값으로 대체(검증 로직과는 무관, 결제 자체엔 영향 없음).
-    private String extractCardBrand(JsonNode body) {
-        JsonNode card = body.path("methods").path(0).path("card");
-        String name = text(card, "name");
-        return name != null ? name : "카드";
+    // 흔한 간편결제 PG사 코드 → 화면 표시용 한글 이름. 목록에 없는 코드는 그냥 원문 코드를 보여준다.
+    private static final Map<String, String> EASY_PAY_LABELS = Map.of(
+            "KAKAOPAY", "카카오페이",
+            "NAVERPAY", "네이버페이",
+            "TOSSPAY", "토스페이",
+            "PAYCO", "페이코",
+            "SAMSUNGPAY", "삼성페이"
+    );
+
+    private BillingKeyPaymentMethod firstMethod(IssuedBillingKeyInfo issued) {
+        List<BillingKeyPaymentMethod> methods = issued.getMethods();
+        return (methods == null || methods.isEmpty()) ? null : methods.get(0);
     }
 
-    private String extractLast4(JsonNode body) {
-        JsonNode card = body.path("methods").path(0).path("card");
-        String number = text(card, "number");
-        if (number != null) {
-            String digitsOnly = number.replaceAll("\\D", "");
-            if (digitsOnly.length() >= 4) {
-                return digitsOnly.substring(digitsOnly.length() - 4);
+    // methods[0]이 카드면 카드 상품명, 간편결제(카카오페이 등)면 PG사 이름을 반환한다.
+    // 둘 다 아니거나 상세 정보가 없으면 화면 표시용 기본값으로 대체(검증 로직과는 무관, 결제 자체엔 영향 없음).
+    private String extractCardBrand(IssuedBillingKeyInfo issued) {
+        BillingKeyPaymentMethod method = firstMethod(issued);
+
+        if (method instanceof BillingKeyPaymentMethodCard cardMethod) {
+            Card card = cardMethod.getCard();
+            String name = card != null ? card.getName() : null;
+            return name != null ? name : "카드";
+        }
+        if (method instanceof BillingKeyPaymentMethodEasyPay easyPay) {
+            String code = easyPay.getProvider() != null ? easyPay.getProvider().getValue() : null;
+            return EASY_PAY_LABELS.getOrDefault(code, code != null ? code : "간편결제");
+        }
+        return "카드";
+    }
+
+    // 카드일 때만 마지막 4자리가 의미 있다 — 간편결제 등은 카드번호 개념이 없어서 자리표시자를 반환한다.
+    private String extractLast4(IssuedBillingKeyInfo issued) {
+        if (firstMethod(issued) instanceof BillingKeyPaymentMethodCard cardMethod) {
+            Card card = cardMethod.getCard();
+            String number = card != null ? card.getNumber() : null;
+            if (number != null) {
+                String digitsOnly = number.replaceAll("\\D", "");
+                if (digitsOnly.length() >= 4) {
+                    return digitsOnly.substring(digitsOnly.length() - 4);
+                }
             }
         }
         return "0000";
@@ -107,7 +157,7 @@ public class PortOneBillingClient implements BillingClient {
                     .header("Authorization", "PortOne " + apiSecret)
                     .body(new BillingKeyPayRequest(
                             billingKey, storeId, channelKey, orderName,
-                            new Customer(customerName, customerPhone, customerEmail),
+                            new Customer(new CustomerName(customerName), customerPhone, customerEmail),
                             new Amount(amount), currency
                     ))
                     .retrieve()
@@ -119,8 +169,8 @@ public class PortOneBillingClient implements BillingClient {
     }
 
     // 다음 회차 결제 예약. POST /payments/{paymentId}/schedule → 예약 ID 반환.
-    // ⚠️ 요청/응답 필드는 공식 문서에 상세 스키마가 없어 결제 실행 API와 같은 구조로 추정해서 짬 —
-    // 실제 예약 1건 걸어보고 응답 원문을 로그로 찍어 재확인 필요.
+    // 요청 바디는 CreatePaymentScheduleBody, 응답은 CreatePaymentScheduleResponse(={"schedule":{"id":...}})로
+    // 공식 OpenAPI 스펙에서 확인함 — 아래 body.path("schedule") 폴백이 실제로 맞는 경로였다.
     public String createSchedule(String paymentId, String billingKey, String channelKey, String orderName,
                                   Long amount, String currency, LocalDateTime timeToPay,
                                   String customerName, String customerPhone, String customerEmail) {
@@ -134,7 +184,7 @@ public class PortOneBillingClient implements BillingClient {
                     .body(new CreateScheduleRequest(
                             new SchedulePaymentInput(
                                     billingKey, storeId, channelKey, orderName,
-                                    new Customer(customerName, customerPhone, customerEmail),
+                                    new Customer(new CustomerName(customerName), customerPhone, customerEmail),
                                     new Amount(amount), currency
                             ),
                             timeToPayIso
@@ -179,7 +229,12 @@ public class PortOneBillingClient implements BillingClient {
     private record Amount(long total) {
     }
 
-    private record Customer(String fullName, String phoneNumber, String email) {
+    // PortOne 공식 스키마(CustomerInput.name)는 "fullName"이 아니라 "name":{"full":...} 형태다 —
+    // fullName으로 보내면 PortOne이 모르는 필드라 조용히 무시돼서 결제 자체는 되지만 고객 이름이 안 남았다.
+    private record CustomerName(String full) {
+    }
+
+    private record Customer(CustomerName name, String phoneNumber, String email) {
     }
 
     private record BillingKeyPayRequest(String billingKey, String storeId, String channelKey, String orderName,

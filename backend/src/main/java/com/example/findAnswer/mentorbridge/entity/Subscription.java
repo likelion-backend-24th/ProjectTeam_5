@@ -77,6 +77,14 @@ public class Subscription extends BaseTimeEntity {
         this.status = SubscriptionStatus.CANCEL_RESERVED;
     }
 
+    // 방금 낸 회차(=지금 이용 중인 기간을 만든 결제)를 바로 환불했을 때 — 기간이 남아 있어도
+    // 더 이상 이용하지 못하게 즉시 끊는다. 일반 해지(reserveCancellation)는 기간 끝까지 이용을 유지하지만,
+    // 환불은 돈을 돌려준 거라 그 기간에 대한 이용 권한도 같이 회수해야 한다.
+    public void expireImmediately() {
+        this.status = SubscriptionStatus.EXPIRED;
+        this.currentPeriodEnd = LocalDateTime.now();
+    }
+
     public void reactivate(LocalDateTime start, LocalDateTime end, Integer amount) {
         this.status = SubscriptionStatus.ACTIVE;
         this.amount = amount;
