@@ -64,6 +64,9 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/auth/signup", "/api/auth/login", "/api/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/questions/**").permitAll()
+                        // 멘토 목록/상세/리뷰는 구독 여부와 상관없이 공개 — 구독 안 한 사람도 보고 판단할 수 있어야 한다.
+                        // POST/PUT/DELETE(프로필 수정, 리뷰 작성/삭제 등)는 이 규칙에 안 걸리고 그대로 인증 필요.
+                        .requestMatchers(HttpMethod.GET, "/api/mentors/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // "/h2-console/**" 제거
                         .requestMatchers("/", "/health").permitAll()
                         .requestMatchers("/error").permitAll()
