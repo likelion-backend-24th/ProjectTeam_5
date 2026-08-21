@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, act } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/app/contexts/AuthContext";
@@ -12,6 +12,9 @@ import {
   getMentorApplications,
   approveMentor,
   rejectMentor,
+  getPendingCancellations,
+  approveCancellation,
+  rejectCancellation,
 } from "@/lib/admin";
 import { getQuestions, deleteQuestion } from "@/lib/questions";
 import { getQuestionsByUser } from "@/lib/users";
@@ -37,6 +40,9 @@ export default function AdminPage() {
   const [userQuestionsMap, setUserQuestionsMap] = useState({});
   const [subLoadingId, setSubLoadingId] = useState(null);
 
+  const [cancellations, setCancellations] = useState([]);
+  const [cancelBusyId, setCancelBusyId] = useState(null);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     setErrorMessage("");
@@ -48,8 +54,17 @@ export default function AdminPage() {
         const data = await getMentorApplications();
         setMentorApps(data || []);
       } else if (activeTab === "questions") {
-        const data = await getQuestions({ page: 0, size: 1000, category: "전체", keyword: "", sort: "latest" });
+        const data = await getQuestions({
+          page: 0,
+          size: 1000,
+          category: "전체",
+          keyword: "",
+          sort: "latest",
+        });
         setQuestions(data.content || data || []);
+      } else if (activeTab === "refunds"){
+        const data = await getPendingCancellations();
+        setCancellations(data || []);
       }
     } catch (error) {
       console.error(error);
@@ -87,7 +102,7 @@ export default function AdminPage() {
       list = list.filter(
         (u) =>
           (u.name || "").toLowerCase().includes(q) ||
-          (u.email || "").toLowerCase().includes(q)
+          (u.email || "").toLowerCase().includes(q),
       );
     }
 
@@ -112,7 +127,7 @@ export default function AdminPage() {
       list = list.filter(
         (app) =>
           (app.name || "").toLowerCase().includes(q) ||
-          (app.email || "").toLowerCase().includes(q)
+          (app.email || "").toLowerCase().includes(q),
       );
     }
 
@@ -138,11 +153,13 @@ export default function AdminPage() {
       const qUserId = q.userId || q.authorId || q.writerId;
       const qUserName = q.writerName || q.authorName || "알 수 없음";
 
-      const matchedUser = (qUserId && userMapById[String(qUserId)]) || userMapByName[qUserName];
+      const matchedUser =
+        (qUserId && userMapById[String(qUserId)]) || userMapByName[qUserName];
 
       const authorId = matchedUser?.id || qUserId || qUserName;
       const authorName = matchedUser?.name || qUserName;
-      const authorRole = matchedUser?.role || q.writerRole || q.authorRole || q.role || "USER";
+      const authorRole =
+        matchedUser?.role || q.writerRole || q.authorRole || q.role || "USER";
 
       if (!map[authorId]) {
         map[authorId] = {
@@ -227,7 +244,7 @@ export default function AdminPage() {
   const handleDeleteUser = async (userId, userName) => {
     if (
       !confirm(
-        `정말로 회원 '${userName}'(ID: ${userId})을 강제 삭제하시겠습니까?\n이 작업은 복구할 수 없습니다.`
+        `정말로 회원 '${userName}'(ID: ${userId})을 강제 삭제하시겠습니까?\n이 작업은 복구할 수 없습니다.`,
       )
     ) {
       return;
@@ -264,6 +281,37 @@ export default function AdminPage() {
     }
   };
 
+  const handleApproveCancellation = async (id, paymentId) => {
+    if (!confirm(`결제 ${paymentId}의 환불을 승인하시겠습니까? \n PortOne에 실제 취소 요청이 전송되며 되돌릴 수 없습니다.`)) return;
+
+    setCancelBusyId(id);
+
+    try{ 
+      await approveCancellation(id);
+      alert("환불이 승인되었습니다.");
+      fetchData();
+    } catch (error) {
+      alert(error.message || "승인 처리에 실패했습니다.");
+    } finally {
+      setCancelBusyId(null);
+    }
+  };
+
+  const handleRejectCancellation = async (id, paymentId) => {
+  const adminNote = window.prompt(`결제 ${paymentId} 건 환불을 거절합니다.`);
+  if (adminNote === null) return;
+
+  setCancelBusyId(id);
+  try {
+    await rejectCancellation(id, adminNote.trim());
+    alert("환불 요청이 거절되었습니다.");
+    fetchData();
+  } catch (error) {
+    alert(error.message || "거절 처리에 실패했습니다.");
+  } finally {
+    setCancelBusyId(null);
+  }
+
   if (authLoading) return <p className={styles.statusText}>권한 확인 중...</p>;
 
   return (
@@ -271,7 +319,9 @@ export default function AdminPage() {
       <div className={styles.heading}>
         <div>
           <h1>관리자 페이지</h1>
-          <p>회원 정보, 멘토 신청 및 커뮤니티 게시글을 통합 관리할 수 있습니다.</p>
+          <p>
+            회원 정보, 멘토 신청 및 커뮤니티 게시글을 통합 관리할 수 있습니다.
+          </p>
         </div>
       </div>
 
@@ -297,6 +347,14 @@ export default function AdminPage() {
             onClick={() => handleTabChange("questions")}
           >
             게시글 관리
+          </button>
+
+          <button
+            type="button"
+            className={`${styles.tabButton} ${activeTab === "refunds" ? styles.tabActive : ""}`}
+            onClick={() => handleTabChange("refunds")}
+          >
+            환불 관리
           </button>
         </div>
 
@@ -332,8 +390,12 @@ export default function AdminPage() {
               onChange={(e) => setSortOption(e.target.value)}
               className={styles.selectBox}
             >
-              <option value="latest">{activeTab === "questions" ? "작성글 많은 순" : "최신순"}</option>
-              <option value="oldest">{activeTab === "questions" ? "작성글 적은 순" : "오래된순"}</option>
+              <option value="latest">
+                {activeTab === "questions" ? "작성글 많은 순" : "최신순"}
+              </option>
+              <option value="oldest">
+                {activeTab === "questions" ? "작성글 적은 순" : "오래된순"}
+              </option>
             </select>
           </div>
         </div>
@@ -348,7 +410,9 @@ export default function AdminPage() {
           <>
             {filteredUsers.length === 0 ? (
               <p className={styles.statusText}>
-                {searchQuery ? "검색 결과가 없습니다." : "등록된 회원이 없습니다."}
+                {searchQuery
+                  ? "검색 결과가 없습니다."
+                  : "등록된 회원이 없습니다."}
               </p>
             ) : (
               <table className={styles.table}>
@@ -360,7 +424,9 @@ export default function AdminPage() {
                     <th style={{ width: "70px" }}>역할</th>
                     <th style={{ width: "60px", textAlign: "center" }}>상태</th>
                     <th style={{ width: "90px" }}>가입일</th>
-                    <th style={{ width: "110px", textAlign: "center" }}>관리</th>
+                    <th style={{ width: "110px", textAlign: "center" }}>
+                      관리
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -370,8 +436,13 @@ export default function AdminPage() {
                     return (
                       <tr key={u.id}>
                         <td style={{ textAlign: "center" }}>{u.id}</td>
-                        <td className={styles.ellipsisCell}>{u.email || "OAuth 계정"}</td>
-                        <td className={styles.ellipsisCell} style={{ fontWeight: "bold", color: "#333" }}>
+                        <td className={styles.ellipsisCell}>
+                          {u.email || "OAuth 계정"}
+                        </td>
+                        <td
+                          className={styles.ellipsisCell}
+                          style={{ fontWeight: "bold", color: "#333" }}
+                        >
                           {u.name}
                         </td>
                         <td>
@@ -380,8 +451,8 @@ export default function AdminPage() {
                               u.role === "ADMIN"
                                 ? styles.roleAdmin
                                 : u.role === "MENTOR"
-                                ? styles.roleMentor
-                                : styles.roleUser
+                                  ? styles.roleMentor
+                                  : styles.roleUser
                             }
                           >
                             {u.role}
@@ -399,8 +470,14 @@ export default function AdminPage() {
                           <div className={styles.actionButtons}>
                             <button
                               type="button"
-                              className={isUserBlocked ? styles.unblockBtn : styles.blockBtn}
-                              onClick={() => handleBlockToggle(u.id, isUserBlocked)}
+                              className={
+                                isUserBlocked
+                                  ? styles.unblockBtn
+                                  : styles.blockBtn
+                              }
+                              onClick={() =>
+                                handleBlockToggle(u.id, isUserBlocked)
+                              }
                             >
                               {isUserBlocked ? "해제" : "차단"}
                             </button>
@@ -427,7 +504,9 @@ export default function AdminPage() {
           <>
             {filteredMentorApps.length === 0 ? (
               <p className={styles.statusText}>
-                {searchQuery ? "검색 결과가 없습니다." : "대기 중인 멘토 신청이 없습니다."}
+                {searchQuery
+                  ? "검색 결과가 없습니다."
+                  : "대기 중인 멘토 신청이 없습니다."}
               </p>
             ) : (
               <table className={styles.table}>
@@ -438,16 +517,22 @@ export default function AdminPage() {
                     <th style={{ width: "100px" }}>이름</th>
                     <th style={{ width: "140px" }}>관심 분야</th>
                     <th style={{ width: "100px" }}>신청일</th>
-                    <th style={{ width: "120px", textAlign: "center" }}>승인 처리</th>
+                    <th style={{ width: "120px", textAlign: "center" }}>
+                      승인 처리
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredMentorApps.map((app) => (
                     <tr key={app.id}>
                       <td style={{ textAlign: "center" }}>{app.id}</td>
-                      <td className={styles.ellipsisCell}>{app.email || "-"}</td>
+                      <td className={styles.ellipsisCell}>
+                        {app.email || "-"}
+                      </td>
                       <td className={styles.ellipsisCell}>{app.name}</td>
-                      <td className={styles.ellipsisCell}>{app.interests || "-"}</td>
+                      <td className={styles.ellipsisCell}>
+                        {app.interests || "-"}
+                      </td>
                       <td>{formatDate(app.createdAt)}</td>
                       <td style={{ textAlign: "center" }}>
                         <div className={styles.actionButtons}>
@@ -480,7 +565,9 @@ export default function AdminPage() {
           <>
             {authorSummary.length === 0 ? (
               <p className={styles.statusText}>
-                {searchQuery ? "검색 결과가 없습니다." : "등록된 게시글이 없습니다."}
+                {searchQuery
+                  ? "검색 결과가 없습니다."
+                  : "등록된 게시글이 없습니다."}
               </p>
             ) : (
               <table className={styles.table}>
@@ -489,8 +576,12 @@ export default function AdminPage() {
                     <th style={{ width: "80px", textAlign: "center" }}>번호</th>
                     <th style={{ width: "200px" }}>작성자 이름</th>
                     <th style={{ width: "120px" }}>역할</th>
-                    <th style={{ width: "120px", textAlign: "center" }}>총 작성글 수</th>
-                    <th style={{ width: "150px", textAlign: "center" }}>작성글 보기</th>
+                    <th style={{ width: "120px", textAlign: "center" }}>
+                      총 작성글 수
+                    </th>
+                    <th style={{ width: "150px", textAlign: "center" }}>
+                      작성글 보기
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -514,15 +605,17 @@ export default function AdminPage() {
                                 item.role === "ADMIN"
                                   ? styles.roleAdmin
                                   : item.role === "MENTOR"
-                                  ? styles.roleMentor
-                                  : styles.roleUser
+                                    ? styles.roleMentor
+                                    : styles.roleUser
                               }
                             >
                               {item.role}
                             </span>
                           </td>
                           <td style={{ textAlign: "center" }}>
-                            <span style={{ fontWeight: "bold", color: "#2867e8" }}>
+                            <span
+                              style={{ fontWeight: "bold", color: "#2867e8" }}
+                            >
                               {item.count}개
                             </span>
                           </td>
@@ -530,7 +623,11 @@ export default function AdminPage() {
                             <button
                               type="button"
                               className={styles.askButton}
-                              style={{ padding: "6px 12px", fontSize: "12px", cursor: "pointer" }}
+                              style={{
+                                padding: "6px 12px",
+                                fontSize: "12px",
+                                cursor: "pointer",
+                              }}
                               onClick={() => handleToggleExpand(item.id)}
                             >
                               {isExpanded ? "닫기 ▲" : "작성글 보기 ▼"}
@@ -541,40 +638,157 @@ export default function AdminPage() {
                         {/* 아코디언 펼쳐짐 영역 */}
                         {isExpanded && (
                           <tr>
-                            <td colSpan="5" style={{ backgroundColor: "#f9fbff", padding: "16px" }}>
-                              <div style={{ border: "1px solid #d0e1fd", borderRadius: "8px", padding: "12px", background: "#fff" }}>
-                                <p style={{ fontWeight: "bold", marginBottom: "8px", color: "#2867e8", fontSize: "13px" }}>
+                            <td
+                              colSpan="5"
+                              style={{
+                                backgroundColor: "#f9fbff",
+                                padding: "16px",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  border: "1px solid #d0e1fd",
+                                  borderRadius: "8px",
+                                  padding: "12px",
+                                  background: "#fff",
+                                }}
+                              >
+                                <p
+                                  style={{
+                                    fontWeight: "bold",
+                                    marginBottom: "8px",
+                                    color: "#2867e8",
+                                    fontSize: "13px",
+                                  }}
+                                >
                                   📌 {item.name} 님이 작성한 질문 목록
                                 </p>
                                 {isSubLoading ? (
-                                  <p style={{ textAlign: "center", padding: "12px", color: "#666" }}>불러오는 중...</p>
+                                  <p
+                                    style={{
+                                      textAlign: "center",
+                                      padding: "12px",
+                                      color: "#666",
+                                    }}
+                                  >
+                                    불러오는 중...
+                                  </p>
                                 ) : userQuestions.length === 0 ? (
-                                  <p style={{ textAlign: "center", padding: "12px", color: "#666" }}>작성한 질문이 없습니다.</p>
+                                  <p
+                                    style={{
+                                      textAlign: "center",
+                                      padding: "12px",
+                                      color: "#666",
+                                    }}
+                                  >
+                                    작성한 질문이 없습니다.
+                                  </p>
                                 ) : (
-                                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                                  <table
+                                    style={{
+                                      width: "100%",
+                                      borderCollapse: "collapse",
+                                      fontSize: "13px",
+                                    }}
+                                  >
                                     <thead>
-                                      <tr style={{ borderBottom: "1px solid #eee", textAlign: "left", color: "#555" }}>
-                                        <th style={{ padding: "6px", width: "80px" }}>분류</th>
+                                      <tr
+                                        style={{
+                                          borderBottom: "1px solid #eee",
+                                          textAlign: "left",
+                                          color: "#555",
+                                        }}
+                                      >
+                                        <th
+                                          style={{
+                                            padding: "6px",
+                                            width: "80px",
+                                          }}
+                                        >
+                                          분류
+                                        </th>
                                         <th style={{ padding: "6px" }}>제목</th>
-                                        <th style={{ padding: "6px", width: "60px", textAlign: "center" }}>답변</th>
-                                        <th style={{ padding: "6px", width: "60px", textAlign: "center" }}>좋아요</th>
-                                        <th style={{ padding: "6px", width: "90px", textAlign: "center" }}>등록일</th>
+                                        <th
+                                          style={{
+                                            padding: "6px",
+                                            width: "60px",
+                                            textAlign: "center",
+                                          }}
+                                        >
+                                          답변
+                                        </th>
+                                        <th
+                                          style={{
+                                            padding: "6px",
+                                            width: "60px",
+                                            textAlign: "center",
+                                          }}
+                                        >
+                                          좋아요
+                                        </th>
+                                        <th
+                                          style={{
+                                            padding: "6px",
+                                            width: "90px",
+                                            textAlign: "center",
+                                          }}
+                                        >
+                                          등록일
+                                        </th>
                                       </tr>
                                     </thead>
                                     <tbody>
                                       {userQuestions.map((q) => (
-                                        <tr key={q.id} style={{ borderBottom: "1px solid #f2f2f2" }}>
-                                          <td style={{ padding: "8px 6px", color: "#2867e8", fontWeight: "bold" }}>
+                                        <tr
+                                          key={q.id}
+                                          style={{
+                                            borderBottom: "1px solid #f2f2f2",
+                                          }}
+                                        >
+                                          <td
+                                            style={{
+                                              padding: "8px 6px",
+                                              color: "#2867e8",
+                                              fontWeight: "bold",
+                                            }}
+                                          >
                                             [{q.category || "기타"}]
                                           </td>
                                           <td style={{ padding: "8px 6px" }}>
-                                            <Link href={`/questions/${q.id}`} target="_blank" style={{ color: "#333", textDecoration: "none" }}>
+                                            <Link
+                                              href={`/questions/${q.id}`}
+                                              target="_blank"
+                                              style={{
+                                                color: "#333",
+                                                textDecoration: "none",
+                                              }}
+                                            >
                                               {q.title}
                                             </Link>
                                           </td>
-                                          <td style={{ padding: "8px 6px", textAlign: "center" }}>{q.answerCount ?? 0}</td>
-                                          <td style={{ padding: "8px 6px", textAlign: "center" }}>❤️ {q.likeCount ?? 0}</td>
-                                          <td style={{ padding: "8px 6px", textAlign: "center", color: "#777" }}>
+                                          <td
+                                            style={{
+                                              padding: "8px 6px",
+                                              textAlign: "center",
+                                            }}
+                                          >
+                                            {q.answerCount ?? 0}
+                                          </td>
+                                          <td
+                                            style={{
+                                              padding: "8px 6px",
+                                              textAlign: "center",
+                                            }}
+                                          >
+                                            ❤️ {q.likeCount ?? 0}
+                                          </td>
+                                          <td
+                                            style={{
+                                              padding: "8px 6px",
+                                              textAlign: "center",
+                                              color: "#777",
+                                            }}
+                                          >
                                             {q.createdAt?.slice(0, 10)}
                                           </td>
                                         </tr>

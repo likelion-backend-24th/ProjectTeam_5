@@ -72,3 +72,34 @@ export function rejectMentor(userId) {
     fallbackMessage: "멘토 거절에 실패했습니다.",
   });
 }
+
+// 8. 대기 중인 환불 요청 목록 조회
+export function getPendingCancellations() {
+  const token = getToken();
+  return request("/api/admin/cancellations", {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
+    fallbackMessage: "환불 요청 목록을 불러오지 못했습니다.",
+  });
+}
+
+// 9. 환불 승인 — PortOne 취소 API가 실제로 호출된다 (되돌릴 수 없음)
+export function approveCancellation(id) {
+  const token = getToken();
+  return request(`/api/admin/cancellations/${id}/approve`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+    fallbackMessage: "환불 승인 처리에 실패했습니다.",
+  });
+}
+
+// 10. 환불 거절
+export function rejectCancellation(id, adminNote) {
+  const token = getToken();
+  return request(`/api/admin/cancellations/${id}/reject`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+    body: { adminNote },
+    fallbackMessage: "환불 거절 처리에 실패했습니다.",
+  });
+}

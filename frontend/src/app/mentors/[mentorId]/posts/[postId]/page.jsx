@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/app/contexts/AuthContext";
+import { downloadFile } from "@/lib/attachments";
 import styles from "./page.module.css";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -121,6 +122,14 @@ export default function MentorPostDetailPage() {
       alert("서버 오류가 발생했습니다.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDownload = async (file) => {
+    try {
+      await downloadFile(file.attachId, file.originalFileName);
+    } catch (err) {
+      alert(err.message || "파일 다운로드에 실패했습니다.");
     }
   };
 
@@ -290,8 +299,9 @@ export default function MentorPostDetailPage() {
                 <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 6 }}>
                   {post.files.map((file) => (
                     <li key={file.attachId}>
-                      <a
-                        href={`${process.env.NEXT_PUBLIC_API_URL}${file.downloadUrl}`}
+                      <button
+                        type="button"
+                        onClick={() => handleDownload(file)}
                         style={{
                           display: "inline-flex",
                           alignItems: "center",
@@ -300,12 +310,13 @@ export default function MentorPostDetailPage() {
                           border: "1px solid #e5e7eb",
                           borderRadius: 8,
                           fontSize: 14,
-                          textDecoration: "none",
+                          background: "none",
+                          cursor: "pointer",
                           color: "#374151",
                         }}
                       >
                         📎 {file.originalFileName} ({(file.size / 1024 / 1024).toFixed(2)}MB)
-                      </a>
+                      </button>
                     </li>
                   ))}
                 </ul>
