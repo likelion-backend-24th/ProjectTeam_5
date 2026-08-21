@@ -23,6 +23,9 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
 
     boolean existsByUserIdAndMentor_IdAndStatusIn(Long userId, Long mentorId, List<SubscriptionStatus> statuses);
 
+    // 만료 처리 벌크 업데이트 직전에, 알림을 보낼 대상(userId)을 미리 조회하는 용도
+    List<Subscription> findByStatusInAndCurrentPeriodEndLessThanEqual(List<SubscriptionStatus> statuses, LocalDateTime now);
+
     @Modifying(clearAutomatically = true)
     @Query(value = "UPDATE subscription SET status = 'EXPIRED' " +
             "WHERE current_period_end <= :now " +

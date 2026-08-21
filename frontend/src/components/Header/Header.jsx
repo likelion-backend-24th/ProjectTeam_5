@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import styles from "./Header.module.css";
 import { useAuth } from "@/app/contexts/AuthContext";
+import NotificationBell from "./NotificationBell";
 
 export default function Header() {
   const pathname = usePathname();
@@ -115,6 +116,7 @@ export default function Header() {
           <div className={styles.authArea}>
             {isLoggedIn ? (
                 <>
+                  <NotificationBell />
 
                   <div className={styles.userMenuContainer} ref={dropdownRef}>
                     <div

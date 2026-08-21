@@ -1,6 +1,7 @@
 package com.example.findAnswer.mentorbridge.service;
 
 import com.example.findAnswer.mentorbridge.client.billing.PortOneBillingClient;
+import com.example.findAnswer.mentorbridge.constants.NotificationType;
 import com.example.findAnswer.mentorbridge.constants.PaymentStatus;
 import com.example.findAnswer.mentorbridge.constants.SubscriptionStatus;
 import com.example.findAnswer.mentorbridge.dto.payment.PaymentHistoryResponse;
@@ -28,6 +29,7 @@ public class SubscriptionService {
     private final UserRepository userRepository;
     private final PaymentRepository paymentRepository;
     private final PortOneBillingClient portOneBillingClient;
+    private final NotificationService notificationService;
 
     // 구독 신청("바로 ACTIVE" 로직)은 PaymentPrepareService.subscribe()로 대체됨 (결제 검증 후에만 ACTIVE)
 
@@ -55,6 +57,9 @@ public class SubscriptionService {
                 });
 
         subscription.reserveCancellation();
+
+        notificationService.notify(userId, NotificationType.SUBSCRIPTION_CANCELLED,
+                "구독이 해지 예약되었습니다. 현재 결제 기간이 끝날 때까지는 계속 이용하실 수 있습니다.", "/profile");
     }
 
     public SubscriptionCheckResponse checkAccessPermission(Long userId, Long mentorId) {
