@@ -34,15 +34,13 @@ public class MentorPostController {
 
     // F-41: 멘토 게시글 단건 조회 (구독 여부 자동 검증!)
     @GetMapping("/{postId}")
-    @RequireSubscription
     public ResponseEntity<MentorPostResponse> getPost(
             @RequestHeader(value = "X-USER-ID", required = false) Long userId,
             @PathVariable Long mentorId,
             @PathVariable Long postId) {
 
-        return ResponseEntity.ok(mentorPostService.getPost(mentorId, postId));
+        return ResponseEntity.ok(mentorPostService.getPost(userId, mentorId, postId));
     }
-
     // F-41: 멘토 본인 게시글 수정
     @PutMapping("/{postId}")
     public ResponseEntity<MentorPostResponse> updatePost(

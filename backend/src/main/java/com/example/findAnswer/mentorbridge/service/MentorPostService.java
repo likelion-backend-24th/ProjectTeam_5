@@ -35,6 +35,7 @@ public class MentorPostService {
 
     private final MentorPostRepository mentorPostRepository;
     private final UserRepository userRepository;
+    private final SubscriptionService subscriptionService;
     private final QuestionAttachmentFileRepository questionAttachmentFileRepository;
     private final AttachmentStorage attachmentStorage;
     private final FileStorage fileStorage;
@@ -135,9 +136,24 @@ public class MentorPostService {
         mentorPostRepository.delete(post);
     }
 
-    public MentorPostResponse getPost(Long mentorId, Long postId) {
+    public MentorPostResponse getPost(Long userId, Long mentorId, Long postId) {
         MentorPost post = mentorPostRepository.findByIdAndMentor_Id(postId, mentorId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 멘토의 게시글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+
+        if (Boolean.FALSE.equals(post.getIsPublic())) {
+
+            if (userId == null) {
+                throw new CustomException(ErrorCode.SUBSCRIPTION_REQUIRED);
+            }
+
+            if (!userId.equals(mentorId)) {
+                var accessInfo = subscriptionService.checkAccessPermission(userId, mentorId);
+                if (!accessInfo.accessAllowed()) {
+                    throw new CustomException(ErrorCode.SUBSCRIPTION_REQUIRED);
+                }
+            }
+        }
+
         List<QuestionAttachmentFile> attachments = questionAttachmentFileRepository.findByMentorPost(post);
         return MentorPostResponse.from(post, imagesOf(attachments), filesOf(attachments));
     }

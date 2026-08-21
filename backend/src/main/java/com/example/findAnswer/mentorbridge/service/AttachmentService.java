@@ -130,15 +130,37 @@ public class AttachmentService {
         return new FileUploadResponse(attachment.getId(), attachment.getOriginalFileName(), attachment.getSize());
     }
 
-    public DownloadFile downloadFile(Long attachId) {
+    public DownloadFile downloadFile(Long currentUserId, Long attachId) {
         QuestionAttachmentFile attachment = questionAttachmentFileRepository.findById(attachId)
                 .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
+
+        if (!canDownload(currentUserId, attachment)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
 
         Resource resource = fileStorage.loadAsResource(attachment.getStorageKey());
         String extension = extractExtension(attachment.getOriginalFileName());
         String contentType = FILE_CONTENT_TYPES.getOrDefault(extension, "application/octet-stream");
 
         return new DownloadFile(resource, attachment.getOriginalFileName(), contentType);
+    }
+
+    // 업로더 본인은 항상 접근 가능. 질문 게시판은 전체 공개라 첨부도 공개다(질문에 붙은 상태일 때만 — PENDING/DELETED는 아직
+    // 공개 콘텐츠가 아니므로 제외). 멘토 게시글 첨부는 그 게시글의 공개 여부(isPublic)를 그대로 따른다.
+    private boolean canDownload(Long userId, QuestionAttachmentFile attachment) {
+        if (attachment.isOwnedBy(userId)) {
+            return true;
+        }
+        if (!attachment.isAttached()) {
+            return false;
+        }
+        if (attachment.getQuestion() != null) {
+            return true;
+        }
+        if (attachment.getMentorPost() != null) {
+            return Boolean.TRUE.equals(attachment.getMentorPost().getIsPublic());
+        }
+        return false;
     }
 
 

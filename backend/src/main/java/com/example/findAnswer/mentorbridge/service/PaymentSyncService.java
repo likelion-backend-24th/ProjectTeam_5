@@ -10,12 +10,14 @@ import com.example.findAnswer.mentorbridge.constants.PaymentStatus;
 import com.example.findAnswer.mentorbridge.constants.SubscriptionStatus;
 import com.example.findAnswer.mentorbridge.dto.payment.PaymentCompleteResponse;
 import com.example.findAnswer.mentorbridge.entity.Payment;
+import com.example.findAnswer.mentorbridge.entity.PaymentCancellation;
 import com.example.findAnswer.mentorbridge.entity.PaymentMethod;
 import com.example.findAnswer.mentorbridge.entity.PaymentTransaction;
 import com.example.findAnswer.mentorbridge.entity.Settlement;
 import com.example.findAnswer.mentorbridge.entity.Subscription;
 import com.example.findAnswer.mentorbridge.entity.User;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
+import com.example.findAnswer.mentorbridge.repository.PaymentCancellationRepository;
 import com.example.findAnswer.mentorbridge.repository.PaymentRepository;
 import com.example.findAnswer.mentorbridge.repository.PaymentTransactionRepository;
 import com.example.findAnswer.mentorbridge.repository.SettlementRepository;
@@ -25,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -37,6 +40,7 @@ public class PaymentSyncService {
 
     private final PaymentRepository paymentRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
+    private final PaymentCancellationRepository paymentCancellationRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final PortOnePaymentClient portOnePaymentClient;
     private final PortOneBillingClient portOneBillingClient;
@@ -223,5 +227,14 @@ public class PaymentSyncService {
         // 🔥 환불 발생 시 정산 내역도 취소 처리
         settlementRepository.findByPaymentId(payment.getId())
                 .ifPresent(Settlement::cancel);
+    }
+
+    // PaymentCancellationService.approve()가 이 호출 실패를 받아 markFailed() 후 다시 throw하는데, 그 메서드
+    // 전체가 @Transactional이라 그대로 두면 예외 전파와 함께 markFailed()도 롤백되어 실패 기록이 안 남는다.
+    // REQUIRES_NEW로 별도 트랜잭션에서 커밋해야 한다 — NotificationService.notify()와 동일 패턴.
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void recordCancellationFailure(Long cancellationId, String adminNote) {
+        paymentCancellationRepository.findById(cancellationId)
+                .ifPresent(cancellation -> cancellation.markFailed(adminNote));
     }
 }

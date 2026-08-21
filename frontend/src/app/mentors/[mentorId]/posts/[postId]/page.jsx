@@ -7,9 +7,9 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { downloadFile } from "@/lib/attachments";
+import { getAccessToken } from "@/lib/tokenStore";
+import { API_URL as BACKEND_URL } from "@/lib/client";
 import styles from "./page.module.css";
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export default function MentorPostDetailPage() {
   const params = useParams();
@@ -32,17 +32,15 @@ export default function MentorPostDetailPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const loadPost = useCallback(async () => {
-    if (!mentorId || !postId) return;
-
-    setLoading(true);
-    setErrorMessage("");
-    setIsForbidden(false);
+  if (!mentorId || !postId || mentorId === "undefined" || postId === "undefined") {
+    return;
+  }
+  setLoading(true);
+  setErrorMessage("");
+  setIsForbidden(false);
 
     try {
-      const token =
-        typeof window !== "undefined"
-          ? localStorage.getItem("accessToken") || localStorage.getItem("token")
-          : null;
+      const token = getAccessToken();
 
       const headers = {
         "Content-Type": "application/json",
@@ -63,6 +61,9 @@ export default function MentorPostDetailPage() {
       if (res.status === 403) {
         setIsForbidden(true);
         return;
+      }
+      if (res.status === 404) {
+        throw new Error("존재하지 않는 게시글입니다.");
       }
 
       if (!res.ok) {
@@ -87,8 +88,10 @@ export default function MentorPostDetailPage() {
   }, [mentorId, postId, currentUserId]);
 
   useEffect(() => {
+  if (mentorId && postId) { 
     loadPost();
-  }, [loadPost]);
+  }
+}, [loadPost, mentorId, postId]);
 
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -99,7 +102,7 @@ export default function MentorPostDetailPage() {
 
     setSubmitting(true);
     try {
-      const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
+      const token = getAccessToken();
       const headers = { "Content-Type": "application/json" };
       if (currentUserId) headers["X-USER-ID"] = String(currentUserId);
       if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -137,7 +140,7 @@ export default function MentorPostDetailPage() {
     if (!confirm("정말 이 게시글을 삭제하시겠습니까?")) return;
 
     try {
-      const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
+      const token = getAccessToken();
       const headers = {};
       if (currentUserId) headers["X-USER-ID"] = String(currentUserId);
       if (token) headers["Authorization"] = `Bearer ${token}`;

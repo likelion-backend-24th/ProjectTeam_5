@@ -1,7 +1,8 @@
 import { request } from "./client";
 import * as authApi from "./auth";
+import { getAccessToken } from "./tokenStore";
 
-export const getToken = () => localStorage.getItem("accessToken");
+export const getToken = () => getAccessToken();
 
 // 1. 이름 + 관심 분야 수정 (추가된 부분!)/
 export function updateProfileInfo(name, interests, token) {

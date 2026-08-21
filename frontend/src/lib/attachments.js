@@ -1,4 +1,5 @@
 import { request } from "./client";
+import { getAccessToken } from "./tokenStore";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
 
@@ -34,10 +35,7 @@ export function validateFile(file) {
 export async function uploadFile(file) {
   validateFile(file);
 
-  const token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("token") || localStorage.getItem("accessToken")
-      : null;
+  const token = getAccessToken();
 
   const formData = new FormData();
   formData.append("file", file);
@@ -62,10 +60,7 @@ export async function uploadFile(file) {
 // <a href={downloadUrl}>로 그냥 열면 브라우저가 Authorization 헤더 없이 GET을 보내서 401 →
 // 스프링 기본 Whitelabel 에러 페이지가 뜬다. fetch로 토큰을 실어 받은 뒤 blob을 직접 저장해야 한다.
 export async function downloadFile(attachId, filename = "download") {
-  const token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("token") || localStorage.getItem("accessToken")
-      : null;
+  const token = getAccessToken();
 
   const res = await fetch(`${API_URL}/api/attachments/files/${attachId}/download`, {
     method: "GET",

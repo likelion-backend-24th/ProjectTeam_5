@@ -36,9 +36,12 @@ public class MentorProfile extends BaseTimeEntity {
     @Column(length = 255)
     private String schedule;
 
+    @Column(length = 255)
+    private String portfolioUrl;
+
     @Builder
     public MentorProfile(User user, String bio, String company, String career,
-                         String tags, String education, String schedule) {
+                         String tags, String education, String schedule, String portfolioUrl) {
         this.user = user;
         this.bio = bio;
         this.company = company;
@@ -46,15 +49,17 @@ public class MentorProfile extends BaseTimeEntity {
         this.tags = tags;
         this.education = education;
         this.schedule = schedule;
+        this.portfolioUrl = portfolioUrl;
     }
 
     public void update(String bio, String company, String career,
-                       String tags, String education, String schedule) {
+                       String tags, String education, String schedule, String portfolioUrl) {
         this.bio = bio;
         this.company = company;
         this.career = career;
         this.tags = tags;
         this.education = education;
         this.schedule = schedule;
+        this.portfolioUrl = portfolioUrl;
     }
 }

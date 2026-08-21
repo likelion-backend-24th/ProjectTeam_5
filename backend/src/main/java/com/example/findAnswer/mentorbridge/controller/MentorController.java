@@ -43,13 +43,14 @@ public class MentorController {
         return ResponseEntity.ok(response);
     }
 
-    // 멘토 프로필 수정 API
+    // 멘토 프로필 수정 API — 본인 프로필만 수정 가능
     @PutMapping("/{mentorId}")
     public ResponseEntity<MentorResponse> updateMentorProfile(
+            @AuthenticationPrincipal Long currentUserId,
             @PathVariable Long mentorId,
             @RequestBody MentorUpdateDto requestDto // 수정할 데이터를 받을 DTO
     ) {
-        MentorResponse response = mentorService.updateMentorProfile(mentorId, requestDto);
+        MentorResponse response = mentorService.updateMentorProfile(currentUserId, mentorId, requestDto);
         return ResponseEntity.ok(response);
     }
 

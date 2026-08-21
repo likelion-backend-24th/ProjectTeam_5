@@ -1,7 +1,8 @@
 // src/lib/admin.js
 import { request } from "./client";
+import { getAccessToken } from "./tokenStore";
 
-export const getToken = () => localStorage.getItem("accessToken");
+export const getToken = () => getAccessToken();
 
 // 1. 전체 회원 목록 조회
 export function getAllUsers() {
