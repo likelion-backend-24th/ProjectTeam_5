@@ -210,10 +210,17 @@ public class UserService {
                 );
     }
 
-    // 인증 이메일 발송
+    // 인증 이메일 발송 — 인증 성공 시 이 이메일로 계정 이메일(=로그인 아이디)이 바뀌므로, 다른 계정이
+    // 이미 쓰는 이메일이면 여기서 먼저 막아서 괜히 인증번호까지 보내는 걸 방지한다.
     @Transactional
     public void sendVerificationCode(Long userId, EmailVerificationRequest request) {
         String email = request.email();
+        User user = getUserById(userId);
+
+        if (!email.equals(user.getEmail()) && userRepository.existsByEmail(email)) {
+            throw new CustomException(ErrorCode.EMAIL_DUPLICATE);
+        }
+
         String code = String.format("%06d", new java.util.Random().nextInt(1000000));
         java.time.LocalDateTime expiresAt = java.time.LocalDateTime.now().plusMinutes(5);
 
@@ -222,7 +229,8 @@ public class UserService {
         emailService.sendVerificationEmail(email, code);
     }
 
-    // 인증번호 확인
+    // 인증번호 확인 — 인증 성공 시 계정 이메일(로그인 아이디)이 이 이메일로 바뀐다.
+    // 발송 시점과 확인 시점 사이에 다른 계정이 같은 이메일을 선점했을 수 있어 여기서도 한 번 더 체크한다.
     @Transactional
     public UserResponse verifyEmailCode(Long userId, EmailVerificationSubmitRequest request) {
         EmailVerification verification = emailVerificationRepository.findByUserIdAndEmail(userId, request.email())
@@ -236,6 +244,11 @@ public class UserService {
         }
 
         User user = getUserById(userId);
+
+        if (!request.email().equals(user.getEmail()) && userRepository.existsByEmail(request.email())) {
+            throw new CustomException(ErrorCode.EMAIL_DUPLICATE);
+        }
+
         user.updateEmail(request.email());
         user.verifyEmail();
 
