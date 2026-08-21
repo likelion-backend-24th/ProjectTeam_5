@@ -88,6 +88,10 @@ public class User extends BaseTimeEntity {
     public void verifyEmail() {
         this.emailVerified = true;
     }
+    
+    public void updateMentorProfile(MentorProfile mentorProfile) {
+        this.mentorProfile = mentorProfile;
+    }
 
     public User(String email, String password, String name, Role role) {
         this.email = email;

@@ -82,12 +82,10 @@ export default function MentorProfilePage() {
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [currentPeriodEnd, setCurrentPeriodEnd] = useState(null);
 
-  // 구독 요금제 캐러셀 + 결제 진행 상태
   const [plans, setPlans] = useState([]);
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
   const [subscribing, setSubscribing] = useState(false);
 
-  // 구독 유도 모달 상태 추가
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
 
   // 카드 미등록 상태에서 구독 시 그 자리에서 카드 등록을 이어서 받기 위한 상태
@@ -118,7 +116,7 @@ export default function MentorProfilePage() {
   });
 
   const [files, setFiles] = useState([]);
-  const [docFiles, setDocFiles] = useState([]); // 게시글 첨부 문서(PDF/ZIP)
+  const [docFiles, setDocFiles] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -300,9 +298,6 @@ export default function MentorProfilePage() {
     setSelectedPlanIndex((i) => (plans.length === 0 ? 0 : (i + 1) % plans.length));
   };
 
-  // 구독하기: 등록된 카드(빌링키)로 서버가 즉시 청구하고 결과까지 한 번에 받는다 — 결제창 팝업 없음.
-  // 등록된 카드가 없으면 서버가 PAYMENT_METHOD_REQUIRED로 거절 → 별도 페이지로 보내지 않고
-  // 이 자리에서 바로 카드 등록 모달(showCardModal)을 띄운다(handleRegisterCardAndSubscribe).
   const handleSubscribe = async () => {
     if (!isLoggedIn) {
       alert("로그인이 필요한 서비스입니다.");
@@ -324,7 +319,6 @@ export default function MentorProfilePage() {
         setSubscriptionStatus("ACTIVE");
         setCurrentPeriodEnd(completeRes.currentPeriodEnd);
 
-        // 구독 성공 시 구독자 수 +1 실시간 반영
         setMentorInfo((prev) => ({
           ...prev,
           subscriberCount: (prev.subscriberCount || 0) + 1,
@@ -503,8 +497,11 @@ export default function MentorProfilePage() {
 
       if (res.ok) {
         const updatedData = await res.json().catch(() => ({}));
-        setMentorInfo({ ...mentorInfo, ...updatedData, ...normalizedForm });
-        setEditForm(normalizedForm);
+        setMentorInfo((prev) => ({
+          ...prev,
+          ...normalizedForm,
+          ...updatedData,
+        }));
         setProfileSnapshot(null);
         setIsEditing(false);
         alert("프로필이 성공적으로 수정되었습니다.");
@@ -513,6 +510,8 @@ export default function MentorProfilePage() {
         alert(error.message || "프로필 수정에 실패했습니다.");
       }
     } catch (error) {
+      console.error("프로필 수정 오류:", error);
+      alert("서버 연결에 실패했습니다. 다시 시도해주세요.");
     } finally {
       setSavingProfile(false);
     }
@@ -586,7 +585,7 @@ export default function MentorProfilePage() {
   const tagsArray = mentorInfo.tags ? mentorInfo.tags.split(",").map((t) => t.trim()).filter(Boolean) : [];
   const isAccessValid = isSubscribed || (subscriptionStatus === 'CANCEL_RESERVED' && (!currentPeriodEnd || new Date(currentPeriodEnd) > new Date()));
   const currentPrice = selectedPlan ? Number(selectedPlan.price).toLocaleString() : "-";
- const isAvailableNow = checkIsAvailable(mentorInfo.schedule);
+  const isAvailableNow = checkIsAvailable(mentorInfo.schedule);
   const statusColor = isAvailableNow ? "#22c55e" : "#94a3b8";
 
   const filteredArticles = [...articles]
@@ -605,7 +604,6 @@ export default function MentorProfilePage() {
 
   return (
     <div className={styles.container}>
-      {/* 프로필 섹션 */}
       <section className={styles.profileBanner}>
         <div className={styles.heroLeft}>
           <div className={styles.avatarWrapper}>
@@ -697,7 +695,6 @@ export default function MentorProfilePage() {
         </div>
       </section>
 
-      {/* 탭 내비게이션 */}
       <div className={styles.tabNav}>
         <button className={activeTab === "feed" ? styles.activeTab : ""} onClick={() => setActiveTab("feed")}>피드</button>
         <button className={activeTab === "info" ? styles.activeTab : ""} onClick={() => setActiveTab("info")}>소개</button>
@@ -802,7 +799,6 @@ export default function MentorProfilePage() {
                 </div>
               </div>
 
-              {/* 게시글 목록 영역 */}
               <div className={styles.articleArea}>
                 <div className={styles.articleList}>
                   {filteredArticles.length === 0 ? (
@@ -876,7 +872,6 @@ export default function MentorProfilePage() {
           )}
         </main>
 
-        {/* 사이드바 */}
         <aside className={styles.sidebar}>
           {!isOwner && !isAccessValid && (
             <div className={styles.sidebarCard}>
@@ -956,11 +951,11 @@ export default function MentorProfilePage() {
             <ul className={styles.infoList}>
               <li>
                 <strong>현직</strong>
-                {isEditing ? <input type="text" name="company" value={editForm.company} onChange={handleInputChange} className={styles.editInput} /> : <span>{mentorInfo.company || "Senior UI/UX Designer @ 네이버"}</span>}
+                {isEditing ? <input type="text" name="company" value={editForm.company} onChange={handleInputChange} className={styles.editInput} /> : <span>{mentorInfo.company || "Senior UI/UX Designer @ 멋사"}</span>}
               </li>
               <li>
                 <strong>경력</strong>
-                {isEditing ? <input type="text" name="career" value={editForm.career} onChange={handleInputChange} className={styles.editInput} /> : <span>{mentorInfo.career || "9년"}</span>}
+                {isEditing ? <input type="text" name="career" value={editForm.career} onChange={handleInputChange} className={styles.editInput} /> : <span>{mentorInfo.career || "50년"}</span>}
               </li>
               <li>
                 <strong>전문 분야</strong>
@@ -968,7 +963,7 @@ export default function MentorProfilePage() {
               </li>
               <li>
                 <strong>학력</strong>
-                {isEditing ? <input type="text" name="education" value={editForm.education} onChange={handleInputChange} className={styles.editInput} /> : <span>{mentorInfo.education || "홍익대학교 디자인과"}</span>}
+                {isEditing ? <input type="text" name="education" value={editForm.education} onChange={handleInputChange} className={styles.editInput} /> : <span>{mentorInfo.education || "멋사대학교 디자인과"}</span>}
               </li>
               {isEditing && (
                 <li>
@@ -1081,7 +1076,6 @@ export default function MentorProfilePage() {
         </aside>
       </div>
 
-      {/* 구독 유도 모달 팝업 */}
       {showSubscribeModal && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
