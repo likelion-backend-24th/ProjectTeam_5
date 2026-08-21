@@ -140,6 +140,15 @@ export default function Header() {
                           >
                             내 프로필 (마이페이지)
                           </Link>
+                          {user?.role === "MENTOR" && (
+                              <Link
+                                  href="/mentor/dashboard"
+                                  className={styles.dropdownItem}
+                                  onClick={() => setIsDropdownOpen(false)}
+                              >
+                                멘토 대시보드
+                              </Link>
+                          )}
                           <Link
                               href={`/users/${user?.id}?name=${encodeURIComponent(user?.name || "익명")}`}
                               className={styles.dropdownItem}
