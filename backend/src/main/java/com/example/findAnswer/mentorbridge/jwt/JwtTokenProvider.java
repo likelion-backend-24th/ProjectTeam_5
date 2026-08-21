@@ -15,11 +15,16 @@ import java.util.Date;
 public class JwtTokenProvider {
 
     private final SecretKey secretKey;
-    private final long accessTokenValidity = 1000L * 60 * 30;
-    private final long refreshTokenValidity = 1000L * 60 * 60 * 24 * 14;
+    private final long accessTokenValidity;
+    private final long refreshTokenValidity;
 
-    public JwtTokenProvider(@Value("${jwt.secret}") String secret) {
+    public JwtTokenProvider(
+            @Value("${jwt.secret}") String secret,
+            @Value("${jwt.access-token-expiration-ms}") long accessTokenValidity,
+            @Value("${jwt.refresh-token-expiration-ms}") long refreshTokenValidity) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.accessTokenValidity = accessTokenValidity;
+        this.refreshTokenValidity = refreshTokenValidity;
     }
 
     public String createAccessToken(Long userId, String email, Role role) {

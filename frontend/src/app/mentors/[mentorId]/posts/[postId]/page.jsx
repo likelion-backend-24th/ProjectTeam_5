@@ -7,9 +7,9 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { downloadFile } from "@/lib/attachments";
+import { getAccessToken } from "@/lib/tokenStore";
+import { API_URL as BACKEND_URL } from "@/lib/client";
 import styles from "./page.module.css";
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export default function MentorPostDetailPage() {
   const params = useParams();
@@ -40,10 +40,7 @@ export default function MentorPostDetailPage() {
   setIsForbidden(false);
 
     try {
-      const token =
-        typeof window !== "undefined"
-          ? localStorage.getItem("accessToken") || localStorage.getItem("token")
-          : null;
+      const token = getAccessToken();
 
       const headers = {
         "Content-Type": "application/json",
@@ -105,7 +102,7 @@ export default function MentorPostDetailPage() {
 
     setSubmitting(true);
     try {
-      const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
+      const token = getAccessToken();
       const headers = { "Content-Type": "application/json" };
       if (currentUserId) headers["X-USER-ID"] = String(currentUserId);
       if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -143,7 +140,7 @@ export default function MentorPostDetailPage() {
     if (!confirm("정말 이 게시글을 삭제하시겠습니까?")) return;
 
     try {
-      const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
+      const token = getAccessToken();
       const headers = {};
       if (currentUserId) headers["X-USER-ID"] = String(currentUserId);
       if (token) headers["Authorization"] = `Bearer ${token}`;

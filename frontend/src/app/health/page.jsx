@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { getApiBaseUrl, getHealth } from "@/lib/health";
+import { clearAccessToken } from "@/lib/tokenStore";
 
 import styles from "./page.module.css";
 
@@ -91,9 +92,7 @@ export default function HealthPage() {
     checkHealth();
   }, [checkHealth]);
   const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-
+    clearAccessToken();
     router.replace("/login");
   };
 

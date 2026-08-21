@@ -1,12 +1,9 @@
 // src/lib/mentors.js
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+import { getAccessToken } from "./tokenStore";
+import { API_URL as BACKEND_URL } from "./client";
 
 // 토큰 가져오기 헬퍼
-const getAuthToken = () => {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("token") || localStorage.getItem("accessToken");
-};
+const getAuthToken = () => getAccessToken();
 
 // 1. 멘토 목록 조회
 export async function getMentors({ page = 0, size = 8, keyword = "" } = {}) {

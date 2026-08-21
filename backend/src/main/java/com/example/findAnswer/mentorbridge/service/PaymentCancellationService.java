@@ -89,7 +89,10 @@ public class PaymentCancellationService {
         try {
             paymentSyncService.cancelPayment(payment, cancellation.getReason());
         } catch (CustomException e) {
-            cancellation.markFailed("PortOne 취소 API 호출 실패: " + e.getErrorCode());
+            // approve() 전체가 @Transactional이라 여기서 그냥 markFailed()만 하고 던지면 롤백에 같이 쓸려간다 —
+            // REQUIRES_NEW로 별도 커밋하는 PaymentSyncService.recordCancellationFailure()를 대신 쓴다.
+            paymentSyncService.recordCancellationFailure(cancellationId,
+                    "PortOne 취소 API 호출 실패: " + e.getErrorCode());
             throw e;
         }
 

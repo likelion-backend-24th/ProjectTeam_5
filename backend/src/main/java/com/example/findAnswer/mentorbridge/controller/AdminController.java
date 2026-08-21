@@ -7,12 +7,16 @@ import com.example.findAnswer.mentorbridge.service.PaymentCancellationService;
 import com.example.findAnswer.mentorbridge.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
 
+// SecurityConfig의 "/api/admin/**" -> hasRole("ADMIN") URL 매칭에만 기대지 않는다 — 새 엔드포인트가
+// 실수로 그 패턴 밖(예: 오타)에 매핑돼도 여기서 한 번 더 막히도록 컨트롤러 레벨에도 걸어둔다.
+@PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor

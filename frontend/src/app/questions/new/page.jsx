@@ -7,6 +7,7 @@ import { createQuestion } from "@/lib/questions";
 
 import styles from "./form.module.css";
 import { uploadImage, validateImage, uploadFile, validateFile } from "@/lib/attachments";
+import { getAccessToken } from "@/lib/tokenStore";
 
 export default function NewQuestionPage() {
   const router = useRouter();
@@ -46,7 +47,7 @@ export default function NewQuestionPage() {
     setErrorMessage("");
 
     //등록 버튼을 누르는 순간 로컬토큰(로그인 상태)이 있는지 한 번 더 확실하게 체크
-    const token = localStorage.getItem("accessToken");
+    const token = getAccessToken();
     if (!token) {
       alert("로그인 후 이용 가능합니다.");
       router.push("/login");

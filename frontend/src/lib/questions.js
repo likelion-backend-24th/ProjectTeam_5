@@ -1,4 +1,5 @@
 import { request } from "./client";
+import { getAccessToken } from "./tokenStore";
 
 export async function getQuestion(id) {
   return request(`/api/questions/${id}`, {
@@ -90,7 +91,7 @@ export async function toggleLike(questionId) {
 
 // 팔로잉 유저 질문 목록 조회
 export async function getFollowingQuestions({ page = 0, size = 10 } = {}) {
-  const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") || localStorage.getItem("token") : null;
+  const token = getAccessToken();
   const query = new URLSearchParams({ page, size }).toString();
   return request(`/api/questions/following?${query}`, {
     method: "GET",

@@ -1,4 +1,9 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
+import { getAccessToken, setAccessToken, clearAccessToken } from "./tokenStore";
+
+// 다른 lib 모듈이 raw fetch를 쓸 때도 이 값을 가져다 쓴다(BACKEND_URL을 각자 다시 선언하지 않는다) —
+// 그래야 배포 환경에 NEXT_PUBLIC_API_URL이 빠졌을 때 "일부만 조용히 localhost로 붙는" 현상 없이 전체가
+// 똑같이 바로 실패한다.
+export const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
 
 if (!API_URL) {
   throw new Error("NEXT_PUBLIC_API_URL이 설정되지 않았습니다.");
@@ -9,7 +14,8 @@ export function startOAuth(provider) {
 }
 
 // AccessToken 만료(401) 시 refresh 토큰(HttpOnly 쿠키)으로 새 AccessToken을 발급받는다.
-async function tryRefreshToken() {
+// 새로고침 직후처럼 메모리에 AccessToken이 아예 없을 때 세션을 복구하는 용도로도 쓴다(AuthContext 참고).
+export async function tryRefreshToken() {
   try {
     const res = await fetch(`${API_URL}/api/auth/refresh`, {
       method: "POST",
@@ -20,7 +26,7 @@ async function tryRefreshToken() {
     const data = await res.json().catch(() => null);
     const newToken = data?.accessToken;
     if (newToken) {
-      localStorage.setItem("accessToken", newToken);
+      setAccessToken(newToken);
       return newToken;
     }
     return null;
@@ -52,10 +58,7 @@ export async function request(
   path,
   { body, fallbackMessage = "요청에 실패했습니다.", _retry = false, ...options } = {}
 ) {
-  const token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("token") || localStorage.getItem("accessToken")
-      : null;
+  const token = getAccessToken();
 
   // X-USER-ID 추출 (localStorage 키 순회 -> user 객체 JSON -> JWT 토큰 디코딩 순)
   let userId = null;
@@ -109,7 +112,7 @@ export async function request(
     if (newToken) {
       return request(path, { body, fallbackMessage, _retry: true, ...options });
     }
-    localStorage.removeItem("accessToken");
+    clearAccessToken();
   }
 
   const isJson = response.headers.get("content-type")?.includes("application/json");
