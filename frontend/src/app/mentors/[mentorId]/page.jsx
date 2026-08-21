@@ -5,9 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/app/contexts/AuthContext";
 import styles from "./page.module.css";
+import { requestIssueBillingKey } from "@portone/browser-sdk/v2";
 import { uploadImage, validateImage, uploadFile, validateFile } from "@/lib/attachments";
 import { getMentorPlans } from "@/lib/mentorPlans";
 import { subscribeToMentor } from "@/lib/subscriptions";
+import { prepareBillingKeyIssuance, registerPaymentMethod } from "@/lib/payments";
 import { getOrCreateChatRoom } from "@/lib/chat";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -85,6 +87,12 @@ export default function MentorProfilePage() {
   const [subscribing, setSubscribing] = useState(false);
 
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
+
+  // 카드 미등록 상태에서 구독 시 그 자리에서 카드 등록을 이어서 받기 위한 상태
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [cardPhoneNumber, setCardPhoneNumber] = useState("");
+  const [registeringCard, setRegisteringCard] = useState(false);
+  const [cardError, setCardError] = useState("");
 
   const [isEditing, setIsEditing] = useState(false);
   const [profileSnapshot, setProfileSnapshot] = useState(null);
@@ -323,15 +331,64 @@ export default function MentorProfilePage() {
       }
     } catch (e) {
       console.error(e);
-      if (e.data?.errorCode === "PAYMENT_METHOD_REQUIRED") {
-        if (confirm("구독하려면 결제수단(카드)을 먼저 등록해야 합니다. 지금 등록하시겠어요?")) {
-          router.push(`/profile/payment-methods/new?redirect=${encodeURIComponent(window.location.pathname)}`);
-        }
+      // ⚠️ 백엔드 ErrorResponse 필드명은 errorCode가 아니라 code다 (GlobalExceptionHandler 확인).
+      if (e.data?.code === "PAYMENT_METHOD_REQUIRED") {
+        setCardError("");
+        setShowCardModal(true);
         return;
       }
       alert(e.message || "구독 결제 중 오류가 발생했습니다.");
     } finally {
       setSubscribing(false);
+    }
+  };
+
+  // 카드 등록 모달에서 "등록하고 구독하기"를 눌렀을 때: 카드 등록(빌링키 발급) → 성공하면 곧바로 구독 재시도.
+  // 별도 페이지 이동 없이 한 흐름으로 이어지도록, 등록만 하고 실제 청구는 handleSubscribe를 다시 호출해 그대로 재사용한다.
+  const handleRegisterCardAndSubscribe = async () => {
+    if (!/^01[0-9]{8,9}$/.test(cardPhoneNumber.trim())) {
+      setCardError("올바른 휴대폰 번호를 입력해주세요. (예: 01012345678)");
+      return;
+    }
+    setCardError("");
+    setRegisteringCard(true);
+
+    try {
+      const prepareRes = await prepareBillingKeyIssuance();
+
+      const issueResult = await requestIssueBillingKey({
+        storeId: prepareRes.storeId,
+        channelKey: prepareRes.channelKey,
+        billingKeyMethod: "CARD",
+        issueId: prepareRes.issueId,
+        issueName: "MentorBridge 결제수단 등록",
+        customer: {
+          fullName: authUser?.name,
+          phoneNumber: cardPhoneNumber.trim(),
+          email: authUser?.email,
+        },
+      });
+
+      if (issueResult?.code) {
+        // 사용자가 카드 등록창을 닫았거나 PG 승인이 거부된 경우
+        setCardError(issueResult.message || "카드 등록이 취소되었습니다.");
+        return;
+      }
+
+      await registerPaymentMethod({
+        cardNickname: "기본 카드",
+        issueId: prepareRes.issueId,
+        billingKey: issueResult.billingKey,
+        phoneNumber: cardPhoneNumber.trim(),
+      });
+
+      setShowCardModal(false);
+      setCardPhoneNumber("");
+      await handleSubscribe(); // 카드 등록 성공 → 이어서 첫 결제(구독) 진행
+    } catch (err) {
+      setCardError(err.message || "카드 등록에 실패했습니다.");
+    } finally {
+      setRegisteringCard(false);
     }
   };
 
@@ -1032,7 +1089,7 @@ export default function MentorProfilePage() {
             </div>
 
             <p style={{ fontSize: 12, color: "#6b7280", margin: "12px 0 0" }}>
-              등록된 카드로 바로 결제됩니다. 카드가 없으면 등록 화면으로 안내해드려요.
+              등록된 카드로 바로 결제됩니다. 카드가 없으면 이 자리에서 바로 등록하실 수 있어요.
             </p>
 
             <div className={styles.modalActionBtns}>
@@ -1042,6 +1099,66 @@ export default function MentorProfilePage() {
               <button
                 className={styles.modalCloseBtn}
                 onClick={() => setShowSubscribeModal(false)}
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 카드 미등록 상태에서 구독 시도 → 별도 페이지 이동 없이 이 자리에서 바로 카드 등록 */}
+      {showCardModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <span className={styles.modalLockIcon}>💳</span>
+            <h2>결제할 카드가 없어요</h2>
+            <p>구독하려면 카드를 먼저 등록해야 해요. 지금 등록하면 바로 이어서 구독이 진행됩니다.</p>
+
+            <div style={{ textAlign: "left", marginTop: 16 }}>
+              <label style={{ display: "block", fontSize: 13, color: "#374151", marginBottom: 6 }}>
+                휴대폰 번호
+              </label>
+              <input
+                type="text"
+                value={cardPhoneNumber}
+                onChange={(e) => setCardPhoneNumber(e.target.value.replace(/\D/g, ""))}
+                inputMode="numeric"
+                maxLength={11}
+                placeholder="01012345678"
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  border: "1px solid #d1d5db",
+                  fontSize: 14,
+                  boxSizing: "border-box",
+                }}
+              />
+              <p style={{ fontSize: 12, color: "#9ca3af", margin: "6px 0 0" }}>
+                등록 버튼을 누르면 PortOne 결제창이 열리고, 거기서 카드 정보를 직접 입력합니다. 카드번호는 저희 서버에 저장되지 않습니다.
+              </p>
+            </div>
+
+            {cardError && (
+              <p style={{ color: "crimson", fontSize: 13, marginTop: 8 }}>{cardError}</p>
+            )}
+
+            <div className={styles.modalActionBtns} style={{ marginTop: 16 }}>
+              <button
+                className={styles.modalSubBtn}
+                onClick={handleRegisterCardAndSubscribe}
+                disabled={registeringCard}
+              >
+                {registeringCard ? "카드 등록 중..." : "카드 등록하고 구독하기"}
+              </button>
+              <button
+                className={styles.modalCloseBtn}
+                onClick={() => {
+                  setShowCardModal(false);
+                  setCardError("");
+                  setCardPhoneNumber("");
+                }}
               >
                 닫기
               </button>

@@ -397,31 +397,20 @@ export default function AdminPage() {
           <div className={styles.selectGroup}>
             {activeTab === "users" && (
               <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value)}
                 className={styles.selectBox}
               >
-                <option value="ALL">모든 역할</option>
-                <option value="USER">일반 사용자 (USER)</option>
-                <option value="MENTOR">멘토 (MENTOR)</option>
-                <option value="ADMIN">관리자 (ADMIN)</option>
+                <option value="latest">
+                  {activeTab === "questions" ? "작성글 많은 순" : "최신순"}
+                </option>
+                <option value="oldest">
+                  {activeTab === "questions" ? "작성글 적은 순" : "오래된순"}
+                </option>
               </select>
-            )}
-
-            <select
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value)}
-              className={styles.selectBox}
-            >
-              <option value="latest">
-                {activeTab === "questions" ? "작성글 많은 순" : "최신순"}
-              </option>
-              <option value="oldest">
-                {activeTab === "questions" ? "작성글 적은 순" : "오래된순"}
-              </option>
-            </select>
+            </div>
           </div>
-        </div>
+        )}
 
         {loading && <p className={styles.statusText}>불러오는 중...</p>}
         {!loading && errorMessage && (
@@ -904,6 +893,69 @@ export default function AdminPage() {
                   </tbody>
                 </table>
               </div>
+            )}
+          </>
+        )}
+
+        {/* 4. 환불 관리 탭 */}
+        {!loading && !errorMessage && activeTab === "refunds" && (
+          <>
+            {cancellations.length === 0 ? (
+              <p className={styles.statusText}>대기 중인 환불 요청이 없습니다.</p>
+            ) : (
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={{ width: "60px", textAlign: "center" }}>ID</th>
+                    <th style={{ width: "140px" }}>결제 ID</th>
+                    <th style={{ width: "130px" }}>신청자</th>
+                    <th style={{ width: "130px" }}>멘토</th>
+                    <th style={{ width: "100px", textAlign: "right" }}>금액</th>
+                    <th>환불 사유</th>
+                    <th style={{ width: "100px" }}>요청일</th>
+                    <th style={{ width: "140px", textAlign: "center" }}>처리</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cancellations.map((c) => (
+                    <tr key={c.id}>
+                      <td style={{ textAlign: "center" }}>{c.id}</td>
+                      <td className={styles.ellipsisCell}>{c.paymentId}</td>
+                      <td className={styles.ellipsisCell}>
+                        {c.userName || "-"}
+                        {c.userId != null && <span style={{ color: "#9ca3af" }}> (#{c.userId})</span>}
+                      </td>
+                      <td className={styles.ellipsisCell}>
+                        {c.mentorName || "-"}
+                        {c.mentorId != null && <span style={{ color: "#9ca3af" }}> (#{c.mentorId})</span>}
+                      </td>
+                      <td style={{ textAlign: "right" }}>{Number(c.amount || 0).toLocaleString()}원</td>
+                      <td className={styles.reasonCell}>{c.reason || "-"}</td>
+                      <td>{formatDate(c.createdAt)}</td>
+                      <td style={{ textAlign: "center" }}>
+                        <div className={styles.actionButtons}>
+                          <button
+                            type="button"
+                            className={styles.approveBtn}
+                            disabled={cancelBusyId === c.id}
+                            onClick={() => handleApproveCancellation(c.id, c.paymentId)}
+                          >
+                            승인
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.rejectBtn}
+                            disabled={cancelBusyId === c.id}
+                            onClick={() => handleRejectCancellation(c.id, c.paymentId)}
+                          >
+                            거절
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </>
         )}
