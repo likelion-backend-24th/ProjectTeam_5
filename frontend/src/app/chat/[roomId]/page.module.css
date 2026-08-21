@@ -38,6 +38,14 @@
   font-size: var(--font-size-sm);
 }
 
+.endedBanner {
+  padding: var(--spacing-2) var(--spacing-4);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  background-color: var(--color-gray-100);
+}
+
 .messageList {
   flex: 1;
   overflow-y: auto;

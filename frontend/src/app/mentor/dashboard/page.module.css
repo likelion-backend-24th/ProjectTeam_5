@@ -1,0 +1,382 @@
+.page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.heading {
+  margin-bottom: 24px;
+}
+
+.heading h1 {
+  margin: 0 0 8px;
+  color: #111827;
+  font-size: 26px;
+}
+
+.heading p {
+  margin: 0;
+  color: #526176;
+  font-size: 14px;
+}
+
+.statusText {
+  padding: 60px 0;
+  text-align: center;
+  color: #526176;
+}
+
+.errorMessage {
+  padding: 60px 0;
+  text-align: center;
+  color: #dc2626;
+}
+
+/* 요약 카드 */
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.summaryCard {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  padding: 18px 20px;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.summaryLabel {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.summaryValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.deltaUp {
+  font-size: 12px;
+  font-weight: 600;
+  color: #16a34a;
+}
+
+.deltaDown {
+  font-size: 12px;
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.deltaFlat {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* 2단 그리드 */
+.grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.col {
+  display: grid;
+  gap: 24px;
+}
+
+.card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  padding: 20px;
+}
+
+.cardTitle {
+  margin: 0 0 14px;
+  font-size: 16px;
+  color: #111827;
+}
+
+.muted {
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.mutedSmall {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+/* 테이블 */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  padding: 10px 8px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+  color: #526176;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #111827;
+  font-size: 13px;
+}
+
+.refundRow {
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.linkRow {
+  display: block;
+  padding: 10px 0;
+  color: #2867e8;
+  font-size: 14px;
+  text-decoration: none;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.linkRow:last-child {
+  border-bottom: none;
+}
+
+/* 구독/수익 추이 차트 */
+.chartWrap {
+  display: grid;
+  gap: 10px;
+}
+
+.chartSvg {
+  width: 100%;
+  height: auto;
+}
+
+.chartGridLine {
+  stroke: #f3f4f6;
+  stroke-width: 1;
+}
+
+.chartBar {
+  fill: #bfdbfe;
+}
+
+.chartBarLabel {
+  font-size: 10px;
+  fill: #526176;
+}
+
+.chartAxisLabel {
+  font-size: 11px;
+  fill: #9ca3af;
+}
+
+.chartLine {
+  fill: none;
+  stroke: #16a34a;
+  stroke-width: 2;
+}
+
+.chartDot {
+  fill: #16a34a;
+}
+
+.chartRevenueLabel {
+  font-size: 10px;
+  fill: #16a34a;
+}
+
+.chartLegend {
+  display: flex;
+  gap: 18px;
+  font-size: 12px;
+  color: #526176;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendDotBar,
+.legendDotLine {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.legendDotBar {
+  background: #bfdbfe;
+}
+
+.legendDotLine {
+  background: #16a34a;
+}
+
+/* 프로필 완성도 */
+.completenessRow {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.completenessRing {
+  --pct: 0;
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: conic-gradient(#2867e8 calc(var(--pct) * 1%), #e5e7eb 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.completenessRing::before {
+  content: "";
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.completenessValue {
+  position: relative;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* 리뷰 요약 히스토그램 */
+.ratingHeadline {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.ratingHeadline strong {
+  font-size: 24px;
+  color: #111827;
+}
+
+.histogram {
+  display: grid;
+  gap: 6px;
+}
+
+.histogramRow {
+  display: grid;
+  grid-template-columns: 32px 1fr 28px;
+  align-items: center;
+  gap: 8px;
+}
+
+.histogramStarLabel {
+  font-size: 12px;
+  color: #526176;
+}
+
+.histogramTrack {
+  height: 8px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  overflow: hidden;
+}
+
+.histogramFill {
+  height: 100%;
+  background: #f59e0b;
+}
+
+.histogramCount {
+  font-size: 12px;
+  color: #9ca3af;
+  text-align: right;
+}
+
+/* 최근 리뷰 */
+.reviewList {
+  display: grid;
+  gap: 12px;
+}
+
+.reviewRow {
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 10px;
+}
+
+.reviewRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.reviewHead {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #111827;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.reviewStars {
+  color: #f59e0b;
+  font-size: 12px;
+}
+
+.reviewComment {
+  margin: 4px 0;
+  font-size: 13px;
+  color: #374151;
+}
+
+/* 최근 구독자 - NEW 뱃지 */
+.newBadge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #16a34a;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.postTitleLink {
+  color: #2867e8;
+  text-decoration: none;
+}
+
+.postTitleLink:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 760px) {
+  .summaryGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

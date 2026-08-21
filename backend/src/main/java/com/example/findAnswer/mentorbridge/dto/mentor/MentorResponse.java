@@ -23,8 +23,13 @@ public record MentorResponse(
         this(mentorId, name, profileImageUrl, bio, tags, rating, reviewCount, 0, null, null, null, null, 9900);
     }
 
-    // User 엔티티와 구독자 수를 받아 DTO로 변환하는 메서드
+    // User 엔티티와 구독자 수만 받는 예전 버전 — 평점/리뷰 수는 0으로 둔다(호출부에서 점진 이관 중).
     public static MentorResponse from(User user, int subscriberCount) {
+        return from(user, subscriberCount, 0.0, 0);
+    }
+
+    // User 엔티티 + 구독자 수 + 실제 집계된 평점/리뷰 수로 DTO 변환
+    public static MentorResponse from(User user, int subscriberCount, double rating, int reviewCount) {
         MentorProfile profile = user.getMentorProfile();
 
         return new MentorResponse(
@@ -33,8 +38,8 @@ public record MentorResponse(
                 user.getProfileImageUrl(),
                 profile != null ? profile.getBio() : null,
                 profile != null ? profile.getTags() : null,
-                0.0,
-                0,
+                rating,
+                reviewCount,
                 subscriberCount,
                 profile != null ? profile.getCompany() : null,
                 profile != null ? profile.getCareer() : null,

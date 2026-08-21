@@ -7,11 +7,6 @@ public record MentorPostRequest(
         String content,
         String category,
         Boolean isPublic,
-        List<AttachmentRequest> attachments
+        List<Long> attachmentIds
 ) {
-    public record AttachmentRequest(
-            String storageKey,
-            String originalFileName,
-            Long size
-    ) {}
 }

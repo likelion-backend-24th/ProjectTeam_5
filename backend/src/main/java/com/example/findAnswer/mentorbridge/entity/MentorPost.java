@@ -35,8 +35,9 @@ public class MentorPost extends BaseTimeEntity {
     @Column(name = "is_public", nullable = false)
     private Boolean isPublic = true;
 
-    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<MentorPostAttachmentFile> attachments = new ArrayList<>();
+    // 질문 첨부와 첨부 인프라를 공유한다 — QuestionAttachmentFile.mentorPost 참고.
+    @OneToMany(mappedBy = "mentorPost")
+    private List<QuestionAttachmentFile> attachments = new ArrayList<>();
 
     @Builder
     public MentorPost(User mentor, String title, String content, String category, Boolean isPublic) {
@@ -47,22 +48,10 @@ public class MentorPost extends BaseTimeEntity {
         this.isPublic = isPublic != null ? isPublic : true;
     }
 
-    public void addAttachment(MentorPostAttachmentFile attachment) {
-        this.attachments.add(attachment);
-        attachment.setPost(this);
-    }
-
-    public void update(String title, String content, String category, Boolean isPublic, List<MentorPostAttachmentFile> newAttachments) {
+    public void update(String title, String content, String category, Boolean isPublic) {
         this.title = title;
         this.content = content;
         if (category != null) this.category = category;
         if (isPublic != null) this.isPublic = isPublic;
-
-        this.attachments.clear();
-        if (newAttachments != null) {
-            for (MentorPostAttachmentFile attachment : newAttachments) {
-                this.addAttachment(attachment);
-            }
-        }
     }
 }

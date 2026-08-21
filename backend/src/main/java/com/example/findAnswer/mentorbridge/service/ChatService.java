@@ -52,14 +52,29 @@ public class ChatService {
                                 .build()
                 ));
 
-        return toRoomResponse(room);
+        // 종료됐던 방이면 다시 상담 신청이 들어온 거니 양쪽 모두에게 다시 보이도록 되살린다.
+        if (room.isEnded()) {
+            room.reactivate();
+        }
+
+        return toRoomResponse(room, currentUserId);
     }
 
     public List<ChatRoomResponse> getMyRooms(Long currentUserId) {
         return chatRoomRepository.findByMentorIdOrSubscriberId(currentUserId, currentUserId)
                 .stream()
-                .map(this::toRoomResponse)
+                .filter(room -> !room.isHiddenFor(currentUserId))
+                .map(room -> toRoomResponse(room, currentUserId))
                 .toList();
+    }
+
+    // 채팅 종료: 누른 사람 목록에서만 숨기고, 이력은 그대로 남긴다(상대방에게는 "종료된 채팅"으로 계속 보임).
+    @Transactional
+    public void endChat(Long currentUserId, Long roomId) {
+        ChatRoom room = getRoomOrThrow(roomId);
+        validateParticipant(room, currentUserId);
+
+        room.endBy(currentUserId);
     }
 
     @Transactional
@@ -67,6 +82,10 @@ public class ChatService {
         ChatRoom room = getRoomOrThrow(roomId);
         validateParticipant(room, currentUserId);
         validateActiveSubscription(room);
+
+        if (room.isEnded()) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
 
         ChatMessage message = chatMessageRepository.save(
                 ChatMessage.builder()
@@ -112,9 +131,12 @@ public class ChatService {
         }
     }
 
-    private ChatRoomResponse toRoomResponse(ChatRoom room) {
+    private ChatRoomResponse toRoomResponse(ChatRoom room, Long currentUserId) {
         String mentorName = userRepository.findById(room.getMentorId()).map(u -> u.getName()).orElse("알 수 없음");
         String subscriberName = userRepository.findById(room.getSubscriberId()).map(u -> u.getName()).orElse("알 수 없음");
-        return new ChatRoomResponse(room.getId(), room.getMentorId(), mentorName, room.getSubscriberId(), subscriberName, room.getCreatedAt());
+        return new ChatRoomResponse(
+                room.getId(), room.getMentorId(), mentorName, room.getSubscriberId(), subscriberName,
+                room.getCreatedAt(), room.isEnded()
+        );
     }
 }

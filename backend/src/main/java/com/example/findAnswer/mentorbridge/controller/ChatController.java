@@ -58,4 +58,13 @@ public class ChatController {
             @PageableDefault(size = 30) Pageable pageable) {
         return ResponseEntity.ok(chatService.getMessages(currentUserId, roomId, pageable));
     }
+
+    // 채팅 종료: 방과 대화 이력을 삭제한다.
+    @DeleteMapping("/chat-rooms/{roomId}")
+    public ResponseEntity<Void> endChat(
+            @AuthenticationPrincipal Long currentUserId,
+            @PathVariable Long roomId) {
+        chatService.endChat(currentUserId, roomId);
+        return ResponseEntity.noContent().build();
+    }
 }
