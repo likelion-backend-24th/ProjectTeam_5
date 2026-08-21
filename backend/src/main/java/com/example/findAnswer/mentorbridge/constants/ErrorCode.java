@@ -35,7 +35,10 @@ public enum ErrorCode {
     CANCELLATION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 취소/환불 요청입니다."),
     CANCELLATION_ALREADY_PROCESSED(HttpStatus.CONFLICT, "이미 처리된 취소/환불 요청입니다."),
     PAYMENT_CANCEL_FAILED(HttpStatus.BAD_REQUEST, "결제 취소에 실패했습니다."),
-    PAYMENT_NOT_CANCELLABLE(HttpStatus.BAD_REQUEST, "취소할 수 없는 결제 상태입니다.");
+    PAYMENT_NOT_CANCELLABLE(HttpStatus.BAD_REQUEST, "취소할 수 없는 결제 상태입니다."),
+    SETTLEMENT_ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "등록된 정산 계좌가 없습니다."),
+    SETTLEMENT_ACCOUNT_REQUIRED(HttpStatus.BAD_REQUEST, "구독 요금제를 생성하려면 정산 계좌를 먼저 등록해야 합니다."),
+    INVALID_ACCOUNT_INFO(HttpStatus.BAD_REQUEST, "계좌가 유효하지 않거나 예금주명이 일치하지 않습니다.");
 
 
     private final HttpStatus status;

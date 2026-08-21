@@ -12,11 +12,13 @@ import com.example.findAnswer.mentorbridge.dto.payment.PaymentCompleteResponse;
 import com.example.findAnswer.mentorbridge.entity.Payment;
 import com.example.findAnswer.mentorbridge.entity.PaymentMethod;
 import com.example.findAnswer.mentorbridge.entity.PaymentTransaction;
+import com.example.findAnswer.mentorbridge.entity.Settlement;
 import com.example.findAnswer.mentorbridge.entity.Subscription;
 import com.example.findAnswer.mentorbridge.entity.User;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
 import com.example.findAnswer.mentorbridge.repository.PaymentRepository;
 import com.example.findAnswer.mentorbridge.repository.PaymentTransactionRepository;
+import com.example.findAnswer.mentorbridge.repository.SettlementRepository;
 import com.example.findAnswer.mentorbridge.repository.SubscriptionRepository;
 import com.example.findAnswer.mentorbridge.util.ShortId;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +41,7 @@ public class PaymentSyncService {
     private final PortOnePaymentClient portOnePaymentClient;
     private final PortOneBillingClient portOneBillingClient;
     private final NotificationService notificationService;
+    private final SettlementRepository settlementRepository;
 
     @Value("${portone.payment-id-prefix}")
     private String paymentIdPrefix;
@@ -48,7 +51,6 @@ public class PaymentSyncService {
         Payment payment = findPaymentOrThrow(paymentId);
         Subscription subscription = findSubscriptionOrThrow(payment);
 
-        // 수정: subscription.getUserId() -> subscription.getUser().getId()
         if (!subscription.getUser().getId().equals(userId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
@@ -89,7 +91,6 @@ public class PaymentSyncService {
     }
 
     private Subscription findSubscriptionOrThrow(Payment payment) {
-        // 수정: payment.getSubscriptionId() -> payment.getSubscription().getId()
         return subscriptionRepository.findById(payment.getSubscription().getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
     }
@@ -99,7 +100,6 @@ public class PaymentSyncService {
             return PaymentCompleteResponse.from(payment, subscription);
         }
 
-        // 수정: payment.getSubscriptionId() -> payment.getSubscription().getId()
         log.info("Payment {} has been synced. Subscription Id = {}", payment.getPaymentId(), payment.getSubscription().getId());
 
         PortOnePaymentSnapshot snapshot = portOnePaymentClient.getPayment(payment.getPaymentId());
@@ -125,6 +125,9 @@ public class PaymentSyncService {
 
         payment.markPaidAt(LocalDateTime.now());
 
+        // 🔥 결제 성공 시 수수료 계산 및 정산 테이블 기록
+        recordSettlement(payment, subscription);
+
         // 결제 주기는 고정 1개월이 아니라 멘토가 설정한 요금제(MentorPlan.billingCycle, 단위: 개월)를 따른다.
         int billingCycleMonths = subscription.getPlan() != null ? subscription.getPlan().getBillingCycle() : 1;
         LocalDateTime nextPeriodEnd = LocalDateTime.now().plusMonths(billingCycleMonths);
@@ -143,8 +146,31 @@ public class PaymentSyncService {
         return PaymentCompleteResponse.from(payment, subscription);
     }
 
+    // 수수료 계산 및 정산 테이블 등록
+    private void recordSettlement(Payment payment, Subscription subscription) {
+        if (settlementRepository.findByPaymentId(payment.getId()).isPresent()) {
+            return; // 이미 정산 데이터가 존재하면 중복 생성 방지
+        }
+
+        long totalAmount = payment.getAmount();
+
+        long pgFee = Math.round(totalAmount * 0.03);       // PG 수수료 3%
+        long platformFee = Math.round(totalAmount * 0.10); // 플랫폼 수수료 10%
+        long netAmount = totalAmount - pgFee - platformFee; // 멘토 최종 정산금
+
+        settlementRepository.save(
+                Settlement.builder()
+                        .payment(payment)
+                        .mentor(subscription.getMentor())
+                        .totalAmount(totalAmount)
+                        .pgFee(pgFee)
+                        .platformFee(platformFee)
+                        .netAmount(netAmount)
+                        .build()
+        );
+    }
+
     // 이번 결제가 확정된 직후, 구독이 여전히 살아있으면 다음 회차를 PortOne에 예약해둔다.
-    // 예약 생성이 실패해도 이번 결제 확정 자체는 그대로 성공 처리한다 — SubscriptionScheduler(만료 처리)가 최후 안전망.
     private void scheduleNextCycle(Payment payment, Subscription subscription) {
         if (subscription.getStatus() != SubscriptionStatus.ACTIVE) {
             return;
@@ -188,10 +214,14 @@ public class PaymentSyncService {
         }
     }
 
-    // 관리자 환불 승인 시 호출 — PortOne 취소 API를 실행하고 로컬 Payment도 CANCELED로 반영한다.
+    // 관리자 환불 승인 시 호출 — PortOne 취소 API를 실행하고 로컬 Payment도 CANCELED로 반영하며, 정산도 취소 처리한다.
     @Transactional
     public void cancelPayment(Payment payment, String reason) {
         portOnePaymentClient.cancelPayment(payment.getPaymentId(), reason);
         payment.markCanceled();
+
+        // 🔥 환불 발생 시 정산 내역도 취소 처리
+        settlementRepository.findByPaymentId(payment.getId())
+                .ifPresent(Settlement::cancel);
     }
 }

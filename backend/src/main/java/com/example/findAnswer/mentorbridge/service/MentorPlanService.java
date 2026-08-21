@@ -7,6 +7,7 @@ import com.example.findAnswer.mentorbridge.entity.MentorPlan;
 import com.example.findAnswer.mentorbridge.entity.User;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
 import com.example.findAnswer.mentorbridge.repository.MentorPlanRepository;
+import com.example.findAnswer.mentorbridge.repository.SettlementAccountRepository;
 import com.example.findAnswer.mentorbridge.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ public class MentorPlanService {
 
     private final MentorPlanRepository mentorPlanRepository;
     private final UserRepository userRepository;
+    private final SettlementAccountRepository settlementAccountRepository;
 
     public MentorPlanResponse getMentorPlanById(Long mentorPlanId) {
         MentorPlan plan = mentorPlanRepository.findById(mentorPlanId).orElseThrow(() -> new CustomException(ErrorCode.PLAN_NOT_FOUND));
@@ -41,6 +43,10 @@ public class MentorPlanService {
     public MentorPlanResponse createMentorPlan(Long mentorId, MentorPlanRequest request) {
         User mentor = userRepository.findById(mentorId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if (!settlementAccountRepository.existsByUserId(mentorId)) {
+            throw new CustomException(ErrorCode.SETTLEMENT_ACCOUNT_REQUIRED);
+        }
 
         MentorPlan plan = mentorPlanRepository.save(
                 MentorPlan.builder()
