@@ -215,8 +215,8 @@
 }
 
 .blockBtn {
-  background-color: #fef3c7;
-  color: #d97706;
+  background-color: #fef2f2;
+  color: #dc2626;         
 }
 
 .unblockBtn {
@@ -225,8 +225,8 @@
 }
 
 .deleteBtn {
-  background-color: #fef2f2;
-  color: #dc2626;
+  background-color: #f3f4f6;
+  color: #4b5563;          
 }
 
 .approveBtn {
