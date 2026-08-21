@@ -62,7 +62,7 @@ export default function AdminPage() {
           sort: "latest",
         });
         setQuestions(data.content || data || []);
-      } else if (activeTab === "refunds"){
+      } else if (activeTab === "refunds") {
         const data = await getPendingCancellations();
         setCancellations(data || []);
       }
@@ -282,11 +282,16 @@ export default function AdminPage() {
   };
 
   const handleApproveCancellation = async (id, paymentId) => {
-    if (!confirm(`결제 ${paymentId}의 환불을 승인하시겠습니까? \n PortOne에 실제 취소 요청이 전송되며 되돌릴 수 없습니다.`)) return;
+    if (
+      !confirm(
+        `결제 ${paymentId}의 환불을 승인하시겠습니까? \n PortOne에 실제 취소 요청이 전송되며 되돌릴 수 없습니다.`,
+      )
+    )
+      return;
 
     setCancelBusyId(id);
 
-    try{ 
+    try {
       await approveCancellation(id);
       alert("환불이 승인되었습니다.");
       fetchData();
@@ -298,21 +303,23 @@ export default function AdminPage() {
   };
 
   const handleRejectCancellation = async (id, paymentId) => {
-  const adminNote = window.prompt(`결제 ${paymentId} 건 환불을 거절합니다.`);
-  if (adminNote === null) return;
+    const adminNote = window.prompt(`결제 ${paymentId} 건 환불을 거절합니다.`);
+    if (adminNote === null) return;
 
-  setCancelBusyId(id);
-  try {
-    await rejectCancellation(id, adminNote.trim());
-    alert("환불 요청이 거절되었습니다.");
-    fetchData();
-  } catch (error) {
-    alert(error.message || "거절 처리에 실패했습니다.");
-  } finally {
-    setCancelBusyId(null);
-  }
+    setCancelBusyId(id);
+    try {
+      await rejectCancellation(id, adminNote.trim());
+      alert("환불 요청이 거절되었습니다.");
+      fetchData();
+    } catch (error) {
+      alert(error.message || "거절 처리에 실패했습니다.");
+    } finally {
+      setCancelBusyId(null);
+    }
 
-  if (authLoading) return <p className={styles.statusText}>권한 확인 중...</p>;
+    if (authLoading)
+      return <p className={styles.statusText}>권한 확인 중...</p>;
+  };
 
   return (
     <main className={styles.page}>
@@ -348,7 +355,6 @@ export default function AdminPage() {
           >
             게시글 관리
           </button>
-
           <button
             type="button"
             className={`${styles.tabButton} ${activeTab === "refunds" ? styles.tabActive : ""}`}
