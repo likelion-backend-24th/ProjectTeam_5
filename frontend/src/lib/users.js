@@ -33,6 +33,16 @@ export function updateProfileEmail(email, token) {
     });
 }
 
+// 비밀번호 변경
+export function updatePassword(currentPassword, newPassword, token) {
+    return request("/api/users/me/password", {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+        body: { currentPassword, newPassword },
+        fallbackMessage: "비밀번호 변경에 실패했습니다.",
+    });
+}
+
 // 3. 회원 탈퇴
 export function deleteAccount(token) {
     return request("/api/users/me", {
