@@ -12,8 +12,9 @@ import { subscribeToMentor } from "@/lib/subscriptions";
 import { prepareBillingKeyIssuance, registerPaymentMethod } from "@/lib/payments";
 import { getOrCreateChatRoom } from "@/lib/chat";
 import { getMentorReviews, submitMentorReview, deleteMentorReview } from "@/lib/mentors";
+import { getAccessToken } from "@/lib/tokenStore";
+import { API_URL as BACKEND_URL } from "@/lib/client";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 const MAX_BIO_LENGTH = 500;
 const DAYS_OF_WEEK = ["월", "화", "수", "목", "금", "토", "일"];
 
@@ -272,7 +273,7 @@ export default function MentorProfilePage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") || localStorage.getItem("token") : null;
+        const token = getAccessToken();
         const headers = {
           "Content-Type": "application/json",
           ...(currentUserId && { "X-USER-ID": String(currentUserId) }),
@@ -469,7 +470,7 @@ export default function MentorProfilePage() {
     if (!confirm(`정말 구독을 해지하시겠습니까?\n해지해도 ${endDateStr}까지는 구독 혜택이 유지됩니다.`)) return;
 
     try {
-      const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
+      const token = getAccessToken();
       const res = await fetch(`${BACKEND_URL}/api/v1/subscriptions/${subscriptionId}/cancel`, {
         method: "PATCH",
         headers: {
@@ -545,7 +546,7 @@ export default function MentorProfilePage() {
 
     try {
       setSavingProfile(true);
-      const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
+      const token = getAccessToken();
       const res = await fetch(`${BACKEND_URL}/api/mentors/${mentorId}`, {
         method: "PUT",
         headers: {
@@ -601,7 +602,7 @@ export default function MentorProfilePage() {
     setErrorMessage("");
 
     try {
-      const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
+      const token = getAccessToken();
       const uploaded = files.length > 0 ? await Promise.all(files.map((f) => uploadImage(f))) : [];
       const uploadedDocs = docFiles.length > 0 ? await Promise.all(docFiles.map((f) => uploadFile(f))) : [];
       const attachmentIds = [...uploaded, ...uploadedDocs].map((u) => u.attachId);

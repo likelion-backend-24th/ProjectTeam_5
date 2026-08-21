@@ -55,10 +55,7 @@ export default function QuestionDetailPage() {
       setLoading(true);
       setErrorMessage("");
 
-      const token =
-          typeof window !== "undefined"
-              ? localStorage.getItem("token") || localStorage.getItem("accessToken")
-              : null;
+      const token = getToken();
 
       try {
         const [questionResult, answersResult, userResult] = await Promise.all([
