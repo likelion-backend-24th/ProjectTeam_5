@@ -189,7 +189,9 @@ export default function MentorPostDetailPage() {
 
     try {
       setIsLikeLoading(true);
-      const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
+      
+      const token = getAccessToken(); 
+      
       const headers = { "Content-Type": "application/json" };
       if (currentUserId) headers["X-USER-ID"] = String(currentUserId);
       if (token) headers["Authorization"] = `Bearer ${token}`;

@@ -70,7 +70,6 @@ export async function getMentorReviews(mentorId) {
   return res.json();
 }
 
-// 4. 리뷰 작성/수정 — 이미 남긴 리뷰가 있으면 덮어쓴다. 그 멘토를 구독한 적 없으면 403.
 export async function submitMentorReview(mentorId, { rating, comment }) {
   const token = getAuthToken();
 
@@ -84,9 +83,14 @@ export async function submitMentorReview(mentorId, { rating, comment }) {
   });
 
   const data = await res.json().catch(() => null);
+  
   if (!res.ok) {
+    if (res.status === 403) {
+      throw new Error("해당 멘토를 구독한 유저만 리뷰를 작성할 수 있습니다.");
+    }
     throw new Error(data?.message || "리뷰 등록에 실패했습니다.");
   }
+  
   return data;
 }
 
