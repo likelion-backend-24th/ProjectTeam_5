@@ -1,6 +1,7 @@
 package com.example.findAnswer.mentorbridge.service;
 
 import com.example.findAnswer.mentorbridge.dto.question.*;
+import com.example.findAnswer.mentorbridge.entity.Answer;
 import com.example.findAnswer.mentorbridge.entity.Question;
 import com.example.findAnswer.mentorbridge.entity.QuestionLike;
 import com.example.findAnswer.mentorbridge.entity.QuestionAttachmentFile;
@@ -8,6 +9,7 @@ import com.example.findAnswer.mentorbridge.entity.User;
 import com.example.findAnswer.mentorbridge.constants.Role;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
 import com.example.findAnswer.mentorbridge.constants.ErrorCode;
+import com.example.findAnswer.mentorbridge.repository.AnswerRepository;
 import com.example.findAnswer.mentorbridge.repository.QuestionLikeRepository;
 import com.example.findAnswer.mentorbridge.repository.QuestionAttachmentFileRepository;
 import com.example.findAnswer.mentorbridge.repository.QuestionRepository;
@@ -37,6 +39,7 @@ public class QuestionService {
     private final UserRepository userRepository;
     private final QuestionLikeRepository questionLikeRepository;
     private final QuestionAttachmentFileRepository questionAttachmentFileRepository;
+    private final AnswerRepository answerRepository;
     private final AttachmentStorage attachmentStorage;
     private final FileStorage fileStorage;
 
@@ -274,6 +277,16 @@ public class QuestionService {
             deleteAttachmentBlob(file);
         }
         questionAttachmentFileRepository.deleteAll(attachments);
+
+        // 좋아요/답변이 있으면 likes.question_id, answers.question_id FK 위반으로 질문 삭제가 실패한다.
+        questionLikeRepository.deleteAll(questionLikeRepository.findByQuestion_Id(questionId));
+
+        // 답글(자식 답변)은 Answer.children의 cascade+orphanRemoval이 처리하므로 최상위 답변만 지우면 된다.
+        List<Answer> topLevelAnswers = answerRepository.findByQuestion_IdOrderByCreatedAtAsc(questionId)
+                .stream()
+                .filter(a -> a.getParent() == null)
+                .toList();
+        answerRepository.deleteAll(topLevelAnswers);
 
         questionRepository.delete(question);
     }
