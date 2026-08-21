@@ -46,8 +46,10 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
+        // accessToken은 URL로 넘기지 않는다 — 브라우저 히스토리/서버 접근 로그/Referer에 남을 수 있다.
+        // 프론트가 이 리다이렉트를 받은 직후 위에서 심어둔 refreshToken 쿠키로 /api/auth/refresh를 불러
+        // accessToken을 받아간다(OAuthCallbackClient.jsx의 restoreSession 참고).
         String target = UriComponentsBuilder.fromUriString(successRedirectUri)
-                .queryParam("token", tokenResponse.getAccessToken())
                 .build().encode(StandardCharsets.UTF_8).toUriString();
 
         clearAuthenticationAttributes(request);
