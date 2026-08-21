@@ -14,6 +14,7 @@ import com.example.findAnswer.mentorbridge.exception.CustomException;
 import com.example.findAnswer.mentorbridge.constants.ErrorCode;
 import com.example.findAnswer.mentorbridge.repository.MentorApplicationRepository;
 import com.example.findAnswer.mentorbridge.repository.MentorPlanRepository;
+import com.example.findAnswer.mentorbridge.repository.MentorReviewRepository;
 import com.example.findAnswer.mentorbridge.repository.SubscriptionRepository;
 import com.example.findAnswer.mentorbridge.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class MentorService {
     private final UserRepository userRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final MentorPlanRepository mentorPlanRepository;
+    private final MentorReviewRepository mentorReviewRepository;
 
     @Transactional
     public void applyForMentor(Long userId) {
@@ -110,10 +112,14 @@ public class MentorService {
                     activeStatuses,
                     now
             );
+            double rating = mentorReviewRepository.findAverageRatingByMentorId(user.getId());
+            long reviewCount = mentorReviewRepository.countByMentor_Id(user.getId());
 
             return MentorResponse.from(
                     user,
-                    (int) subscriberCount
+                    (int) subscriberCount,
+                    rating,
+                    (int) reviewCount
             );
         });
     }
@@ -128,8 +134,10 @@ public class MentorService {
         long subscriberCount = subscriptionRepository.countByMentor_IdAndStatusInAndCurrentPeriodEndAfter(
                 mentorId, activeStatuses, now
         );
+        double rating = mentorReviewRepository.findAverageRatingByMentorId(mentorId);
+        long reviewCount = mentorReviewRepository.countByMentor_Id(mentorId);
 
-        return MentorResponse.from(user, (int) subscriberCount);
+        return MentorResponse.from(user, (int) subscriberCount, rating, (int) reviewCount);
     }
 
     @Transactional
@@ -166,7 +174,9 @@ public class MentorService {
         long subscriberCount = subscriptionRepository.countByMentor_IdAndStatusInAndCurrentPeriodEndAfter(
                 mentorId, activeStatuses, now
         );
+        double rating = mentorReviewRepository.findAverageRatingByMentorId(mentorId);
+        long reviewCount = mentorReviewRepository.countByMentor_Id(mentorId);
 
-        return MentorResponse.from(user, (int) subscriberCount);
+        return MentorResponse.from(user, (int) subscriberCount, rating, (int) reviewCount);
     }
 }

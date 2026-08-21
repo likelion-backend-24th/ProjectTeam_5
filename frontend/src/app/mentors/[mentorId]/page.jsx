@@ -11,6 +11,7 @@ import { getMentorPlans } from "@/lib/mentorPlans";
 import { subscribeToMentor } from "@/lib/subscriptions";
 import { prepareBillingKeyIssuance, registerPaymentMethod } from "@/lib/payments";
 import { getOrCreateChatRoom } from "@/lib/chat";
+import { getMentorReviews, submitMentorReview, deleteMentorReview } from "@/lib/mentors";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 const MAX_BIO_LENGTH = 500;
@@ -75,6 +76,13 @@ export default function MentorProfilePage() {
   const [activeTab, setActiveTab] = useState("feed");
   const [filter, setFilter] = useState("all");
   const [searchText, setSearchText] = useState("");
+
+  // 리뷰 탭
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   const [isOwner, setIsOwner] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -202,6 +210,59 @@ export default function MentorProfilePage() {
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const loadReviews = async () => {
+    setReviewsLoading(true);
+    try {
+      const data = await getMentorReviews(mentorId);
+      setReviews(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const handleReviewTabClick = () => {
+    setActiveTab("review");
+    if (reviews.length === 0) loadReviews();
+  };
+
+  const handleSubmitReview = async () => {
+    if (!isLoggedIn) {
+      alert("로그인이 필요한 서비스입니다.");
+      return;
+    }
+    if (submittingReview) return;
+
+    setSubmittingReview(true);
+    try {
+      await submitMentorReview(mentorId, { rating: reviewRating, comment: reviewComment.trim() });
+      setReviewComment("");
+      setReviewRating(5);
+      await loadReviews();
+      // 목록의 reviewCount/rating도 갱신되도록 멘토 정보 다시 조회
+      const refreshed = await fetch(`${BACKEND_URL}/api/mentors/${mentorId}`).then((r) => (r.ok ? r.json() : null));
+      if (refreshed) setMentorInfo((prev) => ({ ...prev, ...refreshed }));
+      alert("리뷰가 등록되었습니다.");
+    } catch (err) {
+      alert(err.message || "리뷰 등록에 실패했습니다.");
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    if (!confirm("이 리뷰를 삭제하시겠습니까?")) return;
+    try {
+      await deleteMentorReview(mentorId, reviewId);
+      await loadReviews();
+      const refreshed = await fetch(`${BACKEND_URL}/api/mentors/${mentorId}`).then((r) => (r.ok ? r.json() : null));
+      if (refreshed) setMentorInfo((prev) => ({ ...prev, ...refreshed }));
+    } catch (err) {
+      alert(err.message || "리뷰 삭제에 실패했습니다.");
     }
   };
 
@@ -624,7 +685,10 @@ export default function MentorProfilePage() {
               {tagsArray.slice(0, 5).map((tag, i) => (<span key={i} className={styles.tag}>{tag}</span>))}
             </div>
             <div className={styles.statsRow}>
-              <span><span className={styles.star}>★</span> {mentorInfo.rating || "4.9"} ({mentorInfo.reviewCount || 0})</span>
+              <span>
+                <span className={styles.star}>★</span>{" "}
+                {mentorInfo.reviewCount > 0 ? Number(mentorInfo.rating || 0).toFixed(1) : "신규"} ({mentorInfo.reviewCount || 0})
+              </span>
               <span>♙ {mentorInfo.subscriberCount || 0} 구독자</span>
             </div>
           </div>
@@ -698,7 +762,7 @@ export default function MentorProfilePage() {
       <div className={styles.tabNav}>
         <button className={activeTab === "feed" ? styles.activeTab : ""} onClick={() => setActiveTab("feed")}>피드</button>
         <button className={activeTab === "info" ? styles.activeTab : ""} onClick={() => setActiveTab("info")}>소개</button>
-        <button className={activeTab === "review" ? styles.activeTab : ""} onClick={() => setActiveTab("review")}>리뷰</button>
+        <button className={activeTab === "review" ? styles.activeTab : ""} onClick={handleReviewTabClick}>리뷰</button>
       </div>
 
       <div className={styles.mainGrid}>
@@ -865,9 +929,106 @@ export default function MentorProfilePage() {
           )}
 
           {activeTab === "review" && (
-            <div className={styles.empty}>
+            <div className={styles.empty} style={{ textAlign: "left" }}>
               <h3>리뷰 ({mentorInfo.reviewCount || 0})</h3>
-              <p style={{ marginTop: '10px' }}>등록된 리뷰가 없습니다.</p>
+
+              {!isOwner && isLoggedIn && (
+                <div style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: 16, marginTop: 16 }}>
+                  <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setReviewRating(n)}
+                        style={{
+                          border: "none",
+                          background: "none",
+                          cursor: "pointer",
+                          fontSize: 22,
+                          color: n <= reviewRating ? "#f59e0b" : "#d1d5db",
+                          padding: 0,
+                        }}
+                        aria-label={`별점 ${n}점`}
+                      >
+                        ★
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    placeholder="이 멘토에 대한 리뷰를 남겨주세요."
+                    maxLength={1000}
+                    rows={3}
+                    style={{
+                      width: "100%",
+                      boxSizing: "border-box",
+                      padding: 10,
+                      borderRadius: 8,
+                      border: "1px solid #d1d5db",
+                      fontFamily: "inherit",
+                      fontSize: 14,
+                      resize: "vertical",
+                    }}
+                  />
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                    <button
+                      type="button"
+                      onClick={handleSubmitReview}
+                      disabled={submittingReview}
+                      style={{
+                        padding: "8px 16px",
+                        borderRadius: 8,
+                        border: "none",
+                        background: "#1261f5",
+                        color: "#fff",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {submittingReview ? "등록 중..." : "리뷰 등록"}
+                    </button>
+                  </div>
+                  <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 6 }}>
+                    이 멘토를 구독한 적 있는 유저만 리뷰를 남길 수 있습니다. 이미 남긴 리뷰가 있으면 내용이 덮어써집니다.
+                  </p>
+                </div>
+              )}
+
+              {reviewsLoading ? (
+                <p style={{ marginTop: 16, color: "#7b8799" }}>불러오는 중...</p>
+              ) : reviews.length === 0 ? (
+                <p style={{ marginTop: 16 }}>등록된 리뷰가 없습니다.</p>
+              ) : (
+                <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
+                  {reviews.map((r) => (
+                    <div key={r.id} style={{ border: "1px solid #f0f0f0", borderRadius: 10, padding: 14 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <strong style={{ fontSize: 14 }}>{r.userName}</strong>
+                          <span style={{ color: "#f59e0b", fontSize: 13 }}>{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</span>
+                        </div>
+                        {String(r.userId) === String(currentUserId) && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteReview(r.id)}
+                            style={{ border: "none", background: "none", color: "#ef4444", fontSize: 12, cursor: "pointer" }}
+                          >
+                            삭제
+                          </button>
+                        )}
+                      </div>
+                      {r.comment && (
+                        <p style={{ marginTop: 8, fontSize: 13, color: "#374151", whiteSpace: "pre-wrap" }}>{r.comment}</p>
+                      )}
+                      <p style={{ marginTop: 6, fontSize: 11, color: "#9ca3af" }}>
+                        {r.createdAt ? new Date(r.createdAt).toLocaleDateString() : ""}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </main>
