@@ -1,6 +1,4 @@
 import Header from "@/components/Header/Header";
-import Footer from "@/components/Footer/Footer";
-
 import "./globals.css";
 import "highlight.js/styles/github-dark.css"; // 코드블록 문법 하이라이팅 테마
 import { AuthProvider } from "@/app/contexts/AuthContext";
@@ -12,7 +10,6 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           <Header />
           {children}
-          <Footer />
         </AuthProvider>
       </body>
     </html>
