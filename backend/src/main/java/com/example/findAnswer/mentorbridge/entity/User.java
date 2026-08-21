@@ -119,9 +119,8 @@ public class User extends BaseTimeEntity {
     public void softDelete() {
         this.email = null;
         this.password = null;
-        this.name = null;
+        this.name = "탈퇴한 회원";
         this.interests = null;
-        this.role = null;
         this.deletedAt = LocalDateTime.now();
     }
 

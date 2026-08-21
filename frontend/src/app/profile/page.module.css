@@ -123,36 +123,13 @@
   margin-top: 2px;
 }
 
-/* ===== 탭 ===== */
-.tabs {
-  display: flex;
-  gap: 24px;
-  border-bottom: 1px solid #e5e7eb;
-  margin: 28px 0 20px;
-  overflow-x: auto;
-}
-.tab {
-  padding: 12px 2px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #64748b;
-  font-size: 15px;
-  border-bottom: 2px solid transparent;
-  white-space: nowrap;
-}
-.tabActive {
-  color: #2563eb;
-  border-bottom-color: #2563eb;
-  font-weight: 600;
-}
-
 /* ===== 2단 그리드 ===== */
 .grid {
   display: grid;
   grid-template-columns: 1.6fr 1fr;
   gap: 24px;
   align-items: start;
+  margin-top: 28px;
 }
 .col {
   display: grid;

@@ -1,13 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import { FaUserLarge } from "react-icons/fa6";
 import { useProfileActions } from "./useProfileActions";
 import ProfilePaymentSection from "./ProfilePaymentSection";
 import MentorPlanSection from "./MentorPlanSection";
 import styles from "./page.module.css";
-
-const TABS = ["프로필 정보", "활동 내역", "결제 수단 관리", "구독 관리", "보안 설정"];
 
 export default function ProfilePage() {
   const {
@@ -61,7 +59,6 @@ export default function ProfilePage() {
     handleProfileImageChange,
   } = useProfileActions();
 
-  const [activeTab, setActiveTab] = useState("프로필 정보");
   const imageInputRef = useRef(null);
 
   if (loading) return <main className={styles.page} />;
@@ -156,20 +153,6 @@ export default function ProfilePage() {
             ))}
           </div>
         </section>
-
-        {/* ===== 탭 ===== */}
-        <nav className={styles.tabs}>
-          {TABS.map((t) => (
-              <button
-                  key={t}
-                  type="button"
-                  className={`${styles.tab} ${activeTab === t ? styles.tabActive : ""}`}
-                  onClick={() => setActiveTab(t)}
-              >
-                {t}
-              </button>
-          ))}
-        </nav>
 
         {/* ===== 2단 콘텐츠 ===== */}
         <div className={styles.grid}>
