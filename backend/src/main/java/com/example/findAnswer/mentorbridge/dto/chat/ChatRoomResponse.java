@@ -9,5 +9,6 @@ public record ChatRoomResponse(
         String mentorName,
         Long subscriberId,
         String subscriberName,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        boolean ended
 ) {}

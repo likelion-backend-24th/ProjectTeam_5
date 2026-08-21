@@ -115,6 +115,9 @@ export default function ChatRoomPage() {
       </header>
 
       {error && <p className={styles.error}>{error}</p>}
+      {roomInfo?.ended && (
+        <p className={styles.endedBanner}>종료된 채팅입니다. 이전 대화 내용만 확인할 수 있어요.</p>
+      )}
 
       <ul className={styles.messageList} ref={messageListRef}>
         {messages.map((msg) => {
@@ -139,12 +142,16 @@ export default function ChatRoomPage() {
           ref={messageInputRef}
           type="text"
           className={styles.sendInput}
-          placeholder="메시지를 입력하세요"
+          placeholder={roomInfo?.ended ? "종료된 채팅입니다" : "메시지를 입력하세요"}
           value={messageInput}
           onChange={(e) => setMessageInput(e.target.value)}
-          disabled={sending}
+          disabled={sending || roomInfo?.ended}
         />
-        <button type="submit" className={styles.sendButton} disabled={sending || !messageInput.trim()}>
+        <button
+          type="submit"
+          className={styles.sendButton}
+          disabled={sending || !messageInput.trim() || roomInfo?.ended}
+        >
           전송
         </button>
       </form>
