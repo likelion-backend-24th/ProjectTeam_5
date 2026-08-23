@@ -1,11 +1,16 @@
 package com.example.findAnswer.mentorbridge.controller;
 
+import com.example.findAnswer.mentorbridge.constants.Role;
 import com.example.findAnswer.mentorbridge.dto.payment.PaymentCancellationResponse;
 import com.example.findAnswer.mentorbridge.dto.user.UserResponse;
 import com.example.findAnswer.mentorbridge.service.MentorService;
 import com.example.findAnswer.mentorbridge.service.PaymentCancellationService;
 import com.example.findAnswer.mentorbridge.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -50,10 +55,25 @@ public class AdminController {
 
     // ================= 회원 관리 =================
 
-    // 전체 회원 목록 조회 (GET /api/admin/users)
+    // 전체 회원 목록 조회 (GET /api/admin/users) — 질문 관리 탭의 작성자 집계용. 페이지네이션 없음.
     @GetMapping("/users")
     public ResponseEntity<List<UserResponse>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
+    }
+
+    // 회원 관리 탭 전용 — 검색/역할 필터/정렬 + 페이지네이션
+    // (GET /api/admin/users/search?page=&size=&keyword=&role=&sort=latest|oldest)
+    @GetMapping("/users/search")
+    public ResponseEntity<Page<UserResponse>> searchUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Role role,
+            @RequestParam(defaultValue = "latest") String sort
+    ) {
+        Sort.Direction direction = "oldest".equals(sort) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, "id"));
+        return ResponseEntity.ok(userService.searchUsersForAdmin(role, keyword, pageable));
     }
 
     // 회원 차단 (PATCH /api/admin/users/{userId}/block)

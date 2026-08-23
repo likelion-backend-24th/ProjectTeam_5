@@ -20,6 +20,18 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findAllByRole(Role role);
 
+    // [관리자] 전체 회원 목록 페이지네이션 조회(탈퇴한 계정 포함) — role 미지정 시 전체, keyword 미지정 시 필터 없음.
+    @Query("SELECT u FROM User u WHERE " +
+            "(:role IS NULL OR u.role = :role) AND " +
+            "(:keyword IS NULL OR :keyword = '' OR " +
+            "  LOWER(u.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "  LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    Page<User> searchForAdmin(
+            @Param("role") Role role,
+            @Param("keyword") String keyword,
+            Pageable pageable
+    );
+
     @Query("SELECT u FROM User u LEFT JOIN u.mentorProfile p WHERE u.role = 'MENTOR' AND u.deletedAt IS NULL " +
             "AND (:keyword IS NULL OR :keyword = '' OR " +
             "    LOWER(u.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
