@@ -3,13 +3,18 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/app/contexts/AuthContext";
+import { useToast } from "@/app/contexts/ToastContext";
+import ConfirmDialog from "@/components/modal/ConfirmDialog";
 import { getMentorPlans, deleteMentorPlan } from "@/lib/mentorPlans";
 
 // 프로필 페이지의 "구독 플랜 관리" 카드. 멘토 본인만 보인다.
 export default function MentorPlanSection() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState(null); // 비활성화 확인 대상 planId
+  const [deleting, setDeleting] = useState(false);
 
   const load = async () => {
     if (!user) return;
@@ -31,13 +36,22 @@ export default function MentorPlanSection() {
   // 멘토가 아니면 이 카드 자체를 렌더하지 않는다
   if (!user || user.role !== "MENTOR") return null;
 
-  const handleDelete = async (planId) => {
-    if (!confirm("이 요금제를 비활성화할까요? 기존 구독자에게는 영향이 없습니다.")) return;
+  const handleDelete = (planId) => {
+    setDeleteTarget(planId);
+  };
+
+  const confirmDelete = async () => {
+    const planId = deleteTarget;
+    if (!planId) return;
+    setDeleting(true);
     try {
       await deleteMentorPlan(user.id, planId);
       await load();
+      setDeleteTarget(null);
     } catch (err) {
-      alert(err.message);
+      showToast(err.message, "error");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -77,6 +91,17 @@ export default function MentorPlanSection() {
       <Link href="/profile/mentor-plans/new" style={addBtn}>
         + 요금제 추가
       </Link>
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="요금제 비활성화"
+        message="이 요금제를 비활성화할까요? 기존 구독자에게는 영향이 없습니다."
+        confirmLabel="비활성화"
+        danger
+        submitting={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </section>
   );
 }

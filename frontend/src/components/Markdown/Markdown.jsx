@@ -2,6 +2,7 @@
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 import rehypeHighlight from "rehype-highlight";
 
 // 질문 본문(마크다운)을 렌더링한다.
@@ -10,7 +11,7 @@ import rehypeHighlight from "rehype-highlight";
 export default function Markdown({ source }) {
   return (
     <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
+      remarkPlugins={[remarkGfm, remarkBreaks]}
       rehypePlugins={[rehypeHighlight]}
     >
       {source || ""}

@@ -378,6 +378,8 @@
   box-sizing: border-box;      /* 패딩 포함 크기 계산 */
 }
 
+.infoTabBio { margin-top: 10px; }
+
 .sidebar { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .sidebarCard { padding: 17px; box-sizing: border-box; background: #fff; border: 1px solid #e3e8f0; border-radius: 10px; box-shadow: 0 1px 4px rgba(15, 23, 42, 0.025); }
 .sidebarCard h3 { margin: 0; font-size: 14px; font-weight: 700; color: #172033; }
@@ -647,6 +649,104 @@
 .modalCloseBtn:hover {
   color: #0f172a;
 }
+
+.modalHint {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 12px 0 0;
+}
+
+.modalActionBtnsSpaced {
+  margin-top: 16px;
+}
+
+.cardPhoneField {
+  text-align: left;
+  margin-top: 16px;
+}
+
+.cardPhoneLabel {
+  display: block;
+  font-size: 13px;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.cardPhoneInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+}
+
+.cardError {
+  color: crimson;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+/* ==================================================
+   구독중 버튼 아래 해지예약 안내 (프로필 배너)
+================================================== */
+.subscribedBox { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+.subBtnReserved { background: #f97316; }
+.subBtnReserved:hover { background: #ea6a0a; }
+.subscribedUntil { font-size: 9px; color: #64748b; text-align: center; }
+
+/* ==================================================
+   게시글 작성 폼 — 공개범위 라디오, 문서 첨부 목록
+================================================== */
+.visibilityRadioGroup { display: flex; gap: 15px; margin-top: 5px; }
+.visibilityRadioLabel { font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+
+.docFileList { list-style: none; padding: 0; margin-top: 8px; display: grid; gap: 6px; }
+.docFileItem { display: flex; align-items: center; justify-content: space-between; border: 1px solid #e5e7eb; border-radius: 6px; padding: 6px 10px; font-size: 13px; }
+
+/* ==================================================
+   게시글 카드 — 상단 라벨, 잠긴 카드 텍스트
+================================================== */
+.articleTopLeft { display: flex; gap: 8px; align-items: center; }
+.visibilityPublic { font-size: 11px; font-weight: 600; color: #16a34a; }
+.visibilityPrivate { font-size: 11px; font-weight: 600; color: #f97316; }
+.lockEmoji { font-size: 20px; }
+.lockedTitle { margin: 4px 0 2px; font-size: 14px; color: #111827; }
+.lockedDesc { margin: 0; font-size: 11px; color: #64748b; }
+
+/* ==================================================
+   사이드바 — 요금제 없음/링크, 포트폴리오 링크
+================================================== */
+.noPlansText { font-size: 12px; color: #7b8799; margin: 0 0 15px; }
+.noPlansTextSmall { font-size: 11px; color: #7b8799; }
+.plansSummary { font-size: 11px; color: #526074; }
+.planManageLink { display: block; margin-top: 4px; font-size: 10px; color: #1261f5; }
+.portfolioLink { color: #1261f5; text-decoration: underline; word-break: break-all; }
+
+/* ==================================================
+   리뷰 탭
+================================================== */
+.reviewPanel { text-align: left; }
+
+.reviewForm { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; margin-top: 16px; }
+.reviewStars { display: flex; gap: 4px; margin-bottom: 10px; }
+.starBtn { border: none; background: none; cursor: pointer; font-size: 22px; color: #d1d5db; padding: 0; }
+.starBtnActive { color: #f59e0b; }
+.reviewTextarea { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; font-family: inherit; font-size: 14px; resize: vertical; }
+.reviewSubmitRow { display: flex; justify-content: flex-end; margin-top: 8px; }
+.reviewSubmitBtn { padding: 8px 16px; border-radius: 8px; border: none; background: #1261f5; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; }
+.reviewSubmitBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+.reviewFormNotice { font-size: 11px; color: #9ca3af; margin-top: 6px; }
+.reviewStatusText { margin-top: 16px; color: #7b8799; }
+
+.reviewList { display: grid; gap: 12px; margin-top: 16px; }
+.reviewCard { border: 1px solid #f0f0f0; border-radius: 10px; padding: 14px; }
+.reviewCardHeader { display: flex; justify-content: space-between; align-items: center; }
+.reviewCardAuthor { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.reviewCardStars { color: #f59e0b; font-size: 13px; }
+.reviewDeleteBtn { border: none; background: none; color: #ef4444; font-size: 12px; cursor: pointer; }
+.reviewComment { margin-top: 8px; font-size: 13px; color: #374151; white-space: pre-wrap; }
+.reviewDate { margin-top: 6px; font-size: 11px; color: #9ca3af; }
 
 /* ==================================================
    반응형 레이아웃 (태블릿 및 모바일 대응)

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 
 import { getQuestions, getFollowingQuestions } from "@/lib/questions";
 import { getAccessToken } from "@/lib/tokenStore";
+import { useToast } from "@/app/contexts/ToastContext";
 
 import styles from "./page.module.css";
 
@@ -15,6 +16,7 @@ const CATEGORIES = ["전체", "팔로잉", "개발", "멘토링", "취업", "기
 
 export default function QuestionsPage() {
   const router = useRouter();
+  const { showToast } = useToast();
 
   const [page, setPage] = useState(0);
   const [category, setCategory] = useState("전체");
@@ -88,7 +90,7 @@ export default function QuestionsPage() {
     if (newCategory === "팔로잉") {
       const token = getAccessToken();
       if (!token) {
-        alert("팔로우한 사람의 글을 보려면 로그인이 필요합니다.");
+        showToast("팔로우한 사람의 글을 보려면 로그인이 필요합니다.", "error");
         router.push("/login");
         return;
       }
@@ -121,7 +123,7 @@ export default function QuestionsPage() {
     const isLoggedIn = Boolean(getAccessToken());
 
     if (!isLoggedIn) {
-      alert("질문 등록은 로그인 후 이용 가능합니다.");
+      showToast("질문 등록은 로그인 후 이용 가능합니다.", "error");
       router.push("/login");
       return;
     }

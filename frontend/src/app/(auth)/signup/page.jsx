@@ -3,6 +3,7 @@ import { signup } from "@/lib/auth";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/app/contexts/ToastContext";
 
 import styles from "./page.module.css";
 
@@ -15,6 +16,7 @@ export default function SignupPage() {
   });
 
   const router = useRouter();
+  const { showToast } = useToast();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -59,7 +61,7 @@ export default function SignupPage() {
         name: form.name,
       });
 
-      alert("회원가입이 완료되었습니다.");
+      showToast("회원가입이 완료되었습니다.", "success");
       router.push("/login");
     } catch (error) {
       console.error("회원가입 실패:", error);

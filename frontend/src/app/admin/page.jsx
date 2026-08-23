@@ -4,8 +4,10 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/app/contexts/AuthContext";
+import { useToast } from "@/app/contexts/ToastContext";
 import {
   getAllUsers,
+  searchUsers,
   blockUser,
   unblockUser,
   deleteUserByAdmin,
@@ -20,15 +22,22 @@ import {
 } from "@/lib/admin";
 import { getQuestions } from "@/lib/questions";
 import { getQuestionsByUser } from "@/lib/users";
+import ConfirmDialog from "@/components/modal/ConfirmDialog";
 
 import styles from "./page.module.css";
 
 export default function AdminPage() {
   const router = useRouter();
   const { user, isLoggedIn, loading: authLoading } = useAuth();
+  const { showToast } = useToast();
 
   const [activeTab, setActiveTab] = useState("users");
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState([]); // 질문 관리 탭의 작성자 집계용 전체 목록 (그 탭에서만 채워짐)
+
+  // 회원 관리 탭 — 서버 페이지네이션. USERS_PAGE_SIZE만큼씩, 검색/역할/정렬은 서버에 그대로 넘긴다.
+  const USERS_PAGE_SIZE = 20;
+  const [usersPageData, setUsersPageData] = useState({ content: [], totalPages: 0, totalElements: 0, number: 0 });
+  const [usersPageNumber, setUsersPageNumber] = useState(0);
   const [mentorApps, setMentorApps] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -43,22 +52,43 @@ export default function AdminPage() {
   const [subLoadingId, setSubLoadingId] = useState(null);
 
   const [cancellations, setCancellations] = useState([]);
-  const [cancelBusyId, setCancelBusyId] = useState(null);
+
+  // confirm()/prompt() 게이트가 이 페이지에만 7군데라, 액션마다 별도 state를 만드는 대신
+  // "지금 확인 대기 중인 작업 1개"만 들고 있는 범용 패턴을 쓴다. run()이 실제 API 호출을 담당한다.
+  const [pendingAction, setPendingAction] = useState(null);
+  const [actionSubmitting, setActionSubmitting] = useState(false);
+
+  const runPendingAction = async (inputValue) => {
+    if (!pendingAction) return;
+    setActionSubmitting(true);
+    try {
+      await pendingAction.run(inputValue);
+      setPendingAction(null);
+    } catch (error) {
+      showToast(error.message || "처리에 실패했습니다.", "error");
+    } finally {
+      setActionSubmitting(false);
+    }
+  };
 
   const [inquiries, setInquiries] = useState([]);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
 
+  // "users" 탭은 아래 loadUsersPage()가 검색/정렬/역할 필터와 함께 서버 페이지네이션으로 따로 불러온다 —
+  // 예전엔 이 함수가 탭에 상관없이 매번 전체 회원 목록을 통째로 불러오고 있었다(회원 탭이 아닐 때도 낭비).
   const fetchData = useCallback(async () => {
+    if (activeTab === "users") return;
+
     setLoading(true);
     setErrorMessage("");
     try {
-      const usersData = await getAllUsers();
-      setUsers(usersData || []);
-
       if (activeTab === "mentors") {
         const data = await getMentorApplications();
         setMentorApps(data || []);
       } else if (activeTab === "questions") {
+        // 작성자별 집계(authorSummary)가 전체 회원 목록과 대조해야 해서 이 탭에서만 페이지네이션 없이 받는다.
+        const usersData = await getAllUsers();
+        setUsers(usersData || []);
         const data = await getQuestions({
           page: 0,
           size: 1000,
@@ -82,11 +112,50 @@ export default function AdminPage() {
     }
   }, [activeTab]);
 
+  const loadUsersPage = useCallback(
+    async (pageNumber) => {
+      setLoading(true);
+      setErrorMessage("");
+      try {
+        const data = await searchUsers({
+          page: pageNumber,
+          size: USERS_PAGE_SIZE,
+          keyword: searchQuery.trim(),
+          role: roleFilter,
+          sort: sortOption,
+        });
+        setUsersPageData(data);
+      } catch (error) {
+        console.error(error);
+        setErrorMessage(error.message || "회원 목록을 불러오는 데 실패했습니다.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [searchQuery, roleFilter, sortOption]
+  );
+
+  // 검색어/역할/정렬이 바뀌면(또는 회원 탭으로 들어오면) 1페이지부터 새로 불러온다.
+  // 타이핑 중 매 글자마다 요청을 보내지 않도록 300ms 정도 묶어서 보낸다.
+  useEffect(() => {
+    if (activeTab !== "users") return;
+    const timer = setTimeout(() => {
+      setUsersPageNumber(0);
+      loadUsersPage(0);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [activeTab, searchQuery, roleFilter, sortOption, loadUsersPage]);
+
+  const goToUsersPage = (pageNumber) => {
+    setUsersPageNumber(pageNumber);
+    loadUsersPage(pageNumber);
+  };
+
   useEffect(() => {
     if (authLoading) return;
 
     if (!isLoggedIn || user?.role !== "ADMIN") {
-      alert("관리자 권한이 필요합니다.");
+      showToast("관리자 권한이 필요합니다.", "error");
       router.push("/questions");
       return;
     }
@@ -102,31 +171,6 @@ export default function AdminPage() {
     setExpandedUserId(null);
     setSelectedInquiry(null);
   };
-
-  const filteredUsers = useMemo(() => {
-    let list = [...users];
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(
-        (u) =>
-          (u.name || "").toLowerCase().includes(q) ||
-          (u.email || "").toLowerCase().includes(q),
-      );
-    }
-
-    if (roleFilter !== "ALL") {
-      list = list.filter((u) => u.role === roleFilter);
-    }
-
-    list.sort((a, b) => {
-      const idA = Number(a.id || 0);
-      const idB = Number(b.id || 0);
-      return sortOption === "latest" ? idB - idA : idA - idB;
-    });
-
-    return list;
-  }, [users, searchQuery, roleFilter, sortOption]);
 
   const filteredMentorApps = useMemo(() => {
     let list = [...mentorApps];
@@ -248,119 +292,116 @@ export default function AdminPage() {
       setUserQuestionsMap((prev) => ({ ...prev, [userId]: list }));
     } catch (error) {
       console.error(error);
-      alert("해당 유저의 작성글을 불러오는 데 실패했습니다.");
+      showToast("해당 유저의 작성글을 불러오는 데 실패했습니다.", "error");
     } finally {
       setSubLoadingId(null);
     }
   };
 
-  const handleBlockToggle = async (userId, isBlocked) => {
+  const handleBlockToggle = (userId, isBlocked) => {
     const actionText = isBlocked ? "차단 해제" : "차단";
-    if (!confirm(`해당 회원을 ${actionText}하시겠습니까?`)) return;
-
-    try {
-      if (isBlocked) {
-        await unblockUser(userId);
-      } else {
-        await blockUser(userId);
-      }
-      alert(`${actionText} 처리되었습니다.`);
-      fetchData();
-    } catch (error) {
-      alert(error.message || "처리에 실패했습니다.");
-    }
+    setPendingAction({
+      title: `회원 ${actionText}`,
+      message: `해당 회원을 ${actionText}하시겠습니까?`,
+      confirmLabel: actionText,
+      danger: !isBlocked,
+      run: async () => {
+        if (isBlocked) {
+          await unblockUser(userId);
+        } else {
+          await blockUser(userId);
+        }
+        showToast(`${actionText} 처리되었습니다.`, "success");
+        fetchData();
+      },
+    });
   };
 
-  const handleDeleteUser = async (userId, userName) => {
-    if (
-      !confirm(
-        `정말로 회원 '${userName}'(ID: ${userId})을 강제 삭제하시겠습니까?\n이 작업은 복구할 수 없습니다.`,
-      )
-    ) {
-      return;
-    }
-
-    try {
-      await deleteUserByAdmin(userId);
-      alert("회원이 삭제되었습니다.");
-      fetchData();
-    } catch (error) {
-      alert(error.message || "삭제에 실패했습니다.");
-    }
+  const handleDeleteUser = (userId, userName) => {
+    setPendingAction({
+      title: "회원 강제 삭제",
+      message: `정말로 회원 '${userName}'(ID: ${userId})을 강제 삭제하시겠습니까?\n이 작업은 복구할 수 없습니다.`,
+      confirmLabel: "삭제",
+      danger: true,
+      run: async () => {
+        await deleteUserByAdmin(userId);
+        showToast("회원이 삭제되었습니다.", "success");
+        fetchData();
+      },
+    });
   };
 
-  const handleApprove = async (userId) => {
-    if (!confirm("해당 회원을 멘토로 승인하시겠습니까?")) return;
-    try {
-      await approveMentor(userId);
-      alert("멘토 승인이 완료되었습니다.");
-      fetchData();
-    } catch (error) {
-      alert(error.message || "승인 처리에 실패했습니다.");
-    }
+  const handleApprove = (userId) => {
+    setPendingAction({
+      title: "멘토 승인",
+      message: "해당 회원을 멘토로 승인하시겠습니까?",
+      confirmLabel: "승인",
+      run: async () => {
+        await approveMentor(userId);
+        showToast("멘토 승인이 완료되었습니다.", "success");
+        fetchData();
+      },
+    });
   };
 
-  const handleReject = async (userId) => {
-    if (!confirm("해당 회원의 멘토 신청을 거절하시겠습니까?")) return;
-    try {
-      await rejectMentor(userId);
-      alert("멘토 신청이 거절되었습니다.");
-      fetchData();
-    } catch (error) {
-      alert(error.message || "거절 처리에 실패했습니다.");
-    }
+  const handleReject = (userId) => {
+    setPendingAction({
+      title: "멘토 신청 거절",
+      message: "해당 회원의 멘토 신청을 거절하시겠습니까?",
+      confirmLabel: "거절",
+      danger: true,
+      run: async () => {
+        await rejectMentor(userId);
+        showToast("멘토 신청이 거절되었습니다.", "success");
+        fetchData();
+      },
+    });
   };
 
-  const handleApproveCancellation = async (id, paymentId) => {
-    if (
-      !confirm(
-        `결제 ${paymentId}의 환불을 승인하시겠습니까? \n PortOne에 실제 취소 요청이 전송되며 되돌릴 수 없습니다.`,
-      )
-    )
-      return;
-
-    setCancelBusyId(id);
-
-    try {
-      await approveCancellation(id);
-      alert("환불이 승인되었습니다.");
-      fetchData();
-    } catch (error) {
-      alert(error.message || "승인 처리에 실패했습니다.");
-    } finally {
-      setCancelBusyId(null);
-    }
+  const handleApproveCancellation = (id, paymentId) => {
+    setPendingAction({
+      title: "환불 승인",
+      message: `결제 ${paymentId}의 환불을 승인하시겠습니까?\nPortOne에 실제 취소 요청이 전송되며 되돌릴 수 없습니다.`,
+      confirmLabel: "승인",
+      danger: true,
+      run: async () => {
+        await approveCancellation(id);
+        showToast("환불이 승인되었습니다.", "success");
+        fetchData();
+      },
+    });
   };
 
-  const handleRejectCancellation = async (id, paymentId) => {
-    const adminNote = window.prompt(`결제 ${paymentId} 건 환불을 거절합니다.`);
-    if (adminNote === null) return;
-
-    setCancelBusyId(id);
-    try {
-      await rejectCancellation(id, adminNote.trim());
-      alert("환불 요청이 거절되었습니다.");
-      fetchData();
-    } catch (error) {
-      alert(error.message || "거절 처리에 실패했습니다.");
-    } finally {
-      setCancelBusyId(null);
-    }
+  const handleRejectCancellation = (id, paymentId) => {
+    setPendingAction({
+      title: "환불 거절",
+      message: `결제 ${paymentId} 건 환불을 거절합니다.`,
+      confirmLabel: "거절",
+      showInput: true,
+      inputLabel: "거절 사유 (선택)",
+      inputPlaceholder: "거절 사유를 입력하세요",
+      run: async (adminNote) => {
+        await rejectCancellation(id, adminNote);
+        showToast("환불 요청이 거절되었습니다.", "success");
+        fetchData();
+      },
+    });
   };
 
-  const handleStatusChange = async (id, currentStatus) => {
+  const handleStatusChange = (id, currentStatus) => {
     const nextStatus = currentStatus === "PENDING" ? "COMPLETED" : "PENDING";
     const actionText = nextStatus === "COMPLETED" ? "완료" : "대기중";
 
-    if (!confirm(`해당 문의를 '${actionText}' 상태로 변경하시겠습니까?`)) return;
-
-    try {
-      await updateInquiryStatus(id, nextStatus);
-      alert("상태가 변경되었습니다.");
-      fetchData();
-    } catch (error) {
-      alert(error.message || "상태 변경에 실패했습니다.");
-    }
+    setPendingAction({
+      title: "문의 상태 변경",
+      message: `해당 문의를 '${actionText}' 상태로 변경하시겠습니까?`,
+      confirmLabel: "변경",
+      run: async () => {
+        await updateInquiryStatus(id, nextStatus);
+        showToast("상태가 변경되었습니다.", "success");
+        fetchData();
+      },
+    });
   };
 
   if (authLoading) return <p className={styles.statusText}>권한 확인 중...</p>;
@@ -466,7 +507,7 @@ export default function AdminPage() {
         {/* 1. 전체 회원 관리 탭 */}
         {!loading && !errorMessage && activeTab === "users" && (
           <>
-            {filteredUsers.length === 0 ? (
+            {usersPageData.content.length === 0 ? (
               <p className={styles.statusText}>
                 {searchQuery ? "검색 결과가 없습니다." : "등록된 회원이 없습니다."}
               </p>
@@ -484,7 +525,7 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map((u) => {
+                  {usersPageData.content.map((u) => {
                     const isUserBlocked = Boolean(u.blocked ?? u.isBlocked);
                     return (
                       <tr key={u.id}>
@@ -539,6 +580,30 @@ export default function AdminPage() {
                   })}
                 </tbody>
               </table>
+            )}
+
+            {usersPageData.totalPages > 1 && (
+              <div className={styles.pager}>
+                <button
+                  type="button"
+                  className={styles.pagerBtn}
+                  onClick={() => goToUsersPage(usersPageNumber - 1)}
+                  disabled={usersPageNumber <= 0}
+                >
+                  이전
+                </button>
+                <span className={styles.pagerInfo}>
+                  {usersPageNumber + 1} / {usersPageData.totalPages} 페이지 (총 {usersPageData.totalElements}명)
+                </span>
+                <button
+                  type="button"
+                  className={styles.pagerBtn}
+                  onClick={() => goToUsersPage(usersPageNumber + 1)}
+                  disabled={usersPageNumber >= usersPageData.totalPages - 1}
+                >
+                  다음
+                </button>
+              </div>
             )}
           </>
         )}
@@ -752,7 +817,6 @@ export default function AdminPage() {
                           <button
                             type="button"
                             className={styles.approveBtn}
-                            disabled={cancelBusyId === c.id}
                             onClick={() => handleApproveCancellation(c.id, c.paymentId)}
                           >
                             승인
@@ -760,7 +824,6 @@ export default function AdminPage() {
                           <button
                             type="button"
                             className={styles.rejectBtn}
-                            disabled={cancelBusyId === c.id}
                             onClick={() => handleRejectCancellation(c.id, c.paymentId)}
                           >
                             거절
@@ -900,6 +963,20 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={!!pendingAction}
+        title={pendingAction?.title}
+        message={pendingAction?.message}
+        confirmLabel={pendingAction?.confirmLabel || "확인"}
+        danger={pendingAction?.danger}
+        showInput={pendingAction?.showInput}
+        inputLabel={pendingAction?.inputLabel}
+        inputPlaceholder={pendingAction?.inputPlaceholder}
+        submitting={actionSubmitting}
+        onConfirm={runPendingAction}
+        onCancel={() => setPendingAction(null)}
+      />
     </main>
   );
 }

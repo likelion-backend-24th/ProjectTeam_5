@@ -22,11 +22,14 @@ import AnswerForm from "../answers/AnswerForm";
 import AnswerList from "../answers/AnserList";
 import Markdown from "@/components/Markdown/Markdown";
 import { downloadFile } from "@/lib/attachments";
+import ConfirmDialog from "@/components/modal/ConfirmDialog";
+import { useToast } from "@/app/contexts/ToastContext";
 import styles from "./page.module.css";
 
 export default function QuestionDetailPage() {
   const { id } = useParams();
   const router = useRouter();
+  const { showToast } = useToast();
 
   const [question, setQuestion] = useState(null);
   const [answers, setAnswers] = useState([]);
@@ -35,6 +38,23 @@ export default function QuestionDetailPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLikeLoading, setIsLikeLoading] = useState(false);
+
+  // confirm() 게이트(질문 삭제, 답변 삭제)를 대체하는 범용 확인 상태
+  const [pendingAction, setPendingAction] = useState(null);
+  const [actionSubmitting, setActionSubmitting] = useState(false);
+
+  const runPendingAction = async (inputValue) => {
+    if (!pendingAction) return;
+    setActionSubmitting(true);
+    try {
+      await pendingAction.run(inputValue);
+      setPendingAction(null);
+    } catch (error) {
+      showToast(error.message || "처리에 실패했습니다.", "error");
+    } finally {
+      setActionSubmitting(false);
+    }
+  };
 
   // 👇 팔로우 로딩 상태 추가
   const [isFollowing, setIsFollowing] = useState(false);
@@ -107,21 +127,23 @@ export default function QuestionDetailPage() {
     };
   }, [id]);
 
-  const handleDeleteQuestion = async () => {
-    if (!confirm("질문을 삭제할까요?")) return;
-
-    try {
-      await deleteQuestion(id);
-      router.push("/questions");
-    } catch (error) {
-      alert(error.message);
-    }
+  const handleDeleteQuestion = () => {
+    setPendingAction({
+      title: "질문 삭제",
+      message: "질문을 삭제할까요?",
+      confirmLabel: "삭제",
+      danger: true,
+      run: async () => {
+        await deleteQuestion(id);
+        router.push("/questions");
+      },
+    });
   };
 
   // 좋아요 토글 핸들러
   const handleToggleLike = async () => {
     if (!currentUser) {
-      alert("로그인 후 이용 가능합니다.");
+      showToast("로그인 후 이용 가능합니다.", "error");
       router.push("/login");
       return;
     }
@@ -157,7 +179,7 @@ export default function QuestionDetailPage() {
         isLiked: prevIsLiked,
         likeCount: prevLikeCount,
       }));
-      alert(error.message || "좋아요 처리에 실패했습니다.");
+      showToast(error.message || "좋아요 처리에 실패했습니다.", "error");
     } finally {
       setIsLikeLoading(false);
     }
@@ -167,7 +189,7 @@ export default function QuestionDetailPage() {
   const handleFollow = async () => {
     const token = getToken();
     if (!token) {
-      alert("로그인이 필요합니다.");
+      showToast("로그인이 필요합니다.", "error");
       router.push("/login");
       return;
     }
@@ -177,7 +199,7 @@ export default function QuestionDetailPage() {
       await toggleFollowUser(targetUserId, token);
       setIsFollowing(!isFollowing);
     } catch (e) {
-      alert(e.message || "팔로우 처리에 실패했습니다.");
+      showToast(e.message || "팔로우 처리에 실패했습니다.", "error");
     }
   };
 
@@ -195,7 +217,7 @@ export default function QuestionDetailPage() {
       if (reset) reset();
       await fetchAnswers();
     } catch (error) {
-      alert(error.message || "답변 등록에 실패했습니다.");
+      showToast(error.message || "답변 등록에 실패했습니다.", "error");
       if (error.status === 401 || error.status === 403) {
         router.push("/login");
       }
@@ -208,7 +230,7 @@ export default function QuestionDetailPage() {
     try {
       await downloadFile(file.attachId, file.originalFileName);
     } catch (error) {
-      alert(error.message || "파일 다운로드에 실패했습니다.");
+      showToast(error.message || "파일 다운로드에 실패했습니다.", "error");
       if (error.status === 401 || error.status === 403) {
         router.push("/login");
       }
@@ -220,7 +242,7 @@ export default function QuestionDetailPage() {
       await updateAnswer(answerId, { content });
       await fetchAnswers();
     } catch (error) {
-      alert(error.message || "답변 수정에 실패했습니다.");
+      showToast(error.message || "답변 수정에 실패했습니다.", "error");
       if (error.status === 401 || error.status === 403) {
         router.push("/login");
       }
@@ -228,18 +250,24 @@ export default function QuestionDetailPage() {
     }
   };
 
-  const handleDeleteAnswer = async (answerId) => {
-    if (!confirm("정말 이 답변을 삭제하시겠습니까?")) return;
-
-    try {
-      await deleteAnswer(answerId);
-      await fetchAnswers();
-    } catch (error) {
-      alert(error.message || "답변 삭제에 실패했습니다.");
-      if (error.status === 401 || error.status === 403) {
-        router.push("/login");
-      }
-    }
+  const handleDeleteAnswer = (answerId) => {
+    setPendingAction({
+      title: "답변 삭제",
+      message: "정말 이 답변을 삭제하시겠습니까?",
+      confirmLabel: "삭제",
+      danger: true,
+      run: async () => {
+        try {
+          await deleteAnswer(answerId);
+          await fetchAnswers();
+        } catch (error) {
+          if (error.status === 401 || error.status === 403) {
+            router.push("/login");
+          }
+          throw error;
+        }
+      },
+    });
   };
 
   const isQuestionOwner =
@@ -406,6 +434,17 @@ export default function QuestionDetailPage() {
               </section>
             </>
         )}
+
+        <ConfirmDialog
+          isOpen={!!pendingAction}
+          title={pendingAction?.title}
+          message={pendingAction?.message}
+          confirmLabel={pendingAction?.confirmLabel || "확인"}
+          danger={pendingAction?.danger}
+          submitting={actionSubmitting}
+          onConfirm={runPendingAction}
+          onCancel={() => setPendingAction(null)}
+        />
       </main>
   );
 }

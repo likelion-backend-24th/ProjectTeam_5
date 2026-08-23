@@ -8,9 +8,11 @@ import { createQuestion } from "@/lib/questions";
 import styles from "./form.module.css";
 import { uploadImage, validateImage, uploadFile, validateFile } from "@/lib/attachments";
 import { getAccessToken } from "@/lib/tokenStore";
+import { useToast } from "@/app/contexts/ToastContext";
 
 export default function NewQuestionPage() {
   const router = useRouter();
+  const { showToast } = useToast();
 
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("개발");
@@ -49,7 +51,7 @@ export default function NewQuestionPage() {
     //등록 버튼을 누르는 순간 로컬토큰(로그인 상태)이 있는지 한 번 더 확실하게 체크
     const token = getAccessToken();
     if (!token) {
-      alert("로그인 후 이용 가능합니다.");
+      showToast("로그인 후 이용 가능합니다.", "error");
       router.push("/login");
       return;
     }
@@ -74,8 +76,9 @@ export default function NewQuestionPage() {
 
       // 2. 백엔드에서 인증 관련 에러(401 Unauthorized 또는 403 Forbidden)를 보낸 경우
       if (error.status === 401 || error.status === 403) {
-        alert(
+        showToast(
           "로그인 세션이 만료되었거나 권한이 없습니다. 다시 로그인해주세요.",
+          "error",
         );
         router.push("/login");
         return;

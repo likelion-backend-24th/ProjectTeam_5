@@ -10,13 +10,16 @@ import { useAuth } from "@/app/contexts/AuthContext";
 import { downloadFile } from "@/lib/attachments";
 import { getAccessToken } from "@/lib/tokenStore";
 import { API_URL as BACKEND_URL } from "@/lib/client";
+import ConfirmDialog from "@/components/modal/ConfirmDialog";
+import { useToast } from "@/app/contexts/ToastContext";
 import styles from "./page.module.css";
 
 export default function MentorPostDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user: authUser } = useAuth();
-  
+  const { showToast } = useToast();
+
   const currentUserId = authUser?.id || authUser?.userId || (typeof window !== "undefined" ? localStorage.getItem("userId") : null);
 
   const mentorId = params?.mentorId;
@@ -31,6 +34,8 @@ export default function MentorPostDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ title: "", content: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const loadPost = useCallback(async () => {
   if (!mentorId || !postId || mentorId === "undefined" || postId === "undefined") {
@@ -97,7 +102,7 @@ export default function MentorPostDetailPage() {
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (!editForm.title || !editForm.content) {
-      alert("제목과 내용을 모두 입력해주세요.");
+      showToast("제목과 내용을 모두 입력해주세요.", "error");
       return;
     }
 
@@ -115,15 +120,15 @@ export default function MentorPostDetailPage() {
       });
 
       if (res.ok) {
-        alert("게시글이 수정되었습니다.");
+        showToast("게시글이 수정되었습니다.", "success");
         setIsEditing(false);
         loadPost();
       } else {
-        alert("게시글 수정에 실패했습니다.");
+        showToast("게시글 수정에 실패했습니다.", "error");
       }
     } catch (err) {
       console.error(err);
-      alert("서버 오류가 발생했습니다.");
+      showToast("서버 오류가 발생했습니다.", "error");
     } finally {
       setSubmitting(false);
     }
@@ -133,13 +138,16 @@ export default function MentorPostDetailPage() {
     try {
       await downloadFile(file.attachId, file.originalFileName);
     } catch (err) {
-      alert(err.message || "파일 다운로드에 실패했습니다.");
+      showToast(err.message || "파일 다운로드에 실패했습니다.", "error");
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm("정말 이 게시글을 삭제하시겠습니까?")) return;
+  const handleDelete = () => {
+    setShowDeleteConfirm(true);
+  };
 
+  const confirmDelete = async () => {
+    setDeleting(true);
     try {
       const token = getAccessToken();
       const headers = {};
@@ -152,14 +160,16 @@ export default function MentorPostDetailPage() {
       });
 
       if (res.ok) {
-        alert("게시글이 삭제되었습니다.");
+        showToast("게시글이 삭제되었습니다.", "success");
         router.push(`/mentors/${mentorId}`);
       } else {
-        alert("게시글 삭제에 실패했습니다.");
+        showToast("게시글 삭제에 실패했습니다.", "error");
+        setDeleting(false);
       }
     } catch (err) {
       console.error(err);
-      alert("서버 오류가 발생했습니다.");
+      showToast("서버 오류가 발생했습니다.", "error");
+      setDeleting(false);
     }
   };
 
@@ -329,6 +339,17 @@ export default function MentorPostDetailPage() {
           </article>
         )}
       </section>
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="게시글 삭제"
+        message="정말 이 게시글을 삭제하시겠습니까?"
+        confirmLabel="삭제"
+        danger
+        submitting={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </main>
   );
 }

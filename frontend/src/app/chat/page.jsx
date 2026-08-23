@@ -3,16 +3,21 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/contexts/AuthContext";
+import { useToast } from "@/app/contexts/ToastContext";
+import ConfirmDialog from "@/components/modal/ConfirmDialog";
 import { endChatRoom, getMyChatRooms } from "@/lib/chat";
 import styles from "./page.module.css";
 
 export default function ChatRoomListPage() {
   const { isLoggedIn, loading: authLoading, userId } = useAuth();
+  const { showToast } = useToast();
   const router = useRouter();
 
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [endTarget, setEndTarget] = useState(null); // 종료 확인 대상 roomId
+  const [ending, setEnding] = useState(false);
 
   const loadRooms = useCallback(async () => {
     try {
@@ -35,16 +40,23 @@ export default function ChatRoomListPage() {
     loadRooms();
   }, [authLoading, isLoggedIn, router, loadRooms]);
 
-  const handleEndChat = async (event, roomId) => {
+  const handleEndChat = (event, roomId) => {
     event.stopPropagation();
-    if (!window.confirm("이 채팅방을 종료할까요? 내 목록에서만 사라지며, 상대방이 다시 상담 신청하면 이어서 대화할 수 있습니다.")) {
-      return;
-    }
+    setEndTarget(roomId);
+  };
+
+  const confirmEndChat = async () => {
+    const roomId = endTarget;
+    if (!roomId) return;
+    setEnding(true);
     try {
       await endChatRoom(roomId);
       setRooms((prev) => prev.filter((r) => r.chatRoomId !== roomId));
+      setEndTarget(null);
     } catch (err) {
-      alert(err.message || "채팅방을 종료하지 못했습니다.");
+      showToast(err.message || "채팅방을 종료하지 못했습니다.", "error");
+    } finally {
+      setEnding(false);
     }
   };
 
@@ -101,6 +113,17 @@ export default function ChatRoomListPage() {
           })}
         </ul>
       )}
+
+      <ConfirmDialog
+        isOpen={!!endTarget}
+        title="채팅 종료"
+        message="이 채팅방을 종료할까요? 내 목록에서만 사라지며, 상대방이 다시 상담 신청하면 이어서 대화할 수 있습니다."
+        confirmLabel="종료"
+        danger
+        submitting={ending}
+        onConfirm={confirmEndChat}
+        onCancel={() => setEndTarget(null)}
+      />
     </main>
   );
 }

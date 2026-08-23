@@ -173,10 +173,16 @@
 }
 
 .answerContent {
-  margin: 0;
   color: #111827;
   line-height: 1.4;
-  white-space: pre-wrap;
+}
+
+.answerContent :global(p) {
+  margin: 0;
+}
+
+.answerContent :global(p) + :global(p) {
+  margin-top: 8px;
 }
 
 .replyList {
