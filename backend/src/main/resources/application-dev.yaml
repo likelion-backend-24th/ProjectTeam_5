@@ -89,10 +89,10 @@ cloudinary:
 
 
 portone:
-  store-id: ${PORTONE_STORE_ID:store-test-0000}
-  channel-key-payment: ${PORTONE_CHANNEL_KEY_PAYMENT:channel-key-test-0000}
-  channel-key-billing: ${PORTONE_CHANNEL_KEY_BILLING:channel-key-test-0000}
-  api-secret: ${PORTONE_API_SECRET:portone-test-api-secret}
+  store-id: ${PORTONE_STORE_ID:store-bde9f845-f03c-42b9-b98d-f6fa2c0d6468}
+  channel-key-payment: ${PORTONE_CHANNEL_KEY_PAYMENT:channel-key-c5723eb4-9ee3-4df3-9c56-129d13d4e9d6}
+  channel-key-billing: ${PORTONE_CHANNEL_KEY_BILLING:channel-key-c0736ef7-925d-4de6-8f52-4cc89c502688}
+  api-secret: ${PORTONE_API_SECRET:Y632BycHu8Vbv4Gu5kCYps5rrOhxzxgIiOSQmyCAn0cFBOcyLfszeR3IC45lLZor5KfmvHO8fjEt080d}
   api-base-url: ${PORTONE_API_BASE_URL:https://api.portone.io}
   payment-id-prefix: ${PORTONE_PAYMENT_ID_PREFIX:MB}
   webhook-secret: ${PORTONE_WEBHOOK_SECRET:whsec_dGVzdC13ZWJob29rLXNlY3JldC1rZXk=}   # ★ 추가

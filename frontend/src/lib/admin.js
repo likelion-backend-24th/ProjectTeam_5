@@ -125,3 +125,23 @@ export function updateInquiryStatus(id, status) {
     fallbackMessage: "문의 상태 변경에 실패했습니다.",
   });
 }
+
+// 전체 정산 내역 조회 (추가됨)
+export function getAllSettlements() {
+  const token = getToken();
+  return request("/api/admin/settlements", {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
+    fallbackMessage: "정산 내역을 불러오지 못했습니다.",
+  });
+}
+
+// 정산 완료 처리 (추가됨)
+export function completeSettlement(id) {
+  const token = getToken();
+  return request(`/api/admin/settlements/${id}/complete`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+    fallbackMessage: "정산 완료 처리에 실패했습니다.",
+  });
+}

@@ -304,6 +304,25 @@ export default function MentorDashboardPage() {
           <DeltaChip value={summary?.subscriberGrowthRate} />
         </div>
         <div className={styles.summaryCard}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span className={styles.summaryLabel}>이번 달 예상 정산금</span>
+            <span style={{ fontSize: "10px", color: "#64748b", backgroundColor: "#f1f5f9", padding: "2px 6px", borderRadius: "4px" }}>
+              수수료 10% 공제
+            </span>
+          </div>
+          <strong className={styles.summaryValue} style={{ color: "#2563eb" }}>
+            {Number(Math.floor((summary?.monthlyRevenue || 0) * 0.9)).toLocaleString()}원
+          </strong>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "4px" }}>
+            <span style={{ fontSize: "11px", color: "#9ca3af" }}>
+              총 결제액 {Number(summary?.monthlyRevenue || 0).toLocaleString()}원
+            </span>
+            <span style={{ fontSize: "11px", color: "#15803d", fontWeight: "700", backgroundColor: "#dcfce7", padding: "3px 8px", borderRadius: "6px" }}>
+              💸 매월 1일 일괄 정산
+            </span>
+          </div>
+        </div>
+        <div className={styles.summaryCard}>
           <span className={styles.summaryLabel}>이번 달 수익</span>
           <strong className={styles.summaryValue}>{Number(summary?.monthlyRevenue || 0).toLocaleString()}원</strong>
           <DeltaChip value={summary?.revenueGrowthRate} />

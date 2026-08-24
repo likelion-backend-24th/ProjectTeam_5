@@ -1,9 +1,11 @@
 package com.example.findAnswer.mentorbridge.controller;
 
 import com.example.findAnswer.mentorbridge.dto.payment.PaymentCancellationResponse;
+import com.example.findAnswer.mentorbridge.dto.settlement.SettlementResponse;
 import com.example.findAnswer.mentorbridge.dto.user.UserResponse;
 import com.example.findAnswer.mentorbridge.service.MentorService;
 import com.example.findAnswer.mentorbridge.service.PaymentCancellationService;
+import com.example.findAnswer.mentorbridge.service.SettlementService;
 import com.example.findAnswer.mentorbridge.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +27,7 @@ public class AdminController {
     private final MentorService mentorService;
     private final UserService userService;
     private final PaymentCancellationService paymentCancellationService;
+    private final SettlementService settlementService;
 
     // ================= 멘토 관리 =================
 
@@ -94,6 +97,18 @@ public class AdminController {
     @PatchMapping("/cancellations/{id}/reject")
     public ResponseEntity<Void> rejectCancellation(@PathVariable Long id, @RequestBody Map<String, String> body) {
         paymentCancellationService.reject(id, body.get("adminNote"));
+        return ResponseEntity.ok().build();
+    }
+
+    // ================= 정산 관리 =================
+    @GetMapping("/settlements")
+    public ResponseEntity<List<SettlementResponse>> getAllSettlements() {
+        return ResponseEntity.ok(settlementService.getAllSettlements());
+    }
+
+    @PatchMapping("/settlements/{id}/complete")
+    public ResponseEntity<Void> completeSettlement(@PathVariable Long id) {
+        settlementService.completeSettlement(id);
         return ResponseEntity.ok().build();
     }
 }

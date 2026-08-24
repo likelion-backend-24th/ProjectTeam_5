@@ -29,7 +29,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 
 @Slf4j
@@ -129,10 +128,10 @@ public class PaymentSyncService {
 
         payment.markPaidAt(LocalDateTime.now());
 
-        // 🔥 결제 성공 시 수수료 계산 및 정산 테이블 기록
+// 🔥 결제 성공 시 수수료 계산 및 정산 테이블 기록
         recordSettlement(payment, subscription);
 
-        // 결제 주기는 고정 1개월이 아니라 멘토가 설정한 요금제(MentorPlan.billingCycle, 단위: 개월)를 따른다.
+// 결제 주기는 고정 1개월이 아니라 멘토가 설정한 요금제(MentorPlan.billingCycle, 단위: 개월)를 따른다.
         int billingCycleMonths = subscription.getPlan() != null ? subscription.getPlan().getBillingCycle() : 1;
         LocalDateTime nextPeriodEnd = LocalDateTime.now().plusMonths(billingCycleMonths);
 
@@ -150,7 +149,7 @@ public class PaymentSyncService {
         return PaymentCompleteResponse.from(payment, subscription);
     }
 
-    // 수수료 계산 및 정산 테이블 등록
+// 수수료 계산 및 정산 테이블 등록
     private void recordSettlement(Payment payment, Subscription subscription) {
         if (settlementRepository.findByPaymentId(payment.getId()).isPresent()) {
             return; // 이미 정산 데이터가 존재하면 중복 생성 방지
@@ -158,7 +157,7 @@ public class PaymentSyncService {
 
         long totalAmount = payment.getAmount();
 
-        long pgFee = Math.round(totalAmount * 0.03);       // PG 수수료 3%
+        long pgFee = Math.round(totalAmount * 0.03); // PG 수수료 3%
         long platformFee = Math.round(totalAmount * 0.10); // 플랫폼 수수료 10%
         long netAmount = totalAmount - pgFee - platformFee; // 멘토 최종 정산금
 
@@ -174,7 +173,7 @@ public class PaymentSyncService {
         );
     }
 
-    // 이번 결제가 확정된 직후, 구독이 여전히 살아있으면 다음 회차를 PortOne에 예약해둔다.
+// 이번 결제가 확정된 직후, 구독이 여전히 살아있으면 다음 회차를 PortOne에 예약해둔다.
     private void scheduleNextCycle(Payment payment, Subscription subscription) {
         if (subscription.getStatus() != SubscriptionStatus.ACTIVE) {
             return;
@@ -218,20 +217,20 @@ public class PaymentSyncService {
         }
     }
 
-    // 관리자 환불 승인 시 호출 — PortOne 취소 API를 실행하고 로컬 Payment도 CANCELED로 반영하며, 정산도 취소 처리한다.
+// 관리자 환불 승인 시 호출 — PortOne 취소 API를 실행하고 로컬 Payment도 CANCELED로 반영하며, 정산도 취소 처리한다.
     @Transactional
     public void cancelPayment(Payment payment, String reason) {
         portOnePaymentClient.cancelPayment(payment.getPaymentId(), reason);
         payment.markCanceled();
 
-        // 🔥 환불 발생 시 정산 내역도 취소 처리
+// 🔥 환불 발생 시 정산 내역도 취소 처리
         settlementRepository.findByPaymentId(payment.getId())
                 .ifPresent(Settlement::cancel);
     }
 
-    // PaymentCancellationService.approve()가 이 호출 실패를 받아 markFailed() 후 다시 throw하는데, 그 메서드
-    // 전체가 @Transactional이라 그대로 두면 예외 전파와 함께 markFailed()도 롤백되어 실패 기록이 안 남는다.
-    // REQUIRES_NEW로 별도 트랜잭션에서 커밋해야 한다 — NotificationService.notify()와 동일 패턴.
+// PaymentCancellationService.approve()가 이 호출 실패를 받아 markFailed() 후 다시 throw하는데, 그 메서드
+// 전체가 @Transactional이라 그대로 두면 예외 전파와 함께 markFailed()도 롤백되어 실패 기록이 안 남는다.
+// REQUIRES_NEW로 별도 트랜잭션에서 커밋해야 한다 — NotificationService.notify()와 동일 패턴.
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordCancellationFailure(Long cancellationId, String adminNote) {
         paymentCancellationRepository.findById(cancellationId)
