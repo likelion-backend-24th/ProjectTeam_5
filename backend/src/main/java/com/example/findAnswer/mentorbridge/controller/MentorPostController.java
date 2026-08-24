@@ -1,6 +1,5 @@
 package com.example.findAnswer.mentorbridge.controller;
 
-import com.example.findAnswer.mentorbridge.annotation.RequireSubscription;
 import com.example.findAnswer.mentorbridge.dto.mentor.MentorPostRequest;
 import com.example.findAnswer.mentorbridge.dto.mentor.MentorPostResponse;
 import com.example.findAnswer.mentorbridge.service.MentorPostService;
@@ -18,7 +17,6 @@ public class MentorPostController {
 
     private final MentorPostService mentorPostService;
 
-    // F-41: 멘토 본인 게시글 작성
     @PostMapping
     public ResponseEntity<MentorPostResponse> createPost(
             @RequestHeader("X-USER-ID") Long userId,
@@ -32,7 +30,6 @@ public class MentorPostController {
         return ResponseEntity.status(HttpStatus.CREATED).body(mentorPostService.createPost(mentorId, request));
     }
 
-    // F-41: 멘토 게시글 단건 조회 (구독 여부 자동 검증!)
     @GetMapping("/{postId}")
     public ResponseEntity<MentorPostResponse> getPost(
             @RequestHeader(value = "X-USER-ID", required = false) Long userId,
@@ -41,7 +38,7 @@ public class MentorPostController {
 
         return ResponseEntity.ok(mentorPostService.getPost(userId, mentorId, postId));
     }
-    // F-41: 멘토 본인 게시글 수정
+
     @PutMapping("/{postId}")
     public ResponseEntity<MentorPostResponse> updatePost(
             @RequestHeader("X-USER-ID") Long userId,
@@ -56,7 +53,6 @@ public class MentorPostController {
         return ResponseEntity.ok(mentorPostService.updatePost(mentorId, postId, request));
     }
 
-    // F-41: 멘토 본인 게시글 삭제
     @DeleteMapping("/{postId}")
     public ResponseEntity<Void> deletePost(
             @RequestHeader("X-USER-ID") Long userId,
@@ -71,9 +67,28 @@ public class MentorPostController {
         return ResponseEntity.ok().build();
     }
 
-    // F-41: 멘토의 전체 게시글 목록 조회
     @GetMapping
     public ResponseEntity<List<MentorPostResponse>> getPosts(@PathVariable Long mentorId) {
         return ResponseEntity.ok(mentorPostService.getPostsByMentorId(mentorId));
+    }
+
+    @PostMapping("/{postId}/likes")
+    public ResponseEntity<Void> likePost(
+            @RequestHeader("X-USER-ID") Long userId,
+            @PathVariable Long mentorId,
+            @PathVariable Long postId) {
+
+        mentorPostService.likePost(userId, mentorId, postId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{postId}/likes")
+    public ResponseEntity<Void> unlikePost(
+            @RequestHeader("X-USER-ID") Long userId,
+            @PathVariable Long mentorId,
+            @PathVariable Long postId) {
+
+        mentorPostService.unlikePost(userId, mentorId, postId);
+        return ResponseEntity.ok().build();
     }
 }

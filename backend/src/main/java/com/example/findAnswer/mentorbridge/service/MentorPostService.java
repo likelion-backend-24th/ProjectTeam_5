@@ -6,13 +6,9 @@ import com.example.findAnswer.mentorbridge.dto.mentor.MentorPostRequest;
 import com.example.findAnswer.mentorbridge.dto.mentor.MentorPostResponse;
 import com.example.findAnswer.mentorbridge.dto.question.ImageResponse;
 import com.example.findAnswer.mentorbridge.dto.questionAttachedFile.FileResponse;
-import com.example.findAnswer.mentorbridge.entity.MentorPost;
-import com.example.findAnswer.mentorbridge.entity.QuestionAttachmentFile;
-import com.example.findAnswer.mentorbridge.entity.User;
+import com.example.findAnswer.mentorbridge.entity.*;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
-import com.example.findAnswer.mentorbridge.repository.MentorPostRepository;
-import com.example.findAnswer.mentorbridge.repository.QuestionAttachmentFileRepository;
-import com.example.findAnswer.mentorbridge.repository.UserRepository;
+import com.example.findAnswer.mentorbridge.repository.*;
 import com.example.findAnswer.mentorbridge.storage.AttachmentStorage;
 import com.example.findAnswer.mentorbridge.storage.FileStorage;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +35,8 @@ public class MentorPostService {
     private final QuestionAttachmentFileRepository questionAttachmentFileRepository;
     private final AttachmentStorage attachmentStorage;
     private final FileStorage fileStorage;
+    private final MentorPostLikeRepository mentorPostLikeRepository;
+    private final MentorPostViewLogRepository viewLogRepository;
 
     @Transactional
     public MentorPostResponse createPost(Long mentorId, MentorPostRequest request) {
@@ -71,7 +69,7 @@ public class MentorPostService {
             }
         }
 
-        return MentorPostResponse.from(savedPost, imagesOf(attached), filesOf(attached));
+        return MentorPostResponse.from(savedPost, imagesOf(attached), filesOf(attached), false, savedPost.getLikeCount());
     }
 
     @Transactional
@@ -115,7 +113,7 @@ public class MentorPostService {
             lastFiles.add(file);
         }
 
-        return MentorPostResponse.from(post, imagesOf(lastFiles), filesOf(lastFiles));
+        return MentorPostResponse.from(post, imagesOf(lastFiles), filesOf(lastFiles), false, post.getLikeCount());
     }
 
     @Transactional
@@ -136,26 +134,37 @@ public class MentorPostService {
         mentorPostRepository.delete(post);
     }
 
+
+    @Transactional
     public MentorPostResponse getPost(Long userId, Long mentorId, Long postId) {
         MentorPost post = mentorPostRepository.findByIdAndMentor_Id(postId, mentorId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
-        if (Boolean.FALSE.equals(post.getIsPublic())) {
-
-            if (userId == null) {
-                throw new CustomException(ErrorCode.SUBSCRIPTION_REQUIRED);
+        if (userId != null) {
+            if (!viewLogRepository.existsByUserIdAndPostId(userId, postId)) {
+                post.increaseViewCount(); // 조회수 증가
+                viewLogRepository.save(new MentorPostViewLog(userId, postId)); // 기록 저장
             }
-
-            if (!userId.equals(mentorId)) {
-                var accessInfo = subscriptionService.checkAccessPermission(userId, mentorId);
-                if (!accessInfo.accessAllowed()) {
-                    throw new CustomException(ErrorCode.SUBSCRIPTION_REQUIRED);
-                }
-            }
+        } else {
+            post.increaseViewCount();
         }
 
+        boolean liked = (userId != null) && mentorPostLikeRepository.existsByUserIdAndMentorPostId(userId, postId);
         List<QuestionAttachmentFile> attachments = questionAttachmentFileRepository.findByMentorPost(post);
-        return MentorPostResponse.from(post, imagesOf(attachments), filesOf(attachments));
+
+        return MentorPostResponse.from(post, imagesOf(attachments), filesOf(attachments), liked, post.getLikeCount());
+    }
+
+    public List<MentorPostResponse> getPostsByMentorId(Long userId, Long mentorId) { // userId 파라미터 추가 필요
+        return mentorPostRepository.findByMentor_IdOrderByCreatedAtDesc(mentorId)
+                .stream()
+                .map(post -> {
+                    List<QuestionAttachmentFile> attachments = questionAttachmentFileRepository.findByMentorPost(post);
+                    boolean liked = (userId != null) && mentorPostLikeRepository.existsByUserIdAndMentorPostId(userId, post.getId());
+                    return MentorPostResponse.from(post, imagesOf(attachments), filesOf(attachments), liked, post.getLikeCount());
+                })
+                .toList();
+
     }
 
     public List<MentorPostResponse> getPostsByMentorId(Long mentorId) {
@@ -163,9 +172,33 @@ public class MentorPostService {
                 .stream()
                 .map(post -> {
                     List<QuestionAttachmentFile> attachments = questionAttachmentFileRepository.findByMentorPost(post);
-                    return MentorPostResponse.from(post, imagesOf(attachments), filesOf(attachments));
+                    return MentorPostResponse.from(post, imagesOf(attachments), filesOf(attachments), false, post.getLikeCount());
                 })
                 .toList();
+    }
+
+    @Transactional
+    public void likePost(Long userId, Long mentorId, Long postId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        MentorPost post = mentorPostRepository.findByIdAndMentor_Id(postId, mentorId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+
+        if (!mentorPostLikeRepository.existsByUserIdAndMentorPostId(userId, postId)) {
+            mentorPostLikeRepository.save(new MentorPostLike(user, post));
+            post.increaseLikeCount();
+        }
+    }
+
+    @Transactional
+    public void unlikePost(Long userId, Long mentorId, Long postId) {
+        MentorPost post = mentorPostRepository.findByIdAndMentor_Id(postId, mentorId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+
+        if (mentorPostLikeRepository.existsByUserIdAndMentorPostId(userId, postId)) {
+            mentorPostLikeRepository.deleteByUserIdAndMentorPostId(userId, postId);
+            post.decreaseLikeCount();
+        }
     }
 
     private List<ImageResponse> imagesOf(List<QuestionAttachmentFile> files) {
@@ -186,7 +219,6 @@ public class MentorPostService {
                 .toList();
     }
 
-    // 이미지는 Cloudinary, 일반 파일은 로컬 디스크에 저장돼서 삭제 방식이 다르다.
     private void deleteAttachmentBlob(QuestionAttachmentFile file) {
         try {
             if (file.getAttachmentType() == AttachmentFileType.IMAGE) {
