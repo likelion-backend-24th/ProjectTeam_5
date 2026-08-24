@@ -8,7 +8,9 @@ import org.springframework.stereotype.Component;
 public class BankAccountVerifier {
 
     public boolean verifyAccount(String bankName, String accountNumber, String accountHolder) {
-        log.info("🔍 로컬 계좌 검증 시도 - 은행: {}, 계좌: {}, 예금주: {}", bankName, accountNumber, accountHolder);
+        // 계좌번호와 예금주 실명은 로그에 남기지 않는다. 로그는 보통 DB보다 오래 남고,
+        // 이 둘이 함께 있으면 송금 지시를 위조하기에 충분한 정보가 된다.
+        log.info("🔍 로컬 계좌 검증 시도 - 은행: {}, 계좌: {}", bankName, mask(accountNumber));
 
         if (bankName == null || bankName.isBlank() ||
                 accountNumber == null || accountNumber.isBlank() ||
@@ -39,6 +41,14 @@ public class BankAccountVerifier {
         return true;
     }
 
+
+    /** 로그용 마스킹 — 뒤 4자리만 남긴다. */
+    private String mask(String accountNumber) {
+        if (accountNumber == null || accountNumber.length() < 4) {
+            return "****";
+        }
+        return "****" + accountNumber.substring(accountNumber.length() - 4);
+    }
 
     private boolean hasSeparatedJamo(String text) {
         for (char c : text.toCharArray()) {

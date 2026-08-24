@@ -29,7 +29,7 @@ export default function MentorPostDetailPage() {
   const [isOwner, setIsOwner] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ title: "", content: "" });
+  const [editForm, setEditForm] = useState({ title: "", content: "", category: "", isPublic: true, attachmentIds: [] });
   const [submitting, setSubmitting] = useState(false);
   const [isLikeLoading, setIsLikeLoading] = useState(false);
 
@@ -76,7 +76,18 @@ export default function MentorPostDetailPage() {
 
       const data = await res.json();
       setPost(data);
-      setEditForm({ title: data.title, content: data.content });
+      // category/isPublic/attachmentIds를 같이 실어 보내지 않으면 백엔드가 그 값들을 비운 것으로 처리한다.
+      // 특히 attachmentIds가 빠지면 첨부 행은 물론 Cloudinary 원본까지 삭제된다.
+      setEditForm({
+        title: data.title,
+        content: data.content,
+        category: data.category ?? "",
+        isPublic: data.isPublic ?? true,
+        attachmentIds: [
+          ...(data.images ?? []).map((f) => f.attachId),
+          ...(data.files ?? []).map((f) => f.attachId),
+        ],
+      });
 
       if (currentUserId && data.mentorId && String(data.mentorId) === String(currentUserId)) {
         setIsOwner(true);
