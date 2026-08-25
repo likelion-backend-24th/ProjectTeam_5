@@ -1,9 +1,15 @@
 // src/lib/admin.js
 import { request } from "./client";
-// 토큰은 request 헬퍼가 tokenStore에서 직접 읽어 붙인다.
-// 여기서 명시적으로 Authorization 헤더를 넘기면 401 → refresh → 재시도 때 옛 토큰이 그대로 재사용돼
-// 갱신이 안 된다(lib/auth.js의 주석 참고). 관리자 화면이 토큰 만료 후 영구히 실패하던 원인.
-export { getAccessToken as getToken } from "./tokenStore";
+import { getAccessToken } from "./tokenStore";
+
+// 이 파일의 API 호출들은 Authorization 헤더를 직접 붙이지 않는다.
+// 명시적으로 넘기면 401 → refresh → 재시도 때 옛 토큰이 그대로 재사용돼 갱신이 안 된다
+// (lib/auth.js의 주석 참고). 관리자 화면이 토큰 만료 후 영구히 실패하던 원인이었다.
+// 토큰은 request 헬퍼가 tokenStore에서 최신 값을 읽어 붙인다.
+//
+// getToken은 다른 모듈에서 쓸 수 있도록 남겨둔다. (re-export로 바꾸면 이 파일 안에서
+//  getToken()을 호출할 수 없어 ReferenceError가 난다.)
+export const getToken = () => getAccessToken();
 
 // 1. 전체 회원 목록 조회 (페이지네이션 없음 — 질문 관리 탭의 작성자 집계 전용)
 export function getAllUsers() {
@@ -15,14 +21,12 @@ export function getAllUsers() {
 
 // 1-1. 회원 관리 탭 전용 — 검색/역할 필터/정렬 + 서버 페이지네이션
 export function searchUsers({ page = 0, size = 20, keyword = "", role, sort = "latest" } = {}) {
-  const token = getToken();
   const params = new URLSearchParams({ page, size, sort });
   if (keyword) params.set("keyword", keyword);
   if (role && role !== "ALL") params.set("role", role);
 
   return request(`/api/admin/users/search?${params.toString()}`, {
     method: "GET",
-    headers: { Authorization: `Bearer ${token}` },
     fallbackMessage: "회원 목록을 불러오지 못했습니다.",
   });
 }
