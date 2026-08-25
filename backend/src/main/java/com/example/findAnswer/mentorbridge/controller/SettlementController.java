@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -21,5 +22,11 @@ public class SettlementController {
     @GetMapping("/me")
     public ResponseEntity<List<SettlementResponse>> getMySettlements(@AuthenticationPrincipal Long currentUserId) {
         return ResponseEntity.ok(settlementService.getMySettlements(currentUserId));
+    }
+
+    @PostMapping("/me/request-withdrawal")
+    public ResponseEntity<Void> requestWithdrawal(@AuthenticationPrincipal Long currentUserId) {
+        settlementService.requestWithdrawal(currentUserId);
+        return ResponseEntity.ok().build();
     }
 }

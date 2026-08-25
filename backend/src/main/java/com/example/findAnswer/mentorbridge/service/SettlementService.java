@@ -2,6 +2,7 @@ package com.example.findAnswer.mentorbridge.service;
 
 import com.example.findAnswer.mentorbridge.constants.ErrorCode;
 import com.example.findAnswer.mentorbridge.constants.Role;
+import com.example.findAnswer.mentorbridge.constants.SettlementStatus;
 import com.example.findAnswer.mentorbridge.dto.settlement.SettlementResponse;
 import com.example.findAnswer.mentorbridge.entity.Settlement;
 import com.example.findAnswer.mentorbridge.entity.User;
@@ -50,4 +51,20 @@ public class SettlementService {
 
         settlement.complete();
     }
+
+    //멘토의 출금 신청 처리
+    @Transactional
+    public void requestWithdrawal(Long mentorId) {
+        List<Settlement> pendingSettlements = settlementRepository.findByMentor_IdOrderByCreatedAtDesc(mentorId)
+                .stream()
+                .filter(s -> s.getStatus() == SettlementStatus.PENDING) // 대기 중인 것만 필터링
+                .toList();
+
+        if (pendingSettlements.isEmpty()) {
+            throw new CustomException(ErrorCode.SETTLEMENT_REQUIRED); // "신청할 정산 금액이 없습니다." 처리
+        }
+
+        pendingSettlements.forEach(Settlement::requestWithdrawal);
+    }
 }
+

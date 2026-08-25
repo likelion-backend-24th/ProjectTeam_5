@@ -147,7 +147,7 @@ export default function AdminPage() {
     return list;
   }, [inquiries, searchQuery, sortOption]);
 
-  // 💡 정산 통계 계산 (화면 상단 대시보드용)
+  // 🔥 정산 통계 계산 (화면 상단 대시보드용) - 이제 REQUESTED 상태만 대기 건수로 잡습니다.
   const settlementStats = useMemo(() => {
     let pendingCount = 0;
     let pendingNetAmount = 0;
@@ -155,7 +155,8 @@ export default function AdminPage() {
     let totalPlatformFee = 0;
 
     settlements.forEach((s) => {
-      if (s.status === "PENDING") {
+      // 관리자는 '출금 신청(REQUESTED)'된 건만 처리 대기 목록으로 봅니다.
+      if (s.status === "REQUESTED") {
         pendingCount += 1;
         pendingNetAmount += Number(s.netAmount || 0);
       } else if (s.status === "COMPLETED") {
@@ -178,6 +179,7 @@ export default function AdminPage() {
       list = list.filter((item) => (item.mentorName || "").toLowerCase().includes(q));
     }
     if (roleFilter === "PENDING") list = list.filter(item => item.status === "PENDING");
+    if (roleFilter === "REQUESTED") list = list.filter(item => item.status === "REQUESTED"); // 🔥 필터 추가
     if (roleFilter === "COMPLETED") list = list.filter(item => item.status === "COMPLETED");
     if (roleFilter === "CANCELED") list = list.filter(item => item.status === "CANCELED");
 
@@ -386,7 +388,8 @@ export default function AdminPage() {
                   {activeTab === "settlements" && (
                       <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className={styles.selectBox}>
                         <option value="ALL">전체 상태</option>
-                        <option value="PENDING">정산 대기</option>
+                        <option value="PENDING">누적됨 (신청 전)</option>
+                        <option value="REQUESTED">출금 신청됨</option>
                         <option value="COMPLETED">정산 완료</option>
                         <option value="CANCELED">정산 취소(환불)</option>
                       </select>
@@ -469,16 +472,16 @@ export default function AdminPage() {
               </>
           )}
 
-          {/*정산 관리 탭*/}
+          {/* 🔥 3. 정산 관리 탭 */}
           {!loading && !errorMessage && activeTab === "settlements" && (
               <>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "24px" }}>
                   <div style={{ padding: "20px", border: "1px solid #e5e7eb", borderRadius: "12px", background: "#fff" }}>
-                    <div style={{ fontSize: "14px", color: "#64748b", marginBottom: "8px", fontWeight: "600" }}>송금 대기 건수</div>
+                    <div style={{ fontSize: "14px", color: "#64748b", marginBottom: "8px", fontWeight: "600" }}>송금 대기 건수 (출금 신청)</div>
                     <div style={{ fontSize: "28px", fontWeight: "800", color: "#f97316" }}>{settlementStats.pendingCount}건</div>
                   </div>
                   <div style={{ padding: "20px", border: "1px solid #e5e7eb", borderRadius: "12px", background: "#fff" }}>
-                    <div style={{ fontSize: "14px", color: "#64748b", marginBottom: "8px", fontWeight: "600" }}>이번 달 송금 예정 총액</div>
+                    <div style={{ fontSize: "14px", color: "#64748b", marginBottom: "8px", fontWeight: "600" }}>송금 대기 총액</div>
                     <div style={{ fontSize: "28px", fontWeight: "800", color: "#2563eb" }}>{settlementStats.pendingNetAmount.toLocaleString()}원</div>
                   </div>
                   <div style={{ padding: "20px", border: "1px solid #e5e7eb", borderRadius: "12px", background: "#fff" }}>
@@ -514,17 +517,19 @@ export default function AdminPage() {
                             <td className={styles.rightText} style={{color:"#ef4444"}}>-{Number(s.pgFee + s.platformFee).toLocaleString()}원</td>
                             <td className={styles.rightText} style={{color:"#2563eb", fontWeight:"bold"}}>{Number(s.netAmount).toLocaleString()}원</td>
                             <td className={styles.centerText}>
-                        <span className={s.status === "COMPLETED" ? styles.badgeActive : s.status === "CANCELED" ? styles.badgeBlocked : styles.badgePending}>
-                          {s.status === "COMPLETED" ? "완료" : s.status === "CANCELED" ? "취소(환불)" : "대기중"}
-                        </span>
+                              <span className={s.status === "COMPLETED" ? styles.badgeActive : s.status === "CANCELED" ? styles.badgeBlocked : styles.badgePending}>
+                                {/* 🔥 상태 라벨 수정 */}
+                                {s.status === "COMPLETED" ? "완료" : s.status === "CANCELED" ? "취소(환불)" : s.status === "REQUESTED" ? "신청됨" : "누적됨"}
+                              </span>
                             </td>
                             <td>{formatDate(s.createdAt)}</td>
                             <td className={styles.centerText}>
                               <button
                                   type="button"
                                   className={styles.approveBtn}
-                                  disabled={s.status !== "PENDING" || settlementBusyId === s.id}
-                                  style={{ opacity: s.status !== "PENDING" ? 0.3 : 1 }}
+                                  // 🔥 송금 버튼은 REQUESTED 일 때만 활성화됩니다!
+                                  disabled={s.status !== "REQUESTED" || settlementBusyId === s.id}
+                                  style={{ opacity: s.status !== "REQUESTED" ? 0.3 : 1 }}
                                   onClick={() => handleCompleteSettlement(s.id, s.mentorName, s.netAmount)}
                               >
                                 {settlementBusyId === s.id ? "처리중" : s.status === "COMPLETED" ? "송금완료" : "송금 완료하기"}

@@ -58,4 +58,10 @@ public class Settlement extends BaseTimeEntity {
     public void complete() {
         this.status = SettlementStatus.COMPLETED;
     }
+
+    public void requestWithdrawal() {
+        if (this.status == SettlementStatus.PENDING) {
+            this.status = SettlementStatus.REQUESTED;
+        }
+    }
 }
