@@ -9,6 +9,8 @@ import {
   requestRefund,
   getMyCancellations,
 } from "@/lib/subscriptions";
+import ConfirmDialog from "@/components/modal/ConfirmDialog";
+import { useToast } from "@/app/contexts/ToastContext";
 
 const STATUS_LABEL = {
   ACTIVE: { text: "구독중", color: "#16a34a" },
@@ -36,6 +38,7 @@ const CANCELLATION_STATUS_LABEL = {
 
 export default function SubscriptionManagePage() {
   const router = useRouter();
+  const { showToast } = useToast();
 
   const [subscriptions, setSubscriptions] = useState([]);
   const [cancellations, setCancellations] = useState([]);
@@ -44,6 +47,8 @@ export default function SubscriptionManagePage() {
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [busyId, setBusyId] = useState(null);
+  const [cancelTarget, setCancelTarget] = useState(null); // 해지 확인 대상 구독
+  const [refundTarget, setRefundTarget] = useState(null); // 환불 요청 대상 결제
 
   const loadSubscriptions = async () => {
     try {
@@ -58,7 +63,7 @@ export default function SubscriptionManagePage() {
         router.push("/login");
         return;
       }
-      alert(err.message);
+      showToast(err.message, "error");
     } finally {
       setLoading(false);
     }
@@ -69,23 +74,26 @@ export default function SubscriptionManagePage() {
     loadSubscriptions();
   }, []);
 
-  const handleCancel = async (subscription) => {
+  const handleCancel = (subscription) => {
     if (subscription.status === "CANCEL_RESERVED") {
-      alert("이미 해지 예약된 구독입니다.");
+      showToast("이미 해지 예약된 구독입니다.", "error");
       return;
     }
-    const endDateStr = subscription.currentPeriodEnd
-      ? new Date(subscription.currentPeriodEnd).toLocaleDateString()
-      : "기간 만료일";
-    if (!confirm(`정말 해지하시겠어요?\n${endDateStr}까지는 계속 이용하실 수 있어요.`)) return;
+    setCancelTarget(subscription);
+  };
+
+  const confirmCancel = async () => {
+    const subscription = cancelTarget;
+    if (!subscription) return;
 
     setBusyId(subscription.subscriptionId);
     try {
       await unsubscribeMentor(subscription.subscriptionId);
       await loadSubscriptions();
-      alert("해지가 예약되었습니다.");
+      setCancelTarget(null);
+      showToast("해지가 예약되었습니다.", "success");
     } catch (err) {
-      alert(err.message);
+      showToast(err.message, "error");
     } finally {
       setBusyId(null);
     }
@@ -102,24 +110,29 @@ export default function SubscriptionManagePage() {
       const history = await getPaymentHistory(subscriptionId);
       setPaymentHistory(history);
     } catch (err) {
-      alert(err.message);
+      showToast(err.message, "error");
     } finally {
       setHistoryLoading(false);
     }
   };
 
-  const handleRefundRequest = async (payment) => {
-    const reason = window.prompt("환불 사유를 입력해주세요.");
-    if (!reason || !reason.trim()) return;
+  const handleRefundRequest = (payment) => {
+    setRefundTarget(payment);
+  };
+
+  const confirmRefundRequest = async (reason) => {
+    const payment = refundTarget;
+    if (!payment) return;
 
     setBusyId(payment.paymentId);
     try {
-      await requestRefund(payment.paymentId, reason.trim());
-      alert("환불 요청이 접수되었습니다. 관리자 승인 후 처리됩니다.");
+      await requestRefund(payment.paymentId, reason);
+      setRefundTarget(null);
+      showToast("환불 요청이 접수되었습니다. 관리자 승인 후 처리됩니다.", "success");
       const myCancellations = await getMyCancellations().catch(() => []);
       setCancellations(myCancellations);
     } catch (err) {
-      alert(err.message);
+      showToast(err.message, "error");
     } finally {
       setBusyId(null);
     }
@@ -233,6 +246,38 @@ export default function SubscriptionManagePage() {
           })}
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={!!cancelTarget}
+        title="구독 해지"
+        message={
+          cancelTarget
+            ? `정말 해지하시겠어요?\n${
+                cancelTarget.currentPeriodEnd
+                  ? new Date(cancelTarget.currentPeriodEnd).toLocaleDateString()
+                  : "기간 만료일"
+              }까지는 계속 이용하실 수 있어요.`
+            : ""
+        }
+        confirmLabel="해지하기"
+        danger
+        submitting={!!cancelTarget && busyId === cancelTarget.subscriptionId}
+        onConfirm={confirmCancel}
+        onCancel={() => setCancelTarget(null)}
+      />
+
+      <ConfirmDialog
+        isOpen={!!refundTarget}
+        title="환불 요청"
+        message="환불 사유를 입력해주세요."
+        showInput
+        inputRequired
+        inputPlaceholder="예: 서비스 이용이 어려워 환불을 요청합니다."
+        confirmLabel="요청하기"
+        submitting={!!refundTarget && busyId === refundTarget.paymentId}
+        onConfirm={confirmRefundRequest}
+        onCancel={() => setRefundTarget(null)}
+      />
     </main>
   );
 }

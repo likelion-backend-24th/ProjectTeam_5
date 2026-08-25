@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/app/contexts/AuthContext";
+import { useToast } from "@/app/contexts/ToastContext";
 // 👇 getAnsweredQuestionsByUser, toggleFollowUser 함수 임포트
 import { getQuestionsByUser, getPublicProfile, updatePublicProfileData, updateProfileImageUrl, getToken, getAnsweredQuestionsByUser, toggleFollowUser } from "@/lib/users";
 import { uploadProfileImage, validateImage } from "@/lib/attachments";
@@ -13,6 +14,7 @@ export default function PublicProfilePage() {
     const { id } = useParams();
     const router = useRouter();
     const { user: currentUser } = useAuth();
+    const { showToast } = useToast();
 
     const [profile, setProfile] = useState(null);
     const [questions, setQuestions] = useState([]);
@@ -37,7 +39,7 @@ export default function PublicProfilePage() {
 
     const handleFollow = async () => {
         const token = getToken();
-        if (!token) return alert("로그인이 필요합니다.");
+        if (!token) return showToast("로그인이 필요합니다.", "error");
 
         try {
             await toggleFollowUser(id, token);
@@ -47,7 +49,7 @@ export default function PublicProfilePage() {
                 followerCount: prev.isFollowing ? prev.followerCount - 1 : prev.followerCount + 1,
             }));
         } catch (e) {
-            alert(e.message);
+            showToast(e.message, "error");
         }
     };
 
@@ -95,7 +97,7 @@ export default function PublicProfilePage() {
         try {
             validateImage(file);
         } catch (err) {
-            alert(err.message);
+            showToast(err.message, "error");
             return;
         }
 
@@ -105,7 +107,7 @@ export default function PublicProfilePage() {
 
     const handleSave = async () => {
         const token = getToken();
-        if (!token) return alert("로그인이 필요합니다.");
+        if (!token) return showToast("로그인이 필요합니다.", "error");
 
         setIsSubmitting(true);
         try {
@@ -121,9 +123,9 @@ export default function PublicProfilePage() {
                 ...prev, ...editForm, profileImageUrl: finalImageUrl,
             }));
             setIsEditing(false);
-            alert("프로필이 성공적으로 수정되었습니다.");
+            showToast("프로필이 성공적으로 수정되었습니다.", "success");
         } catch (error) {
-            alert(error.message || "프로필 수정에 실패했습니다.");
+            showToast(error.message || "프로필 수정에 실패했습니다.", "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -192,7 +194,7 @@ export default function PublicProfilePage() {
                                 >
                                     {profile.isFollowing ? "✓ 팔로잉" : "+ 팔로우"}
                                 </button>
-                                <button className={styles.messageBtn} onClick={() => alert("준비 중인 기능입니다.")}>
+                                <button className={styles.messageBtn} onClick={() => showToast("준비 중인 기능입니다.", "info")}>
                                     💬 메시지
                                 </button>
                             </div>

@@ -4,10 +4,24 @@ import { getAccessToken } from "./tokenStore";
 
 export const getToken = () => getAccessToken();
 
-// 1. 전체 회원 목록 조회
+// 1. 전체 회원 목록 조회 (페이지네이션 없음 — 질문 관리 탭의 작성자 집계 전용)
 export function getAllUsers() {
   const token = getToken();
   return request("/api/admin/users", {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
+    fallbackMessage: "회원 목록을 불러오지 못했습니다.",
+  });
+}
+
+// 1-1. 회원 관리 탭 전용 — 검색/역할 필터/정렬 + 서버 페이지네이션
+export function searchUsers({ page = 0, size = 20, keyword = "", role, sort = "latest" } = {}) {
+  const token = getToken();
+  const params = new URLSearchParams({ page, size, sort });
+  if (keyword) params.set("keyword", keyword);
+  if (role && role !== "ALL") params.set("role", role);
+
+  return request(`/api/admin/users/search?${params.toString()}`, {
     method: "GET",
     headers: { Authorization: `Bearer ${token}` },
     fallbackMessage: "회원 목록을 불러오지 못했습니다.",

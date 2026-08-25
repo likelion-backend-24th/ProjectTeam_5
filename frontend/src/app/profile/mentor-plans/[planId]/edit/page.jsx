@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/app/contexts/AuthContext";
+import { useToast } from "@/app/contexts/ToastContext";
 import { getMentorPlan, updateMentorPlan } from "@/lib/mentorPlans";
 
 export default function MentorPlanEditPage() {
   const router = useRouter();
   const { planId } = useParams();
   const { user, loading: authLoading } = useAuth();
+  const { showToast } = useToast();
 
   const [loading, setLoading] = useState(true);
   const [planName, setPlanName] = useState("");
@@ -58,7 +60,7 @@ export default function MentorPlanEditPage() {
         price: Number(price),
         billingCycle: Number(billingCycle),
       });
-      alert("요금제가 수정됐습니다.");
+      showToast("요금제가 수정됐습니다.", "success");
       router.push("/profile");
     } catch (err) {
       if (err.status === 401 || err.status === 403) {

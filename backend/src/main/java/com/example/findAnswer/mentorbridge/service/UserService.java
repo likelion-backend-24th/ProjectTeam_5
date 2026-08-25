@@ -14,6 +14,8 @@ import com.example.findAnswer.mentorbridge.jwt.JwtTokenProvider;
 import com.example.findAnswer.mentorbridge.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -148,11 +150,18 @@ public class UserService {
         return response;
     }
 
-    // [관리자] 전체 회원 목록 조회 (탈퇴한 계정 포함)
+    // [관리자] 전체 회원 목록 조회 (탈퇴한 계정 포함) — 질문 관리 탭의 작성자 집계가 전체 목록을 그대로 필요로 해서
+    // 페이지네이션 없는 버전도 남겨둔다. 회원 관리 탭 자체는 아래 searchUsersForAdmin()을 쓴다.
     public List<UserResponse> getAllUsers() {
         return userRepository.findAll().stream()
                 .map(UserResponse::from)
                 .toList();
+    }
+
+    // [관리자] 회원 목록 검색 + 페이지네이션
+    public Page<UserResponse> searchUsersForAdmin(Role role, String keyword, Pageable pageable) {
+        return userRepository.searchForAdmin(role, keyword, pageable)
+                .map(UserResponse::from);
     }
 
     // 전체 회원 목록 조회 (공개) — 탈퇴한 계정은 제외

@@ -7,14 +7,19 @@ import {
   deletePaymentMethod,
   setDefaultPaymentMethod,
 } from "@/lib/payments";
+import ConfirmDialog from "@/components/modal/ConfirmDialog";
+import { useToast } from "@/app/contexts/ToastContext";
 
 // 프로필 페이지의 "결제 수단 관리" 카드.
 // 현재 백엔드(등록/목록/삭제/대표지정)로 붙일 수 있는 것만 표시한다.
 // 유효기간·결제내역·구독현황은 백엔드 준비 후 추가(지금은 렌더하지 않음).
 export default function ProfilePaymentSection() {
+  const { showToast } = useToast();
   const [methods, setMethods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openMenuId, setOpenMenuId] = useState(null); // ⋮ 드롭다운 열림 상태
+  const [deleteTarget, setDeleteTarget] = useState(null); // 삭제 확인 대상 결제수단 id
+  const [deleting, setDeleting] = useState(false);
 
   const load = async () => {
     try {
@@ -32,14 +37,23 @@ export default function ProfilePaymentSection() {
     load();
   }, []);
 
-  const handleDelete = async (id) => {
+  const handleDelete = (id) => {
     setOpenMenuId(null);
-    if (!confirm("이 결제수단을 삭제할까요?")) return;
+    setDeleteTarget(id);
+  };
+
+  const confirmDelete = async () => {
+    const id = deleteTarget;
+    if (!id) return;
+    setDeleting(true);
     try {
       await deletePaymentMethod(id);
       await load();
+      setDeleteTarget(null);
     } catch (err) {
-      alert(err.message);
+      showToast(err.message, "error");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -49,7 +63,7 @@ export default function ProfilePaymentSection() {
       await setDefaultPaymentMethod(id);
       await load();
     } catch (err) {
-      alert(err.message);
+      showToast(err.message, "error");
     }
   };
 
@@ -120,6 +134,17 @@ export default function ProfilePaymentSection() {
       <Link href="/profile/subscriptions" style={{ ...addBtn, marginTop: 8, border: "1px solid #e5e7eb", color: "#374151" }}>
         내 구독 관리 (해지 · 환불 요청)
       </Link>
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="결제수단 삭제"
+        message="이 결제수단을 삭제할까요?"
+        confirmLabel="삭제"
+        danger
+        submitting={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </section>
   );
 }

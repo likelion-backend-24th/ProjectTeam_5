@@ -5,12 +5,14 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import styles from "./Header.module.css";
 import { useAuth } from "@/app/contexts/AuthContext";
+import { useToast } from "@/app/contexts/ToastContext";
 import NotificationBell from "./NotificationBell";
 
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { isLoggedIn, user, loading, logout } = useAuth();
+  const { showToast } = useToast();
 
   // 드롭다운 상태 및 외부 클릭 감지용 Ref
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -34,7 +36,7 @@ export default function Header() {
   const handleProtectedNavigation = (e, targetPath, menuName) => {
     if (!isLoggedIn) {
       e.preventDefault();
-      alert(`${menuName}은(는) 로그인 후 이용 가능합니다.`);
+      showToast(`${menuName}은(는) 로그인 후 이용 가능합니다.`, "error");
       router.push("/login");
     }
   };
