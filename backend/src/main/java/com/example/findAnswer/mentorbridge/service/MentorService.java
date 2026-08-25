@@ -72,7 +72,15 @@ public class MentorService {
         MentorApplication application = mentorApplicationRepository.findByUser_IdAndStatus(userId, MentorApplicationStatus.PENDING)
                 .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
         application.approve();
-        application.getUser().promoteToMentor();
+
+        User user = application.getUser();
+        user.promoteToMentor();
+
+        // 승인 시점에 빈 MentorProfile을 같이 만들어둔다 — 없으면 UserController의 공개 프로필 수정(PATCH
+        // /api/users/me/public-profile)이 첫 저장 때마다 MentorProfile 미존재로 실패한다.
+        if (user.getMentorProfile() == null) {
+            user.updateMentorProfile(MentorProfile.builder().user(user).build());
+        }
 
         notificationService.notify(userId, NotificationType.MENTOR_APPROVED,
                 "멘토 신청이 승인되었습니다.", "/profile");
