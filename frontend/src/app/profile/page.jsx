@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { FaUserLarge } from "react-icons/fa6";
 import { useProfileActions } from "./useProfileActions";
 import ProfilePaymentSection from "./ProfilePaymentSection";
 import MentorPlanSection from "./MentorPlanSection";
@@ -9,6 +8,7 @@ import { useToast } from "@/app/contexts/ToastContext";
 import ConfirmDialog from "@/components/modal/ConfirmDialog";
 import SettlementAccountSection from "./SettlementAccountSection";
 import styles from "./page.module.css";
+import { DEFAULT_PROFILE_IMAGE, fallbackToDefaultProfile } from "@/constants/images";
 
 export default function ProfilePage() {
   const { showToast } = useToast();
@@ -101,15 +101,12 @@ export default function ProfilePage() {
         <section className={styles.hero}>
           <div className={styles.heroLeft}>
             <div className={styles.avatar} aria-hidden="true">
-              {user.profileImageUrl ? (
-                  <img
-                      src={user.profileImageUrl}
-                      alt=""
-                      style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }}
-                  />
-              ) : (
-                  <FaUserLarge />
-              )}
+              <img
+                  src={user.profileImageUrl || DEFAULT_PROFILE_IMAGE}
+                  alt=""
+                  onError={fallbackToDefaultProfile}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }}
+              />
             </div>
             <input
                 type="file"

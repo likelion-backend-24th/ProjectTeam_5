@@ -9,6 +9,7 @@ import { useToast } from "@/app/contexts/ToastContext";
 import { getQuestionsByUser, getPublicProfile, updatePublicProfileData, updateProfileImageUrl, getToken, getAnsweredQuestionsByUser, toggleFollowUser } from "@/lib/users";
 import { uploadProfileImage, validateImage } from "@/lib/attachments";
 import styles from "./page.module.css";
+import { DEFAULT_PROFILE_IMAGE } from "@/constants/images";
 
 export default function PublicProfilePage() {
     const { id } = useParams();
@@ -133,7 +134,7 @@ export default function PublicProfilePage() {
     if (loading) return <main className={styles.page}><div className={styles.emptyState}>불러오는 중...</div></main>;
     if (!profile) return <main className={styles.page}><div className={styles.emptyState}>유저를 찾을 수 없습니다.</div></main>;
 
-    const avatarUrl = imagePreview || profile.profileImageUrl || `https://ui-avatars.com/api/?name=${profile.name || "익명"}&background=f1f5f9&color=64748b&size=150`;
+    const avatarUrl = imagePreview || profile.profileImageUrl || DEFAULT_PROFILE_IMAGE;
     const tagsArray = profile.tags ? profile.tags.split(/[\s,]+/).filter(t => t.trim()) : [];
 
     return (
