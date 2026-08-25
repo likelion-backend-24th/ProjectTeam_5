@@ -241,14 +241,14 @@ export default function ProfilePage() {
               </span>
                 <span className={styles.chev}>›</span>
               </button>
-              <button type="button" className={styles.rowLink} onClick={notReady}>
+              {/* <button type="button" className={styles.rowLink} onClick={notReady}>
                 <span className={styles.rowIcon}>🔔</span>
                 <span className={styles.rowText}>
                 <strong>알림 설정</strong>
                 <p>이메일 및 푸시 알림 설정을 관리합니다.</p>
               </span>
                 <span className={styles.chev}>›</span>
-              </button>
+              </button> */}
             </section>
           </div>
 
