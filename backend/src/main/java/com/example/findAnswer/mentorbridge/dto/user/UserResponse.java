@@ -19,6 +19,11 @@ public class UserResponse {
     private String email;
     private String name;
     private String interests;
+
+    private String bio;
+    private String introduction;
+    private String careers;
+    private String location;
     private Role role;
     private String profileImageUrl;
     private boolean blocked;
@@ -54,6 +59,10 @@ public class UserResponse {
         response.name = user.getName();
         response.role = user.getRole();
         response.interests = user.getInterests();
+        response.bio = user.getBio();
+        response.introduction = user.getIntroduction();
+        response.careers = user.getCareers();
+        response.location = user.getLocation();
         response.profileImageUrl = user.getProfileImageUrl();
         response.blocked = user.isBlocked();
         response.emailVerified = user.isEmailVerified();
