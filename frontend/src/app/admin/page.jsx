@@ -78,7 +78,6 @@ export default function AdminPage() {
 
   const [settlements, setSettlements] = useState([]);
   const [copiedAccount, setCopiedAccount] = useState(null);
-  const [settlementBusyId, setSettlementBusyId] = useState(null);
 
   const fetchData = useCallback(async () => {
     if (activeTab === "users") return;
@@ -247,7 +246,7 @@ export default function AdminPage() {
       setCopiedAccount(accountNumber);
       setTimeout(() => setCopiedAccount(null), 1500);
     } catch {
-      alert("복사에 실패했습니다. 계좌번호를 직접 선택해 복사해주세요.");
+      showToast("복사에 실패했습니다. 계좌번호를 직접 선택해 복사해주세요.", "error");
     }
   };
 
@@ -480,18 +479,18 @@ export default function AdminPage() {
   };
 
     // 정산 완료 처리 핸들러
-    const handleCompleteSettlement = async (id, mentorName, netAmount) => {
-      if (!confirm(`${mentorName} 멘토에게 ${netAmount.toLocaleString()}원을 송금하셨습니까?\n확인 시 '정산 완료'로 상태가 변경됩니다.`)) return;
-      setSettlementBusyId(id);
-      try {
-        await completeSettlement(id);
-        alert("정산이 완료 처리되었습니다.");
-        fetchData();
-      } catch (error) {
-        alert(error.message || "처리에 실패했습니다.");
-      } finally {
-        setSettlementBusyId(null);
-      }
+    const handleCompleteSettlement = (id, mentorName, netAmount) => {
+      setPendingAction({
+        title: "송금 완료 처리",
+        message: `${mentorName} 멘토에게 ${Number(netAmount || 0).toLocaleString()}원을 송금하셨습니까?\n확인 시 '정산 완료'로 상태가 변경되며 되돌릴 수 없습니다.`,
+        confirmLabel: "송금 완료",
+        danger: true,
+        run: async () => {
+          await completeSettlement(id);
+          showToast("정산이 완료 처리되었습니다.", "success");
+          fetchData();
+        },
+      });
     };
 
     if (authLoading) return <p className={styles.statusText}>권한 확인 중...</p>;
@@ -871,18 +870,16 @@ export default function AdminPage() {
                                     type="button"
                                     className={styles.approveBtn}
                                     // 🔥 송금 버튼은 REQUESTED 일 때만 활성화됩니다!
-                                    disabled={s.status !== "REQUESTED" || !s.account || settlementBusyId === s.id}
+                                    disabled={s.status !== "REQUESTED" || !s.account}
                                     style={{opacity: s.status !== "REQUESTED" || !s.account ? 0.3 : 1}}
                                     title={!s.account ? "멘토가 정산 계좌를 등록하지 않았습니다." : undefined}
                                     onClick={() => handleCompleteSettlement(s.id, s.mentorName, s.netAmount)}
                                 >
-                                  {settlementBusyId === s.id
-                                      ? "처리중"
-                                      : s.status === "COMPLETED"
-                                          ? "송금완료"
-                                          : !s.account
-                                              ? "계좌 없음"
-                                              : "송금 완료하기"}
+                                  {s.status === "COMPLETED"
+                                      ? "송금완료"
+                                      : !s.account
+                                          ? "계좌 없음"
+                                          : "송금 완료하기"}
                                 </button>
                               </td>
                             </tr>
