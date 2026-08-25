@@ -145,13 +145,23 @@ export default function Header() {
                             내 프로필 (마이페이지)
                           </Link>
                           {user?.role === "MENTOR" && (
-                              <Link
-                                  href="/mentor/dashboard"
-                                  className={styles.dropdownItem}
-                                  onClick={() => setIsDropdownOpen(false)}
-                              >
-                                멘토 대시보드
-                              </Link>
+                              <>
+                                <Link
+                                    href="/mentor/dashboard"
+                                    className={styles.dropdownItem}
+                                    onClick={() => setIsDropdownOpen(false)}
+                                >
+                                  멘토 대시보드
+                                </Link>
+                                {/* 멘토피드에서 자기 카드를 찾아 들어갈 필요 없이 바로 연다 */}
+                                <Link
+                                    href={`/mentors/${user?.id}`}
+                                    className={styles.dropdownItem}
+                                    onClick={() => setIsDropdownOpen(false)}
+                                >
+                                  멘토 프로필
+                                </Link>
+                              </>
                           )}
                           <Link
                               href={`/users/${user?.id}?name=${encodeURIComponent(user?.name || "익명")}`}

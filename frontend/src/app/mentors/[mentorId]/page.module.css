@@ -828,3 +828,26 @@
     width: 100%;
   }
 }
+
+/* 멘토 정보 — 전문 분야 다중 선택 (멘토피드 필터와 같은 목록) */
+.categoryPicker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  padding: 4px 0;
+}
+
+.categoryOption {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.categoryOption input {
+  accent-color: #2867e8;
+  cursor: pointer;
+}

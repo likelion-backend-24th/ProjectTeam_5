@@ -1,8 +1,25 @@
 "use client";
 
+import { MENTOR_CATEGORIES, CAREER_LEVELS, normalizeCategories } from "@/constants/mentorOptions";
 import styles from "../page.module.css";
 
 export default function MentorInfoCard({ mentorInfo, isEditing, editForm, onChange, plans }) {
+  // 멘토피드 필터와 같은 목록에서 고르게 한다. 자유 입력이면 필터에 걸리지 않기 때문이다.
+  // 목록에 없는 예전 값은 여기서 걸러내고, 저장할 때도 같은 기준으로 정리된다.
+  const selectedCategories = normalizeCategories(editForm.tags);
+
+  // 부모(page.jsx)의 handleInputChange가 e.target.{name,value}만 보므로 같은 모양으로 넘긴다.
+  const emitTags = (nextList) => {
+    onChange({ target: { name: "tags", value: nextList.join(", ") } });
+  };
+
+  const toggleCategory = (category) => {
+    const next = selectedCategories.includes(category)
+      ? selectedCategories.filter((item) => item !== category)
+      : [...selectedCategories, category];
+    emitTags(next);
+  };
+
   return (
     <div className={styles.sidebarCard}>
       <h3>멘토 정보</h3>
@@ -12,23 +29,41 @@ export default function MentorInfoCard({ mentorInfo, isEditing, editForm, onChan
           {isEditing ? (
             <input type="text" name="company" value={editForm.company} onChange={onChange} className={styles.editInput} />
           ) : (
-            <span>{mentorInfo.company || "Senior UI/UX Designer @ 멋사"}</span>
+            <span>{mentorInfo.company || "미등록"}</span>
           )}
         </li>
         <li>
           <strong>경력</strong>
           {isEditing ? (
-            <input type="text" name="career" value={editForm.career} onChange={onChange} className={styles.editInput} />
+            <select name="career" value={editForm.career} onChange={onChange} className={styles.editInput}>
+              <option value="">선택 안 함</option>
+              {CAREER_LEVELS.map((level) => (
+                <option key={level.code} value={level.value}>
+                  {level.value}
+                </option>
+              ))}
+            </select>
           ) : (
-            <span>{mentorInfo.career || "50년"}</span>
+            <span>{mentorInfo.career || "미등록"}</span>
           )}
         </li>
         <li>
           <strong>전문 분야</strong>
           {isEditing ? (
-            <input type="text" name="tags" value={editForm.tags} onChange={onChange} className={styles.editInput} placeholder="쉼표(,)로 구분" />
+            <div className={styles.categoryPicker}>
+              {MENTOR_CATEGORIES.map((category) => (
+                <label key={category} className={styles.categoryOption}>
+                  <input
+                    type="checkbox"
+                    checked={selectedCategories.includes(category)}
+                    onChange={() => toggleCategory(category)}
+                  />
+                  <span>{category}</span>
+                </label>
+              ))}
+            </div>
           ) : (
-            <span>{mentorInfo.tags || "UI/UX, 프로토타이핑"}</span>
+            <span>{mentorInfo.tags || "미등록"}</span>
           )}
         </li>
         <li>
@@ -36,7 +71,7 @@ export default function MentorInfoCard({ mentorInfo, isEditing, editForm, onChan
           {isEditing ? (
             <input type="text" name="education" value={editForm.education} onChange={onChange} className={styles.editInput} />
           ) : (
-            <span>{mentorInfo.education || "멋사대학교 디자인과"}</span>
+            <span>{mentorInfo.education || "미등록"}</span>
           )}
         </li>
         <li>
