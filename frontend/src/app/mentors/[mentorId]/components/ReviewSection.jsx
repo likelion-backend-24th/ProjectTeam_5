@@ -6,10 +6,6 @@ import ConfirmDialog from "@/components/modal/ConfirmDialog";
 import { getMentorReviews, submitMentorReview, deleteMentorReview } from "@/lib/mentors";
 import styles from "../page.module.css";
 
-// 리뷰 탭 콘텐츠 전체(작성 폼 + 목록)를 소유한다 — 리뷰 관련 상태는 이 탭 밖에서 쓰이지 않는다.
-// 탭이 "review"로 바뀔 때만 마운트되므로(부모의 조건부 렌더), 마운트 시 매번 목록을 새로 불러온다 —
-// 이전엔 부모가 reviews 배열을 들고 있다가 최초 1회만 불러왔지만, 그 캐시를 유지하려면 이 상태를
-// 부모에 남겨둬야 해서 분리 이점이 없어진다. 대신 매번 최신 데이터를 보여준다는 장점이 있다.
 export default function ReviewSection({ mentorId, reviewCount, isOwner, isLoggedIn, currentUserId, onMentorRefresh }) {
   const { showToast } = useToast();
   const [reviews, setReviews] = useState([]);
@@ -50,7 +46,7 @@ export default function ReviewSection({ mentorId, reviewCount, isOwner, isLogged
       setReviewComment("");
       setReviewRating(5);
       await loadReviews();
-      await onMentorRefresh(); // 목록의 reviewCount/rating도 갱신되도록
+      await onMentorRefresh();
       showToast("리뷰가 등록되었습니다.", "success");
     } catch (err) {
       showToast(err.message || "리뷰 등록에 실패했습니다.", "error");
@@ -78,8 +74,8 @@ export default function ReviewSection({ mentorId, reviewCount, isOwner, isLogged
   };
 
   return (
-    <div className={`${styles.empty} ${styles.reviewPanel}`}>
-      <h3>리뷰 ({reviewCount})</h3>
+    <div className={styles.reviewContainer}>
+    <h3>리뷰 ({reviewCount})</h3>
 
       {!isOwner && isLoggedIn && (
         <div className={styles.reviewForm}>

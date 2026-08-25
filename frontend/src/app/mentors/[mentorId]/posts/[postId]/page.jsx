@@ -6,6 +6,7 @@ import remarkBreaks from "remark-breaks";
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { FaHeart, FaRegHeart, FaTrash } from "react-icons/fa";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { downloadFile } from "@/lib/attachments";
 import { getAccessToken } from "@/lib/tokenStore";
@@ -36,32 +37,57 @@ export default function MentorPostDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [isLikeLoading, setIsLikeLoading] = useState(false);
+
+  // --- 댓글 관련 상태 ---
+  const [comments, setComments] = useState([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentInput, setCommentInput] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
+
+  // 공통 헤더 생성 함수
+  const getAuthHeaders = useCallback(() => {
+    const token = getAccessToken();
+    const headers = { "Content-Type": "application/json" };
+    if (currentUserId) headers["X-USER-ID"] = String(currentUserId);
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    return headers;
+  }, [currentUserId]);
+
+  // 댓글 목록 불러오기
+  const loadComments = useCallback(async () => {
+    if (!mentorId || !postId || mentorId === "undefined" || postId === "undefined") return;
+
+    setCommentsLoading(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/v1/mentors/${mentorId}/posts/${postId}/comments`, {
+        method: "GET",
+        headers: getAuthHeaders(),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setComments(Array.isArray(data) ? data : data.content || []);
+      }
+    } catch (error) {
+      console.error("댓글 조회 실패:", error);
+    } finally {
+      setCommentsLoading(false);
+    }
+  }, [mentorId, postId, getAuthHeaders]);
 
   const loadPost = useCallback(async () => {
-  if (!mentorId || !postId || mentorId === "undefined" || postId === "undefined") {
-    return;
-  }
-  setLoading(true);
-  setErrorMessage("");
-  setIsForbidden(false);
+    if (!mentorId || !postId || mentorId === "undefined" || postId === "undefined") {
+      return;
+    }
+    setLoading(true);
+    setErrorMessage("");
+    setIsForbidden(false);
 
     try {
-      const token = getAccessToken();
-
-      const headers = {
-        "Content-Type": "application/json",
-      };
-
-      if (currentUserId) {
-        headers["X-USER-ID"] = String(currentUserId);
-      }
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
       const res = await fetch(`${BACKEND_URL}/api/v1/mentors/${mentorId}/posts/${postId}`, {
         method: "GET",
-        headers,
+        headers: getAuthHeaders(),
       });
 
       if (res.status === 403) {
@@ -80,8 +106,6 @@ export default function MentorPostDetailPage() {
 
       const data = await res.json();
       setPost(data);
-      // category/isPublic/attachmentIds를 같이 실어 보내지 않으면 백엔드가 그 값들을 비운 것으로 처리한다.
-      // 특히 attachmentIds가 빠지면 첨부 행은 물론 Cloudinary 원본까지 삭제된다.
       setEditForm({
         title: data.title,
         content: data.content,
@@ -102,13 +126,14 @@ export default function MentorPostDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [mentorId, postId, currentUserId]);
+  }, [mentorId, postId, currentUserId, getAuthHeaders]);
 
   useEffect(() => {
-  if (mentorId && postId) { 
-    loadPost();
-  }
-}, [loadPost, mentorId, postId]);
+    if (mentorId && postId) {
+      loadPost();
+      loadComments();
+    }
+  }, [loadPost, loadComments, mentorId, postId]);
 
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -119,14 +144,9 @@ export default function MentorPostDetailPage() {
 
     setSubmitting(true);
     try {
-      const token = getAccessToken();
-      const headers = { "Content-Type": "application/json" };
-      if (currentUserId) headers["X-USER-ID"] = String(currentUserId);
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-
       const res = await fetch(`${BACKEND_URL}/api/v1/mentors/${mentorId}/posts/${postId}`, {
         method: "PUT",
-        headers,
+        headers: getAuthHeaders(),
         body: JSON.stringify(editForm),
       });
 
@@ -160,14 +180,9 @@ export default function MentorPostDetailPage() {
   const confirmDelete = async () => {
     setDeleting(true);
     try {
-      const token = getAccessToken();
-      const headers = {};
-      if (currentUserId) headers["X-USER-ID"] = String(currentUserId);
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-
       const res = await fetch(`${BACKEND_URL}/api/v1/mentors/${mentorId}/posts/${postId}`, {
         method: "DELETE",
-        headers,
+        headers: getAuthHeaders(),
       });
 
       if (res.ok) {
@@ -183,6 +198,113 @@ export default function MentorPostDetailPage() {
       setDeleting(false);
     }
   };
+
+  const handleToggleLike = async () => {
+    if (!currentUserId) {
+      showToast("로그인 후 이용 가능합니다.", "error");
+      router.push("/login");
+      return;
+    }
+    if (isLikeLoading) return;
+
+    const prevIsLiked = post?.isLiked ?? post?.liked ?? false;
+    const prevLikeCount = post?.likeCount ?? 0;
+
+    const nextIsLiked = !prevIsLiked;
+    const nextLikeCount = nextIsLiked ? prevLikeCount + 1 : Math.max(0, prevLikeCount - 1);
+
+    setPost((prev) => ({
+      ...prev,
+      isLiked: nextIsLiked,
+      liked: nextIsLiked,
+      likeCount: nextLikeCount,
+    }));
+
+    try {
+      setIsLikeLoading(true);
+      const method = prevIsLiked ? "DELETE" : "POST";
+      const res = await fetch(`${BACKEND_URL}/api/v1/mentors/${mentorId}/posts/${postId}/likes`, {
+        method,
+        headers: getAuthHeaders(),
+      });
+
+      if (!res.ok) {
+        throw new Error("좋아요 처리에 실패했습니다.");
+      }
+    } catch (err) {
+      console.error(err);
+      setPost((prev) => ({
+        ...prev,
+        isLiked: prevIsLiked,
+        liked: prevIsLiked,
+        likeCount: prevLikeCount,
+      }));
+      showToast(err.message || "서버 오류가 발생했습니다.", "error");
+    } finally {
+      setIsLikeLoading(false);
+    }
+  };
+
+  // --- 댓글 작성 처리 ---
+  const handleCreateComment = async (e) => {
+    e.preventDefault();
+    if (!currentUserId) {
+      showToast("로그인 후 댓글을 작성할 수 있습니다.", "error");
+      router.push("/login");
+      return;
+    }
+
+    if (!commentInput.trim()) {
+      showToast("댓글 내용을 입력해주세요.", "error");
+      return;
+    }
+
+    setSubmittingComment(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/v1/mentors/${mentorId}/posts/${postId}/comments`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ content: commentInput }),
+      });
+
+      if (res.ok) {
+        showToast("댓글이 작성되었습니다.", "success");
+        setCommentInput("");
+        loadComments();
+      } else {
+        showToast("댓글 작성에 실패했습니다.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("서버 오류가 발생했습니다.", "error");
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
+
+  // --- 댓글 삭제 처리 ---
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm("댓글을 삭제하시겠습니까?")) return;
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/v1/mentors/${mentorId}/posts/${postId}/comments/${commentId}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
+
+      if (res.ok) {
+        showToast("댓글이 삭제되었습니다.", "success");
+        setComments((prev) => prev.filter((c) => (c.id || c.commentId) !== commentId));
+      } else {
+        showToast("댓글 삭제에 실패했습니다.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("서버 오류가 발생했습니다.", "error");
+    }
+  };
+
+  const isLikedState = post?.isLiked ?? post?.liked ?? false;
 
   return (
     <main className={styles.page}>
@@ -304,7 +426,6 @@ export default function MentorPostDetailPage() {
 
             {post.images && post.images.length > 0 && (
               <div style={{ marginTop: "30px" }}>
-                <h4 style={{ marginBottom: "10px" }}>첨부 이미지</h4>
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                   {post.images.map((img) => (
                     <img
@@ -347,6 +468,92 @@ export default function MentorPostDetailPage() {
                 </ul>
               </div>
             )}
+
+            {/* 좋아요 버튼 섹션 */}
+            <div className={styles.likeSection}>
+              <button
+                type="button"
+                className={styles.likeButton}
+                onClick={handleToggleLike}
+                disabled={isLikeLoading}
+              >
+                <div className={`${styles.likeIcon} ${isLikedState ? styles.likeIconActive : ""}`}>
+                  {isLikedState ? <FaHeart /> : <FaRegHeart />}
+                </div>
+                <span className={styles.likeCount}>
+                  좋아요 {post.likeCount ?? 0}
+                </span>
+              </button>
+            </div>
+
+            {/* --- 댓글 섹션 --- */}
+            <section className={styles.commentSection}>
+              <h3 className={styles.commentTitle}>댓글 ({comments.length})</h3>
+
+              {/* 댓글 입력 폼 */}
+              <form onSubmit={handleCreateComment} className={styles.commentForm}>
+                <textarea
+                  className={styles.commentInput}
+                  placeholder={
+                    currentUserId
+                      ? "댓글을 입력하세요..."
+                      : "로그인 후 댓글을 작성할 수 있습니다."
+                  }
+                  value={commentInput}
+                  onChange={(e) => setCommentInput(e.target.value)}
+                  disabled={!currentUserId || submittingComment}
+                />
+                <button
+                  type="submit"
+                  className={styles.commentSubmitBtn}
+                  disabled={!currentUserId || submittingComment}
+                >
+                  {submittingComment ? "등록 중..." : "등록"}
+                </button>
+              </form>
+
+              {/* 댓글 목록 */}
+              {commentsLoading ? (
+                <p className={styles.statusText}>댓글을 불러오는 중...</p>
+              ) : comments.length === 0 ? (
+                <p className={styles.emptyComments}>작성된 댓글이 없습니다.</p>
+              ) : (
+                <div className={styles.commentList}>
+                  {comments.map((comment) => {
+                    const commentId = comment.id || comment.commentId;
+                    const isCommentOwner =
+                      currentUserId &&
+                      String(comment.userId || comment.authorId) === String(currentUserId);
+
+                    return (
+                      <div key={commentId} className={styles.commentItem}>
+                        <div className={styles.commentMeta}>
+                          <div className={styles.commentAuthorInfo}>
+                            <span className={styles.commentAuthor}>
+                              {comment.authorName || comment.userName || "익명"}
+                            </span>
+                            <span className={styles.commentDate}>
+                              {formatDate(comment.createdAt)}
+                            </span>
+                          </div>
+                          {isCommentOwner && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteComment(commentId)}
+                              className={styles.commentDeleteBtn}
+                              title="댓글 삭제"
+                            >
+                              <FaTrash size={12} />
+                            </button>
+                          )}
+                        </div>
+                        <p className={styles.commentBody}>{comment.content}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
           </article>
         )}
       </section>

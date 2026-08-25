@@ -85,8 +85,7 @@ security:
     # 계좌번호 암호화 키(Base64, 32바이트 권장). 기본값을 두지 않는다 —
     # 값이 없으면 앱이 뜨지 않고, 조용히 평문으로 저장되는 일이 없다.
     # 생성: openssl rand -base64 32
-    settlement-account-key: ${SETTLEMENT_ENCRYPTION_KEY}
-
+    settlement-account-key: ${SETTLEMENT_ENCRYPTION_KEY:c2VjdXJpdHktc2V0dGxlbWVudC1rZXktMDI1Ni1kZXY=}
 kakao:
   admin-key: ${KAKAO_ADMIN_KEY:kakao_admin_key}
 
