@@ -3,6 +3,8 @@ package com.example.findAnswer.mentorbridge.entity;
 import com.example.findAnswer.mentorbridge.constants.SettlementStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "settlements")
@@ -22,6 +24,7 @@ public class Settlement extends BaseTimeEntity {
     // 돈을 받을 멘토
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "mentor_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private User mentor;
 
     @Column(nullable = false)

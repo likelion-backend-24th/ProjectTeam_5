@@ -5,6 +5,8 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 // 멘토 리뷰(별점 + 코멘트). 유저당 멘토 한 명에게 리뷰 하나만 남길 수 있다(재작성은 update).
 @Entity
@@ -24,10 +26,12 @@ public class MentorReview extends BaseTimeEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "mentor_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private User mentor;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private User user;
 
     @Column(nullable = false)

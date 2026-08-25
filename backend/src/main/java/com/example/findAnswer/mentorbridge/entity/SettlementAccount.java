@@ -3,6 +3,8 @@ package com.example.findAnswer.mentorbridge.entity;
 import com.example.findAnswer.mentorbridge.converter.EncryptedStringConverter;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "settlement_accounts")
@@ -17,6 +19,7 @@ public class SettlementAccount extends BaseTimeEntity {
     // 멘토(User)와 1:1 매핑
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", unique = true, nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private User user;
 
     @Column(nullable = false, length = 50)

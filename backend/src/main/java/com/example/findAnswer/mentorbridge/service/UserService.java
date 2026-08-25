@@ -282,4 +282,15 @@ public class UserService {
 
         return UserResponse.from(user);
     }
+
+    @Transactional
+    public void deleteUserByAdmin(Long userId) {
+        User user = getUserById(userId);
+
+        // 리프레시 토큰 등 세션 정보만 정리 (필요 시)
+        refreshTokenRepository.deleteByUserId(userId);
+
+        // 회원 삭제 -> DB의 ON DELETE CASCADE 기능에 의해 연관 자식 레코드 전체 자동 삭제
+        userRepository.delete(user);
+    }
 }

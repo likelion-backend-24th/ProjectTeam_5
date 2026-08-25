@@ -3,6 +3,8 @@ package com.example.findAnswer.mentorbridge.entity;
 import com.example.findAnswer.mentorbridge.constants.MentorApplicationStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "mentor_applications")
@@ -17,6 +19,7 @@ public class MentorApplication extends BaseTimeEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private User user;
 
     @Enumerated(EnumType.STRING)

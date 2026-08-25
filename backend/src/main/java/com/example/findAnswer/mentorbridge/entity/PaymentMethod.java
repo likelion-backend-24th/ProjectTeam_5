@@ -4,6 +4,8 @@ import com.example.findAnswer.mentorbridge.constants.PaymentMethodStatus;
 import com.example.findAnswer.mentorbridge.constants.PaymentProvider;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "payment_methods")
@@ -18,6 +20,7 @@ public class PaymentMethod extends BaseTimeEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private User user;
 
     @Enumerated(EnumType.STRING)

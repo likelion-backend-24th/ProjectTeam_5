@@ -4,6 +4,8 @@ import com.example.findAnswer.mentorbridge.constants.AttachmentFileType;
 import com.example.findAnswer.mentorbridge.constants.AttachmentStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "question_attachment_files")
@@ -24,6 +26,7 @@ public class QuestionAttachmentFile extends BaseTimeEntity{
     // 질문 첨부와 멘토 게시글 첨부가 이 엔티티 하나를 공유한다 — 둘 중 하나만 채워진다.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "mentor_post_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private MentorPost mentorPost;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
