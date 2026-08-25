@@ -14,8 +14,6 @@ export default function PublicProfilePage() {
     const { id } = useParams();
     const router = useRouter();
     const { user: currentUser } = useAuth();
-    const { showToast } = useToast();
-
     const [profile, setProfile] = useState(null);
     const [questions, setQuestions] = useState([]);
 

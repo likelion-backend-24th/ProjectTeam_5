@@ -122,12 +122,17 @@ export async function request(
     let serverMessage = typeof data === "object" ? data?.message || data?.error : data;
     let message = serverMessage;
 
-    if (!message) {
-      if (response.status === 401 || response.status === 403) {
-        message = "로그인이 필요한 서비스입니다.";
-      } else {
-        message = fallbackMessage;
-      }
+    // 401, 403 인증/권한 에러 처리
+    if (
+      response.status === 401 ||
+      response.status === 403 ||
+      message === "Unauthorized"
+    ) {
+      message = "로그인이 필요한 서비스입니다.";
+    } 
+    // 메시지가 없거나 Spring Boot 기본 에러 문구("No message available")일 경우 fallbackMessage로 대체
+    else if (!message || message === "No message available") {
+      message = fallbackMessage;
     }
 
     const error = new Error(message);
@@ -135,6 +140,6 @@ export async function request(
     error.data = data;
     throw error;
   }
-
+  
   return data;
 }
