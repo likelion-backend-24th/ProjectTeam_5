@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/contexts/AuthContext";
+import { useToast } from "@/app/contexts/ToastContext";
 import { createMentorPlan } from "@/lib/mentorPlans";
 
 export default function MentorPlanNewPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { showToast } = useToast();
 
   const [planName, setPlanName] = useState("");
   const [description, setDescription] = useState("");
@@ -32,7 +34,7 @@ export default function MentorPlanNewPage() {
         price: Number(price),
         billingCycle: Number(billingCycle),
       });
-      alert("요금제가 등록됐습니다. 이제 멘토 목록에 노출됩니다.");
+      showToast("요금제가 등록됐습니다. 이제 멘토 목록에 노출됩니다.", "success");
       router.push("/profile"); // 등록 성공 → 프로필로 복귀
     } catch (err) {
 

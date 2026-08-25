@@ -5,10 +5,24 @@ import { request } from "./client";
 // 갱신이 안 된다(lib/auth.js의 주석 참고). 관리자 화면이 토큰 만료 후 영구히 실패하던 원인.
 export { getAccessToken as getToken } from "./tokenStore";
 
-// 1. 전체 회원 목록 조회
+// 1. 전체 회원 목록 조회 (페이지네이션 없음 — 질문 관리 탭의 작성자 집계 전용)
 export function getAllUsers() {
   return request("/api/admin/users", {
     method: "GET",
+    fallbackMessage: "회원 목록을 불러오지 못했습니다.",
+  });
+}
+
+// 1-1. 회원 관리 탭 전용 — 검색/역할 필터/정렬 + 서버 페이지네이션
+export function searchUsers({ page = 0, size = 20, keyword = "", role, sort = "latest" } = {}) {
+  const token = getToken();
+  const params = new URLSearchParams({ page, size, sort });
+  if (keyword) params.set("keyword", keyword);
+  if (role && role !== "ALL") params.set("role", role);
+
+  return request(`/api/admin/users/search?${params.toString()}`, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
     fallbackMessage: "회원 목록을 불러오지 못했습니다.",
   });
 }

@@ -1,8 +1,8 @@
 # FindAnswer (MentorBridge)
 
-> 멘토와 멘티를 잇는 Q&A 멘토링 플랫폼 — 궁금한 것을 질문하고 전문가(멘토)에게 답변받는 지식 공유 서비스
+> 멘토와 멘티를 잇는 유료 구독형 Q&A 멘토링 플랫폼 — 궁금한 것을 질문하고 전문가(멘토)에게 답변받고, 마음에 드는 멘토는 요금제를 구독해 1:1 채팅·전용 아티클까지 이용할 수 있는 지식 공유 서비스
 
-멋쟁이사자처럼 백엔드 24기 5팀 포트폴리오 프로젝트입니다. 사용자는 카테고리별로 질문을 등록하고, 승인된 멘토들이 답변(및 대댓글)을 달아주는 커뮤니티형 멘토링 플랫폼입니다.
+멋쟁이사자처럼 백엔드 24기 5팀 포트폴리오 프로젝트입니다. 사용자는 카테고리별로 질문을 등록하고, 승인된 멘토들이 답변(및 대댓글)을 달아줍니다. 더 나아가 멘토는 요금제(플랜)를 만들어 판매하고, 멘티는 PortOne 결제로 구독해 멘토 전용 아티클과 1:1 채팅을 이용할 수 있는 커뮤니티형 멘토링 플랫폼입니다.
 
 ---
 
@@ -13,26 +13,49 @@
 - **소셜 로그인(OAuth2)** — Google, Kakao
 - **JWT 인증** — Access Token(15분) + Refresh Token(14일, HttpOnly 쿠키)
 - Refresh Token은 해시값으로 저장하여 보안 강화
-- 프로필 수정(이름·관심분야), 이메일·비밀번호 변경, 회원 탈퇴(OAuth 연결 해제 포함)
+- 프로필(이름·관심분야·소개·프로필 이미지) 수정, 이메일 변경(인증코드 확인 포함), 비밀번호 변경, 회원 탈퇴(OAuth 연결 해제 포함)
+- 이메일 인증(코드 발송 / 검증)
+- 사용자 팔로우 / 언팔로우, 공개 프로필 조회
 
-### 질문(Question)
-- 질문 작성 / 수정 / 삭제 (작성자 본인만)
-- 카테고리별 목록 조회 및 키워드 검색
-- 페이징 지원 (기본 10개, 최신순 정렬)
-- 질문 상세 조회
-
-### 답변(Answer)
-- 특정 질문에 대한 답변 작성 / 수정 / 삭제
-- **대댓글(답변의 답변)** 기능 지원 (부모-자식 계층 구조)
+### 질문(Question) & 답변(Answer)
+- 질문 작성 / 수정 / 삭제 (작성자 본인만), 카테고리별 목록 조회 · 키워드 검색 · 페이징(기본 10개)
+- 질문 좋아요 토글
+- 팔로우한 유저의 질문 피드 조회
+- 특정 유저가 작성한 질문 / 답변한 질문 목록 조회
+- 답변 작성 / 수정 / 삭제, **대댓글(답변의 답변)** 지원 (부모-자식 계층 구조)
+- 질문 첨부파일 업로드 · 다운로드
 
 ### 멘토(Mentor)
-- 일반 사용자의 멘토 신청 및 신청 상태 조회
-- 관리자(ADMIN)의 멘토 신청 목록 조회 / 승인 / 거절
-- 승인 시 사용자 권한이 `USER` → `MENTOR`로 승격
+- 일반 사용자의 멘토 신청 및 신청 상태 조회 → 관리자 승인 시 `USER` → `MENTOR` 승격
+- 멘토 목록 검색(이름/소개/태그) · 상세 조회 · 프로필 수정
+- **멘토 리뷰**: 구독 이력이 있는 유저만 작성 가능, 본인 리뷰 수정/삭제
+- **멘토 아티클(Post)**: 마크다운 글 작성/수정/삭제, 좋아요, 조회 기록
+- **멘토 대시보드**: 요약 지표, 기간별 트렌드, 평점 히스토그램, 프로필 완성도, 최근 글/리뷰, 구독자 목록, 결제 내역, 대기 중인 환불 요청
+
+### 요금제 · 구독 · 결제 (PortOne 연동)
+- 멘토가 **요금제(Plan)** 를 등록/수정/삭제
+- 멘티는 등록된 결제수단(빌링키)으로 요금제를 **구독**하면 서버가 즉시 청구 (결제창 팝업 없이 처리)
+- 구독 해지 예약, 멘토별 구독 권한(접근 가능 여부) 검증, 내 구독 목록/결제 이력 조회
+- **결제수단 관리**: PortOne 빌링키 발급 준비 → 등록 → 기본 결제수단 지정 → 삭제
+- **환불**: 멘티의 환불 요청 → 관리자 승인 시 PortOne 취소 API 실호출로 실제 환불 처리
+- **PortOne 웹훅** 수신 및 서명 검증으로 결제 상태 동기화
+
+### 채팅 & 알림
+- 구독 중인 멘토-멘티 간 1:1 채팅방 생성/조회, 메시지 전송 및 페이징 조회, 채팅 종료(대화 이력 삭제)
+- 알림 목록 조회(페이징), 안 읽은 개수, 읽음 처리(단건/전체), 삭제(읽은 알림 일괄/단건)
+
+### 고객센터 / 관리자
+- 비회원도 이용 가능한 **1:1 문의** 등록
+- 관리자(ADMIN) 전용:
+  - 멘토 신청 목록 조회 / 승인 / 거절
+  - 회원 검색(키워드·역할 필터·정렬) + 페이지네이션, 전체 회원 목록, 회원 차단/차단 해제, 강제 탈퇴(소프트 삭제)
+  - 대기 중인 환불 요청 조회 / 승인 / 거절
+  - 문의 목록 조회 / 상태 변경
 
 ### 운영
 - Actuator + Prometheus 기반 헬스체크 / 모니터링
 - Swagger(OpenAPI) 기반 API 문서 자동화
+- Cloudinary 서명 업로드(이미지), 로컬 디스크 저장(일반 첨부파일)
 
 ---
 
@@ -45,7 +68,10 @@
 | Framework | Spring Boot 4.1.0 |
 | Persistence | Spring Data JPA (Hibernate) |
 | Security | Spring Security, OAuth2 Client, JWT (jjwt 0.12.5) |
-| Database | PostgreSQL (운영/개발), MySQL 8.4 (Docker), H2 (테스트) |
+| Database | PostgreSQL (운영/개발, Supabase), MySQL 8.4 (Docker), H2 (테스트) |
+| 결제 | PortOne 서버 SDK (`io.portone:server-sdk`) — 빌링키/결제/환불/웹훅 |
+| 파일/이미지 | Cloudinary (서명 업로드), 로컬 디스크 업로드(첨부파일) |
+| 메일 | Spring Mail (이메일 인증 코드 발송) |
 | Docs | springdoc-openapi (Swagger UI) |
 | Monitoring | Spring Actuator, Micrometer + Prometheus |
 | Build | Gradle |
@@ -56,12 +82,14 @@
 | Framework | Next.js 16 (App Router) |
 | Library | React 19 |
 | Styling | Tailwind CSS 4, CSS Modules |
+| 결제 | `@portone/browser-sdk` |
+| 콘텐츠 렌더링 | `react-markdown`, `remark-gfm`, `remark-breaks`, `rehype-highlight`, `highlight.js` (멘토 아티클 마크다운) |
 | Icons | react-icons |
 
 ### Infra / DevOps
 - Docker / Docker Compose (backend + MySQL + Nginx + Certbot)
 - Nginx 리버스 프록시, Let's Encrypt(Certbot) HTTPS
-- GitHub Actions CI/CD (`backend-ci-workflow`, `backend-deploy-workflow`)
+- GitHub Actions CI/CD — `main` 브랜치의 `backend/**` 변경 시 self-hosted 러너가 자동으로 `docker compose up -d --build backend` 재배포 (`backend-ci-workflow`, `backend-deploy-workflow`)
 - 배포: Vercel(Frontend), Supabase PostgreSQL(DB)
 
 ---
@@ -74,15 +102,24 @@ ProjectTeam_5/
 │   └── src/main/java/com/example/findAnswer/
 │       ├── FindAnswerApplication.java
 │       └── mentorbridge/
-│           ├── controller/       # Auth, User, Question, Answer, Admin, Health
+│           ├── controller/       # Auth, User, Question, Answer, Mentor, MentorPlan,
+│           │                     #   MentorPost, MentorDashboard, Subscription, Payment,
+│           │                     #   PaymentMethod, Webhook, Chat, Notification, Inquiry,
+│           │                     #   Attachment, Admin, Health
 │           ├── service/          # 비즈니스 로직
 │           ├── repository/       # JPA Repository
-│           ├── entity/           # User, Question, Answer, MentorApplication,
-│           │                     #   OAuthAccount, RefreshToken, BaseTimeEntity
-│           ├── dto/              # 요청/응답 DTO (answer, question, user, oauth, ...)
+│           ├── entity/           # User, Question/Answer/QuestionLike, MentorApplication,
+│           │                     #   MentorProfile, MentorPlan, MentorPost(+Like/ViewLog),
+│           │                     #   MentorReview, Subscription, Payment/PaymentTransaction/
+│           │                     #   PaymentMethod/PaymentCancellation, BillingKeyIssuanceIntent,
+│           │                     #   ChatRoom/ChatMessage, Notification, Inquiry, Follow,
+│           │                     #   OAuthAccount, RefreshToken, EmailVerification,
+│           │                     #   QuestionAttachmentFile, WebhookEvent, BaseTimeEntity
+│           ├── dto/              # 요청/응답 DTO (도메인별 하위 패키지)
 │           ├── jwt/              # JwtTokenProvider, JwtAuthenticationFilter
-│           ├── config/           # SecurityConfig, SwaggerConfig
+│           ├── config/           # SecurityConfig, SwaggerConfig 등
 │           ├── handler/          # 전역 예외 처리, OAuth 성공/실패 핸들러
+│           ├── webhook/          # PortOne 웹훅 서명 검증
 │           ├── constants/        # Role, Provider, ErrorCode, 상태 enum
 │           └── ...               # exception, factory, listener, client
 │
@@ -90,13 +127,20 @@ ProjectTeam_5/
 │   └── src/
 │       ├── app/                  # App Router 페이지
 │       │   ├── (auth)/           # 로그인 · 회원가입
+│       │   ├── admin/            # 관리자 페이지 (회원/멘토/환불/문의 관리)
+│       │   ├── chat/[roomId]/    # 1:1 채팅
+│       │   ├── mentors/          # 멘토 목록/상세, 멘토 아티클
+│       │   ├── mentor/dashboard/ # 멘토 대시보드
+│       │   ├── profile/          # 마이페이지, 요금제 관리, 결제수단, 구독 관리
 │       │   ├── questions/        # 질문 목록/상세/작성/수정, 답변
-│       │   ├── mentor-articles/  # 멘토 아티클
-│       │   ├── profile/          # 마이페이지
+│       │   ├── users/[id]/       # 공개 프로필
 │       │   ├── oauth/            # 소셜 로그인 콜백
 │       │   └── contexts/         # AuthContext
 │       ├── components/           # Header, Icons
-│       ├── lib/                  # API 클라이언트 (auth, questions, users, ...)
+│       ├── lib/                  # API 클라이언트 (auth, questions, users, mentors,
+│       │                         #   mentorPlans, mentorPosts, mentorDashboard,
+│       │                         #   subscriptions, payments, chat, notifications,
+│       │                         #   attachments, admin, ...)
 │       └── constants/            # 라우트 상수
 │
 ├── docker-compose.yml            # backend + MySQL + Nginx + Certbot
@@ -108,15 +152,29 @@ ProjectTeam_5/
 
 ## 🗂 데이터 모델 (핵심 엔티티)
 
-| 엔티티 | 설명 | 주요 관계 |
-|--------|------|-----------|
-| **User** | 사용자 (email, password, name, interests, role) | `1:N` MentorApplication |
-| **Question** | 질문 게시글 (title, content, category) | `N:1` User, `1:N` Answer |
-| **Answer** | 답변 (content, 대댓글용 self-reference) | `N:1` Question, `N:1` User, `1:N` children |
-| **MentorApplication** | 멘토 신청 (status: PENDING/APPROVED/REJECTED) | `N:1` User |
-| **OAuthAccount** | 소셜 계정 연동 정보 | `N:1` User |
-| **RefreshToken** | Refresh Token 저장 (해시값) | `N:1` User |
-| **BaseTimeEntity** | 생성/수정 시각 공통 필드 | (상속용) |
+| 엔티티 | 설명 |
+|--------|------|
+| **User** | 사용자 (email, password, name, interests, role, 소개/프로필 이미지) |
+| **Follow** | 사용자 간 팔로우 관계 |
+| **Question** / **Answer** / **QuestionLike** | 질문, 답변(대댓글 self-reference), 질문 좋아요 |
+| **QuestionAttachmentFile** | 질문 첨부파일 |
+| **MentorApplication** | 멘토 신청 (status: PENDING/APPROVED/REJECTED) |
+| **MentorProfile** | 멘토 공개 프로필(소개, 태그 등) |
+| **MentorPlan** | 멘토가 판매하는 구독 요금제 |
+| **MentorPost** / **MentorPostLike** / **MentorPostViewLog** | 멘토 전용 아티클, 좋아요, 조회 기록 |
+| **MentorReview** | 구독 이력이 있는 멘티가 남기는 멘토 리뷰 |
+| **Subscription** | 멘티-멘토 구독 관계 (요금제, 상태, 해지 예약) |
+| **PaymentMethod** / **BillingKeyIssuanceIntent** | 등록된 결제수단(PortOne 빌링키), 빌링키 발급 시도 |
+| **Payment** / **PaymentTransaction** | 결제 건 및 거래 이력 |
+| **PaymentCancellation** | 환불 요청 및 처리 상태 |
+| **WebhookEvent** | 수신한 PortOne 웹훅 이벤트(중복 처리 방지) |
+| **ChatRoom** / **ChatMessage** | 멘토-멘티 1:1 채팅방과 메시지 |
+| **Notification** | 사용자 알림 |
+| **Inquiry** | 1:1 문의 (비회원 가능) |
+| **OAuthAccount** | 소셜 계정 연동 정보 |
+| **RefreshToken** | Refresh Token 저장 (해시값) |
+| **EmailVerification** | 이메일 인증 코드 |
+| **BaseTimeEntity** | 생성/수정 시각 공통 필드 (상속용) |
 
 **Role**: `USER`(일반) · `MENTOR`(전문가) · `ADMIN`(관리자)
 
@@ -124,7 +182,7 @@ ProjectTeam_5/
 
 ## 🔌 API 개요
 
-Base URL: `/api`
+Base URL: `/api` (일부 결제/채팅/알림/문의 도메인은 `/api/v1`)
 
 ### Auth (`/api/auth`)
 | Method | Endpoint | 설명 | 인증 |
@@ -138,36 +196,115 @@ Base URL: `/api`
 | Method | Endpoint | 설명 |
 |--------|----------|------|
 | GET | `/me` | 내 프로필 조회 |
-| PATCH | `/me` | 프로필(이름·관심분야) 수정 |
-| PATCH | `/me/email` | 이메일 수정 |
-| PATCH | `/me/password` | 비밀번호 수정 |
+| GET | `/` | 전체 회원 목록(공개, 탈퇴 계정 제외) |
+| GET | `/{userId}` | 특정 유저 공개 프로필 조회 |
+| PATCH | `/me` · `/me/public-profile` · `/me/profile-image` | 프로필 / 공개 프로필 / 프로필 이미지 수정 |
+| PATCH | `/me/email` · `/me/password` | 이메일 / 비밀번호 수정 |
+| POST | `/me/email/verification-code` · `/me/email/verify` | 이메일 인증코드 발송 / 검증 |
 | DELETE | `/me` | 회원 탈퇴 |
-| POST | `/me/mentor/application` | 멘토 신청 |
-| GET | `/me/mentor/application` | 내 멘토 신청 상태 조회 |
+| POST | `/{userId}/follow` | 팔로우/언팔로우 토글 |
+| POST | `/me/mentor/application` · GET | 멘토 신청 / 내 신청 상태 조회 |
 
 ### Question (`/api/questions`)
 | Method | Endpoint | 설명 | 인증 |
 |--------|----------|------|------|
 | GET | `/` | 목록 조회 / 검색 (`keyword`, `category`, 페이징) | ✕ |
 | GET | `/{questionId}` | 상세 조회 | ✕ |
+| GET | `/user/{userId}` · `/user/{userId}/answered` | 특정 유저의 작성/답변 질문 목록 | ✕ |
+| GET | `/following` | 팔로우한 유저의 질문 피드 | ○ |
 | POST | `/` | 질문 작성 | ○ |
+| POST | `/{questionId}/like` | 좋아요 토글 | ○ |
 | PATCH | `/{questionId}` | 질문 수정 | ○ (작성자) |
 | DELETE | `/{questionId}` | 질문 삭제 | ○ (작성자) |
 
 ### Answer
 | Method | Endpoint | 설명 |
 |--------|----------|------|
-| POST | `/api/questions/{questionId}/answers` | 답변 작성 |
-| GET | `/api/questions/{questionId}/answers` | 답변 목록 조회 |
-| PATCH | `/api/answers/{answerId}` | 답변 수정 |
-| DELETE | `/api/answers/{answerId}` | 답변 삭제 |
+| POST / GET | `/api/questions/{questionId}/answers` | 답변 작성 / 목록 조회 |
+| PATCH / DELETE | `/api/answers/{answerId}` | 답변 수정 / 삭제 |
+
+### Mentor (`/api/mentors`)
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/` | 멘토 목록 검색(키워드, 페이징) |
+| GET / PUT | `/{mentorId}` | 상세 조회 / 프로필 수정(본인) |
+| GET / POST / DELETE | `/{mentorId}/reviews[/{reviewId}]` | 리뷰 조회 / 작성·수정 / 삭제 |
+
+### Mentor Plan (`/api/v1/mentors/{mentorId}/plans`) — 멘토 본인만 등록/수정/삭제
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/` · `/{planId}` | 요금제 목록 / 단건 조회 |
+| POST / PUT / DELETE | `/` · `/{planId}` | 요금제 등록 / 수정 / 삭제(비활성화) |
+
+### Mentor Post — 멘토 아티클 (`/api/v1/mentors/{mentorId}/posts`)
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/` · `/{postId}` | 목록 / 상세 조회 |
+| POST / PUT / DELETE | `/` · `/{postId}` | 작성 / 수정 / 삭제(멘토 본인만) |
+| POST / DELETE | `/{postId}/likes` | 좋아요 / 좋아요 취소 |
+
+### Mentor Dashboard (`/api/mentors/me/dashboard`) — 로그인한 멘토 본인 데이터
+`/summary`, `/trend`, `/rating-histogram`, `/profile-completeness`, `/recent-posts`, `/recent-reviews`, `/subscribers`, `/refunds`, `/payments` (모두 GET)
+
+### Subscription (`/api/v1/subscriptions`)
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| POST | `/?planid={id}` | 구독 신청 (등록 카드로 즉시 청구) |
+| PATCH | `/{subscriptionId}/cancel` | 구독 해지 예약 |
+| GET | `/check?mentorId={id}` | 구독 권한(접근 가능 여부) 검증 |
+| GET | `/me` | 내 구독 목록 |
+| GET | `/{subscriptionId}/payments` | 구독별 결제 이력 |
+
+### Payment / Payment Method (`/api/v1/payments`, `/api/payment-methods`)
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| POST | `/api/v1/payments/{paymentId}/complete` | 결제창 완료 후 서버가 PortOne 재조회하여 확정 |
+| POST / GET | `/api/v1/payments/{paymentId}/cancellations` · `/cancellations/me` | 환불 요청 / 내 환불 이력 |
+| POST | `/api/payment-methods/prepare` | 빌링키 발급 준비 |
+| POST / GET | `/api/payment-methods` | 결제수단 등록 / 목록 조회 |
+| PATCH / DELETE | `/api/payment-methods/{id}/default` · `/{id}` | 기본 결제수단 지정 / 삭제 |
+
+### Webhook (`/api/v1/webhooks`)
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| POST | `/portone` | PortOne 웹훅 수신 (서명 검증, 중복 이벤트 무시) |
+
+### Chat (`/api/v1`)
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| POST | `/mentors/{mentorId}/chat-room` | 채팅방 생성/조회 (구독 중인 멘토만) |
+| GET | `/chat-rooms/me` | 내 채팅방 목록 |
+| POST / GET | `/chat-rooms/{roomId}/messages` | 메시지 전송 / 목록(페이징) |
+| DELETE | `/chat-rooms/{roomId}` | 채팅 종료(이력 삭제) |
+
+### Notification (`/api/v1/notifications`)
+GET `/`(페이징), GET `/unread-count`, PATCH `/{id}/read`, PATCH `/read-all`, DELETE `/read`, DELETE `/{id}`
+
+### Attachment (`/api/attachments`)
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| POST | `/images/signature` · `/profile-image/signature` | Cloudinary 서명 업로드 URL 발급 |
+| POST | `/files` (multipart) | 일반 파일 업로드(서버 디스크 저장) |
+| GET | `/files/{attachId}/download` | 파일 다운로드 |
+
+### Inquiry (`/api/v1/inquiries`, `/api/admin/inquiries`)
+| Method | Endpoint | 설명 | 인증 |
+|--------|----------|------|------|
+| POST | `/api/v1/inquiries` | 문의 등록 | ✕ |
+| GET | `/api/admin/inquiries` | 문의 목록 조회 | ADMIN |
+| PATCH | `/api/admin/inquiries/{id}/status` | 문의 상태 변경 | ADMIN |
 
 ### Admin (`/api/admin`) — `ADMIN` 권한 전용
 | Method | Endpoint | 설명 |
 |--------|----------|------|
 | GET | `/mentors/applications` | 멘토 신청 목록 조회 |
-| PATCH | `/mentors/{userId}/approval` | 멘토 승인 |
-| PATCH | `/mentors/{userId}/rejection` | 멘토 거절 |
+| PATCH | `/mentors/{userId}/approval` · `/rejection` | 멘토 승인 / 거절 |
+| GET | `/users` | 전체 회원 목록 (페이징 없음) |
+| GET | `/users/search` | 회원 검색(키워드/역할/정렬) + 페이지네이션 |
+| PATCH | `/users/{userId}/block` · `/unblock` | 회원 차단 / 차단 해제 |
+| DELETE | `/users/{userId}` | 회원 강제 탈퇴(소프트 삭제) |
+| GET | `/cancellations` | 대기 중인 환불 요청 목록 |
+| PATCH | `/cancellations/{id}/approve` · `/reject` | 환불 승인(PortOne 취소 실행) / 거절 |
 
 ### 소셜 로그인
 - `GET /oauth2/authorization/{provider}` — `provider`: `google`, `kakao`
@@ -225,9 +362,14 @@ export DB_USERNAME=findanswer
 export DB_PASSWORD=findanswer123
 export JWT_SECRET_KEY=local-dev-secret-please-change-me-32chars-min
 
-# OAuth 로그인을 테스트하지 않는다면 아래는 생략 가능 (일반 로그인/회원가입은 정상 동작)
+# OAuth / 결제(PortOne) / 이미지(Cloudinary) / 메일 발송을 테스트하지 않는다면 아래는 생략 가능
+# (해당 기능 관련 요청만 실패하고 서버 자체는 정상 기동됩니다)
 # export GOOGLE_CLIENT_ID=...   export GOOGLE_CLIENT_SECRET=...
 # export KAKAO_REST_API_KEY=... export KAKAO_CLIENT_SECRET=... export KAKAO_ADMIN_KEY=...
+# export PORTONE_STORE_ID=...   export PORTONE_API_SECRET=...  export PORTONE_WEBHOOK_SECRET=...
+# export PORTONE_CHANNEL_KEY_PAYMENT=...  export PORTONE_CHANNEL_KEY_BILLING=...
+# export CLOUDINARY_URL=...
+# export MAIL_USERNAME=...      export MAIL_PASSWORD=...
 
 ./gradlew bootRun
 ```
@@ -250,7 +392,7 @@ $env:JWT_SECRET_KEY="local-dev-secret-please-change-me-32chars-min"
 - API 문서: **`http://localhost:8080/swagger-ui/index.html`**
 - 헬스체크: **`http://localhost:8080/health`**
 
-> 💡 OAuth 관련 환경변수를 생략하면 개발용 더미 값으로 부팅되므로 서버는 정상 기동됩니다. 단, 실제 구글/카카오 소셜 로그인은 각 플랫폼에서 발급받은 키를 넣어야 동작합니다.
+> 💡 OAuth / PortOne / Cloudinary / 메일 관련 환경변수를 생략해도 서버는 정상 기동됩니다. 단, 소셜 로그인·결제/구독·이미지 업로드·이메일 인증처럼 해당 외부 연동이 필요한 기능만 실제 키가 있어야 동작합니다.
 
 ---
 
@@ -281,7 +423,7 @@ npm run dev
 #   DB_USERNAME=findanswer
 #   DB_PASSWORD=findanswer123
 #   DB_ROOT_PASSWORD=rootpassword
-#   JWT_SECRET_KEY=... (그 외 OAuth 키 등)
+#   JWT_SECRET_KEY=... (그 외 OAuth / PortOne / Cloudinary / 메일 키 등)
 
 docker compose up -d
 ```
@@ -310,6 +452,13 @@ docker compose up -d
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | 구글 OAuth |
 | `KAKAO_REST_API_KEY` / `KAKAO_CLIENT_SECRET` / `KAKAO_ADMIN_KEY` | 카카오 OAuth |
 | `SUCCESS_FRONT_REDIRECT_URI` / `FAILURE_FRONT_REDIRECT_URI` | OAuth 성공/실패 리다이렉트 |
+| `PORTONE_STORE_ID` / `PORTONE_API_SECRET` / `PORTONE_API_BASE_URL` | PortOne 스토어/API 인증 정보 |
+| `PORTONE_CHANNEL_KEY_PAYMENT` / `PORTONE_CHANNEL_KEY_BILLING` | PortOne 결제/빌링키 채널 키 |
+| `PORTONE_WEBHOOK_SECRET` | PortOne 웹훅 서명 검증 시크릿 |
+| `PORTONE_PAYMENT_ID_PREFIX` / `PORTONE_BILLING_ISSUE_ID_PREFIX` | PortOne 결제/빌링키 발급 ID 접두사 |
+| `CLOUDINARY_URL` | Cloudinary 이미지 업로드 연동 |
+| `MAIL_USERNAME` / `MAIL_PASSWORD` | 이메일 인증 코드 발송용 SMTP 계정 |
+| `UPLOAD_DIR` | 첨부파일(일반 파일) 저장 디렉터리 |
 | `NEXT_PUBLIC_API_URL` | (Frontend) 백엔드 API 주소 |
 
 ---
@@ -319,9 +468,10 @@ docker compose up -d
 - **인증 방식**: 무상태(Stateless) JWT — Access Token은 `Authorization: Bearer` 헤더, Refresh Token은 `HttpOnly` + `Secure` + `SameSite=None` 쿠키
 - **Refresh Token 저장**: DB에 원문이 아닌 **해시값**으로 저장
 - **비밀번호**: BCrypt 단방향 암호화
+- **결제 웹훅**: PortOne 웹훅은 서명(`webhook-signature`)을 원문 바디 기준으로 검증한 뒤에만 처리, 중복 이벤트는 `WebhookEvent` 유니크 제약으로 무시
 - **전역 예외 처리**: `GlobalExceptionHandler`에서 예외 타입 → HTTP 상태 코드 매핑을 한 곳에서 관리 (`ErrorCode`, `OAuth2ErrorCode`)
 - **CORS**: 허용 Origin 화이트리스트 (localhost, Vercel 배포 도메인)
-- **접근 제어**: 공개 API(질문 조회 등)와 인증 필요 API, `ADMIN` 전용 API 분리
+- **접근 제어**: 공개 API(질문/멘토 조회 등)와 인증 필요 API, `ADMIN` 전용 API 분리 — `ADMIN` API는 URL 패턴(`SecurityConfig`) 매칭뿐 아니라 컨트롤러 레벨 `@PreAuthorize`로 이중 검증
 
 ---
 
@@ -334,15 +484,3 @@ docker compose up -d
 | 이상민 | 부팀장 |
 | 박준성 | 팀원 |
 | 이동건 | 팀원 |
----
-
-⚙️ 로컬 실행 방법 (Getting Started)
-
-환경 변수 설정
-   - 백엔드 .env.dev 파일 생성 후 데이터베이스 및 OAuth 키 설정
-   - 프론트엔드 .env 파일 생성 후 NEXT_PUBLIC_API_URL 설정
-
-Docker Compose를 이용한 일괄 실행
-   ```bash
-   docker-compose -f docker-compose.yml up -d --build
-```

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/app/contexts/AuthContext";
+import { useToast } from "@/app/contexts/ToastContext";
 import {
   getMentorDashboardSummary,
   getMentorDashboardTrend,
@@ -204,6 +205,7 @@ function RatingHistogram({ histogram }) {
 export default function MentorDashboardPage() {
   const router = useRouter();
   const { user, isLoggedIn, loading: authLoading } = useAuth();
+  const { showToast } = useToast();
 
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
@@ -224,7 +226,7 @@ export default function MentorDashboardPage() {
     if (authLoading) return;
 
     if (!isLoggedIn || user?.role !== "MENTOR") {
-      alert("멘토만 이용할 수 있는 페이지입니다.");
+      showToast("멘토만 이용할 수 있는 페이지입니다.", "error");
       router.push("/profile");
       return;
     }

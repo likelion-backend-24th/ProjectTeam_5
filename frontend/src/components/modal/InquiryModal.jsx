@@ -2,9 +2,11 @@
 
 import { request } from "@/lib/client";
 import { useState } from "react";
+import { useToast } from "@/app/contexts/ToastContext";
 import styles from "./TermsModal.module.css";
 
 export default function InquiryModal({ isOpen, onClose }) {
+  const { showToast } = useToast();
   const [form, setForm] = useState({
     category: "일반문의",
     email: "",
@@ -23,7 +25,7 @@ export default function InquiryModal({ isOpen, onClose }) {
   const handleSubmit = async (e) => {
   e.preventDefault();
   if (!form.email || !form.title || !form.content) {
-    alert("이메일, 제목, 내용을 모두 입력해주세요.");
+    showToast("이메일, 제목, 내용을 모두 입력해주세요.", "error");
     return;
   }
 
@@ -36,12 +38,12 @@ export default function InquiryModal({ isOpen, onClose }) {
       fallbackMessage: "문의 및 신고 접수에 실패했습니다.",
     });
 
-    alert("문의 및 신고가 성공적으로 접수되었습니다. 빠른 시일 내에 답변해 드리겠습니다.");
+    showToast("문의 및 신고가 성공적으로 접수되었습니다. 빠른 시일 내에 답변해 드리겠습니다.", "success");
     setForm({ category: "일반문의", email: "", title: "", content: "" });
     onClose();
   } catch (error) {
     console.error(error);
-    alert(error.message || "접수 중 오류가 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+    showToast(error.message || "접수 중 오류가 오류가 발생했습니다. 잠시 후 다시 시도해주세요.", "error");
   } finally {
     setSubmitting(false);
   }

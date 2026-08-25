@@ -5,14 +5,21 @@ import { FaUserLarge } from "react-icons/fa6";
 import { useProfileActions } from "./useProfileActions";
 import ProfilePaymentSection from "./ProfilePaymentSection";
 import MentorPlanSection from "./MentorPlanSection";
+import { useToast } from "@/app/contexts/ToastContext";
+import ConfirmDialog from "@/components/modal/ConfirmDialog";
 import SettlementAccountSection from "./SettlementAccountSection";
 import styles from "./page.module.css";
 
 export default function ProfilePage() {
+  const { showToast } = useToast();
   const {
     user,
     isLoggedIn,
     loading,
+    pendingAction,
+    actionSubmitting,
+    runPendingAction,
+    setPendingAction,
     isEditing,
     setIsEditing,
     cancelEdit,
@@ -55,6 +62,7 @@ export default function ProfilePage() {
     passwordSubmitting,
     closePasswordModal,
     handleChangePassword,
+    // 프로필 이미지 변경
     uploadingImage,
     handleProfileImageChange,
   } = useProfileActions();
@@ -80,7 +88,7 @@ export default function ProfilePage() {
 
   const handle = user.email ? "@" + user.email.split("@")[0] : "@user";
   const tags = (user.interests || "").split(/[,#\s]+/).filter(Boolean);
-  const notReady = () => alert("아직 준비 중인 기능입니다.");
+  const notReady = () => showToast("아직 준비 중인 기능입니다.", "info");
 
   return (
       <main className={styles.page}>
@@ -515,6 +523,17 @@ export default function ProfilePage() {
               </div>
             </div>
         )}
+
+        <ConfirmDialog
+          isOpen={!!pendingAction}
+          title={pendingAction?.title}
+          message={pendingAction?.message}
+          confirmLabel={pendingAction?.confirmLabel || "확인"}
+          danger={pendingAction?.danger}
+          submitting={actionSubmitting}
+          onConfirm={runPendingAction}
+          onCancel={() => setPendingAction(null)}
+        />
       </main>
   );
 }

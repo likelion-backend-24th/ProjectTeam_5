@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { getQuestion, updateQuestion } from "@/lib/questions";
 import { uploadImage, validateImage, uploadFile, validateFile } from "@/lib/attachments";
 import { getAccessToken } from "@/lib/tokenStore";
+import { useToast } from "@/app/contexts/ToastContext";
 
 import styles from "../../new/form.module.css";
 
@@ -20,6 +21,7 @@ const docRowStyle = {
 };
 
 export default function EditQuestionPage() {
+  const { showToast } = useToast();
   const { id } = useParams();
   const router = useRouter();
 
@@ -88,7 +90,7 @@ export default function EditQuestionPage() {
     // 1. 등록/수정 버튼을 누르는 순간 로컬토큰(로그인 상태) 체크
     const token = getAccessToken();
     if (!token) {
-      alert("로그인 후 이용 가능합니다.");
+      showToast("로그인 후 이용 가능합니다.", "error");
       router.push("/login");
       return;
     }
@@ -119,8 +121,9 @@ export default function EditQuestionPage() {
 
       // 2. 백엔드에서 인증 관련 에러(401 또는 403)를 보낸 경우
       if (error.status === 401 || error.status === 403) {
-        alert(
+        showToast(
           "로그인 세션이 만료되었거나 권한이 없습니다. 다시 로그인해주세요.",
+          "error",
         );
         router.push("/login");
         return;

@@ -88,6 +88,34 @@
   cursor: pointer;
 }
 
+/* 페이지네이션 */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.pagerBtn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pagerBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagerInfo {
+  font-size: 13px;
+  color: #526176;
+}
+
 /* 상태 및 에러 메시지 */
 .statusText {
   padding: 40px 0;

@@ -2,21 +2,24 @@
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { FaHeart, FaRegHeart } from "react-icons/fa";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { downloadFile } from "@/lib/attachments";
 import { getAccessToken } from "@/lib/tokenStore";
 import { API_URL as BACKEND_URL } from "@/lib/client";
+import ConfirmDialog from "@/components/modal/ConfirmDialog";
+import { useToast } from "@/app/contexts/ToastContext";
 import styles from "./page.module.css";
 
 export default function MentorPostDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user: authUser } = useAuth();
-  
+  const { showToast } = useToast();
+
   const currentUserId = authUser?.id || authUser?.userId || (typeof window !== "undefined" ? localStorage.getItem("userId") : null);
 
   const mentorId = params?.mentorId;
@@ -31,15 +34,16 @@ export default function MentorPostDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ title: "", content: "", category: "", isPublic: true, attachmentIds: [] });
   const [submitting, setSubmitting] = useState(false);
-  const [isLikeLoading, setIsLikeLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const loadPost = useCallback(async () => {
-    if (!mentorId || !postId || mentorId === "undefined" || postId === "undefined") {
-      return;
-    }
-    setLoading(true);
-    setErrorMessage("");
-    setIsForbidden(false);
+  if (!mentorId || !postId || mentorId === "undefined" || postId === "undefined") {
+    return;
+  }
+  setLoading(true);
+  setErrorMessage("");
+  setIsForbidden(false);
 
     try {
       const token = getAccessToken();
@@ -101,15 +105,15 @@ export default function MentorPostDetailPage() {
   }, [mentorId, postId, currentUserId]);
 
   useEffect(() => {
-    if (mentorId && postId) { 
-      loadPost();
-    }
-  }, [loadPost, mentorId, postId]);
+  if (mentorId && postId) { 
+    loadPost();
+  }
+}, [loadPost, mentorId, postId]);
 
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (!editForm.title || !editForm.content) {
-      alert("제목과 내용을 모두 입력해주세요.");
+      showToast("제목과 내용을 모두 입력해주세요.", "error");
       return;
     }
 
@@ -127,15 +131,15 @@ export default function MentorPostDetailPage() {
       });
 
       if (res.ok) {
-        alert("게시글이 수정되었습니다.");
+        showToast("게시글이 수정되었습니다.", "success");
         setIsEditing(false);
         loadPost();
       } else {
-        alert("게시글 수정에 실패했습니다.");
+        showToast("게시글 수정에 실패했습니다.", "error");
       }
     } catch (err) {
       console.error(err);
-      alert("서버 오류가 발생했습니다.");
+      showToast("서버 오류가 발생했습니다.", "error");
     } finally {
       setSubmitting(false);
     }
@@ -145,13 +149,16 @@ export default function MentorPostDetailPage() {
     try {
       await downloadFile(file.attachId, file.originalFileName);
     } catch (err) {
-      alert(err.message || "파일 다운로드에 실패했습니다.");
+      showToast(err.message || "파일 다운로드에 실패했습니다.", "error");
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm("정말 이 게시글을 삭제하시겠습니까?")) return;
+  const handleDelete = () => {
+    setShowDeleteConfirm(true);
+  };
 
+  const confirmDelete = async () => {
+    setDeleting(true);
     try {
       const token = getAccessToken();
       const headers = {};
@@ -164,73 +171,18 @@ export default function MentorPostDetailPage() {
       });
 
       if (res.ok) {
-        alert("게시글이 삭제되었습니다.");
+        showToast("게시글이 삭제되었습니다.", "success");
         router.push(`/mentors/${mentorId}`);
       } else {
-        alert("게시글 삭제에 실패했습니다.");
+        showToast("게시글 삭제에 실패했습니다.", "error");
+        setDeleting(false);
       }
     } catch (err) {
       console.error(err);
-      alert("서버 오류가 발생했습니다.");
+      showToast("서버 오류가 발생했습니다.", "error");
+      setDeleting(false);
     }
   };
-
-  const handleToggleLike = async () => {
-    if (!currentUserId) {
-      alert("로그인 후 이용 가능합니다.");
-      router.push("/login");
-      return;
-    }
-    if (isLikeLoading) return;
-
-    const prevIsLiked = post.isLiked ?? post.liked;
-    const prevLikeCount = post.likeCount ?? 0;
-
-    const nextIsLiked = !prevIsLiked;
-    const nextLikeCount = nextIsLiked
-      ? prevLikeCount + 1
-      : Math.max(0, prevLikeCount - 1);
-
-    setPost((prev) => ({
-      ...prev,
-      isLiked: nextIsLiked,
-      liked: nextIsLiked,
-      likeCount: nextLikeCount,
-    }));
-
-    try {
-      setIsLikeLoading(true);
-      
-      const token = getAccessToken(); 
-      
-      const headers = { "Content-Type": "application/json" };
-      if (currentUserId) headers["X-USER-ID"] = String(currentUserId);
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-
-      const method = prevIsLiked ? "DELETE" : "POST";
-      const res = await fetch(`${BACKEND_URL}/api/v1/mentors/${mentorId}/posts/${postId}/likes`, {
-        method,
-        headers,
-      });
-
-      if (!res.ok) {
-        throw new Error("좋아요 처리에 실패했습니다.");
-      }
-    } catch (err) {
-      console.error(err);
-      setPost((prev) => ({
-        ...prev,
-        isLiked: prevIsLiked,
-        liked: prevIsLiked,
-        likeCount: prevLikeCount,
-      }));
-      alert(err.message || "서버 오류가 발생했습니다.");
-    } finally {
-      setIsLikeLoading(false);
-    }
-  };
-
-  const isLikedState = post?.isLiked ?? post?.liked ?? false;
 
   return (
     <main className={styles.page}>
@@ -345,7 +297,7 @@ export default function MentorPostDetailPage() {
             <hr className={styles.divider} />
             
             <div className={styles.postContent}>
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
                 {post.content}
               </ReactMarkdown>
             </div>
@@ -395,30 +347,20 @@ export default function MentorPostDetailPage() {
                 </ul>
               </div>
             )}
-
-            {/* 질문 상세 페이지와 동일한 좋아요 버튼 섹션 */}
-            <div className={styles.likeSection}>
-              <button
-                type="button"
-                className={styles.likeButton}
-                onClick={handleToggleLike}
-                disabled={isLikeLoading}
-              >
-                <div
-                  className={`${styles.likeIcon} ${
-                    isLikedState ? styles.likeIconActive : ""
-                  }`}
-                >
-                  {isLikedState ? <FaHeart /> : <FaRegHeart />}
-                </div>
-                <span className={styles.likeCount}>
-                  좋아요 {post.likeCount ?? 0}
-                </span>
-              </button>
-            </div>
           </article>
         )}
       </section>
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="게시글 삭제"
+        message="정말 이 게시글을 삭제하시겠습니까?"
+        confirmLabel="삭제"
+        danger
+        submitting={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </main>
   );
 }

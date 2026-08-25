@@ -4,8 +4,10 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/app/contexts/AuthContext";
+import { useToast } from "@/app/contexts/ToastContext";
 import {
   getAllUsers,
+  searchUsers,
   blockUser,
   unblockUser,
   deleteUserByAdmin,
@@ -22,15 +24,22 @@ import {
 } from "@/lib/admin";
 import { getQuestions } from "@/lib/questions";
 import { getQuestionsByUser } from "@/lib/users";
+import ConfirmDialog from "@/components/modal/ConfirmDialog";
 
 import styles from "./page.module.css";
 
 export default function AdminPage() {
   const router = useRouter();
   const { user, isLoggedIn, loading: authLoading } = useAuth();
+  const { showToast } = useToast();
 
   const [activeTab, setActiveTab] = useState("users");
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState([]); // 질문 관리 탭의 작성자 집계용 전체 목록 (그 탭에서만 채워짐)
+
+  // 회원 관리 탭 — 서버 페이지네이션. USERS_PAGE_SIZE만큼씩, 검색/역할/정렬은 서버에 그대로 넘긴다.
+  const USERS_PAGE_SIZE = 20;
+  const [usersPageData, setUsersPageData] = useState({ content: [], totalPages: 0, totalElements: 0, number: 0 });
+  const [usersPageNumber, setUsersPageNumber] = useState(0);
   const [mentorApps, setMentorApps] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +54,24 @@ export default function AdminPage() {
   const [subLoadingId, setSubLoadingId] = useState(null);
 
   const [cancellations, setCancellations] = useState([]);
-  const [cancelBusyId, setCancelBusyId] = useState(null);
+
+  // confirm()/prompt() 게이트가 이 페이지에만 7군데라, 액션마다 별도 state를 만드는 대신
+  // "지금 확인 대기 중인 작업 1개"만 들고 있는 범용 패턴을 쓴다. run()이 실제 API 호출을 담당한다.
+  const [pendingAction, setPendingAction] = useState(null);
+  const [actionSubmitting, setActionSubmitting] = useState(false);
+
+  const runPendingAction = async (inputValue) => {
+    if (!pendingAction) return;
+    setActionSubmitting(true);
+    try {
+      await pendingAction.run(inputValue);
+      setPendingAction(null);
+    } catch (error) {
+      showToast(error.message || "처리에 실패했습니다.", "error");
+    } finally {
+      setActionSubmitting(false);
+    }
+  };
 
   const [inquiries, setInquiries] = useState([]);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
@@ -55,6 +81,8 @@ export default function AdminPage() {
   const [settlementBusyId, setSettlementBusyId] = useState(null);
 
   const fetchData = useCallback(async () => {
+    if (activeTab === "users") return;
+
     setLoading(true);
     setErrorMessage("");
     try {
@@ -65,8 +93,15 @@ export default function AdminPage() {
         const data = await getMentorApplications();
         setMentorApps(data || []);
       } else if (activeTab === "questions") {
+        // 작성자별 집계(authorSummary)가 전체 회원 목록과 대조해야 해서 이 탭에서만 페이지네이션 없이 받는다.
+        const usersData = await getAllUsers();
+        setUsers(usersData || []);
         const data = await getQuestions({
-          page: 0, size: 1000, category: "전체", keyword: "", sort: "latest",
+          page: 0,
+          size: 1000,
+          category: "전체",
+          keyword: "",
+          sort: "latest",
         });
         setQuestions(data.content || data || []);
       } else if (activeTab === "refunds") {
@@ -86,6 +121,45 @@ export default function AdminPage() {
       setLoading(false);
     }
   }, [activeTab]);
+
+  const loadUsersPage = useCallback(
+    async (pageNumber) => {
+      setLoading(true);
+      setErrorMessage("");
+      try {
+        const data = await searchUsers({
+          page: pageNumber,
+          size: USERS_PAGE_SIZE,
+          keyword: searchQuery.trim(),
+          role: roleFilter,
+          sort: sortOption,
+        });
+        setUsersPageData(data);
+      } catch (error) {
+        console.error(error);
+        setErrorMessage(error.message || "회원 목록을 불러오는 데 실패했습니다.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [searchQuery, roleFilter, sortOption]
+  );
+
+  // 검색어/역할/정렬이 바뀌면(또는 회원 탭으로 들어오면) 1페이지부터 새로 불러온다.
+  // 타이핑 중 매 글자마다 요청을 보내지 않도록 300ms 정도 묶어서 보낸다.
+  useEffect(() => {
+    if (activeTab !== "users") return;
+    const timer = setTimeout(() => {
+      setUsersPageNumber(0);
+      loadUsersPage(0);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [activeTab, searchQuery, roleFilter, sortOption, loadUsersPage]);
+
+  const goToUsersPage = (pageNumber) => {
+    setUsersPageNumber(pageNumber);
+    loadUsersPage(pageNumber);
+  };
 
   useEffect(() => {
     if (authLoading) return;
@@ -126,25 +200,41 @@ export default function AdminPage() {
     let list = [...mentorApps];
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      list = list.filter((app) => (app.name || "").toLowerCase().includes(q) || (app.email || "").toLowerCase().includes(q));
+      list = list.filter(
+        (app) =>
+          (app.name || "").toLowerCase().includes(q) ||
+          (app.email || "").toLowerCase().includes(q),
+      );
     }
+
     list.sort((a, b) => {
-      const idA = Number(a.id || 0); const idB = Number(b.id || 0);
+      const idA = Number(a.id || 0);
+      const idB = Number(b.id || 0);
       return sortOption === "latest" ? idB - idA : idA - idB;
     });
+
     return list;
   }, [mentorApps, searchQuery, sortOption]);
 
   const filteredInquiries = useMemo(() => {
     let list = [...inquiries];
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      list = list.filter((item) => (item.title || "").toLowerCase().includes(q) || (item.email || "").toLowerCase().includes(q) || (item.category || "").toLowerCase().includes(q));
+      list = list.filter(
+        (item) =>
+          (item.title || "").toLowerCase().includes(q) ||
+          (item.email || "").toLowerCase().includes(q) ||
+          (item.category || "").toLowerCase().includes(q)
+      );
     }
+
     list.sort((a, b) => {
-      const idA = Number(a.id || 0); const idB = Number(b.id || 0);
+      const idA = Number(a.id || 0);
+      const idB = Number(b.id || 0);
       return sortOption === "latest" ? idB - idA : idA - idB;
     });
+
     return list;
   }, [inquiries, searchQuery, sortOption]);
 
@@ -203,141 +293,189 @@ export default function AdminPage() {
     const map = {};
     const userMapByName = {};
     const userMapById = {};
-    users.forEach((u) => { if (u.id) userMapById[String(u.id)] = u; if (u.name) userMapByName[u.name] = u; });
+    users.forEach((u) => {
+      if (u.id) userMapById[String(u.id)] = u;
+      if (u.name) userMapByName[u.name] = u;
+    });
 
     questions.forEach((q) => {
       const qUserId = q.userId || q.authorId || q.writerId;
       const qUserName = q.writerName || q.authorName || "알 수 없음";
-      const matchedUser = (qUserId && userMapById[String(qUserId)]) || userMapByName[qUserName];
+
+      const matchedUser =
+        (qUserId && userMapById[String(qUserId)]) || userMapByName[qUserName];
+
       const authorId = matchedUser?.id || qUserId || qUserName;
       const authorName = matchedUser?.name || qUserName;
-      const authorRole = matchedUser?.role || q.writerRole || q.authorRole || q.role || "USER";
+      const authorRole =
+        matchedUser?.role || q.writerRole || q.authorRole || q.role || "USER";
 
       if (!map[authorId]) {
-        map[authorId] = { id: authorId, name: authorName, role: authorRole, count: 0 };
+        map[authorId] = {
+          id: authorId,
+          name: authorName,
+          role: authorRole,
+          count: 0,
+        };
       }
       map[authorId].count += 1;
     });
 
     let list = Object.values(map);
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter((item) => item.name.toLowerCase().includes(q));
     }
-    list.sort((a, b) => (sortOption === "latest" ? b.count - a.count : a.count - b.count));
+
+    list.sort((a, b) => {
+      if (sortOption === "latest") {
+        return b.count - a.count;
+      } else {
+        return a.count - b.count;
+      }
+    });
+
     return list;
   }, [questions, users, searchQuery, sortOption]);
 
   const handleToggleExpand = async (userId) => {
-    if (expandedUserId === userId) { setExpandedUserId(null); return; }
+    if (expandedUserId === userId) {
+      setExpandedUserId(null);
+      return;
+    }
+
     setExpandedUserId(userId);
+
     if (userQuestionsMap[userId]) return;
 
     setSubLoadingId(userId);
     try {
       const res = await getQuestionsByUser(userId);
       let list = res?.content || res || [];
+
       list.sort((a, b) => {
         const dateA = new Date(a.createdAt || 0).getTime();
         const dateB = new Date(b.createdAt || 0).getTime();
-        if (dateA !== dateB) return dateB - dateA;
+        if (dateA !== dateB) {
+          return dateB - dateA;
+        }
         return Number(b.id || 0) - Number(a.id || 0);
       });
+
       setUserQuestionsMap((prev) => ({ ...prev, [userId]: list }));
     } catch (error) {
-      alert("해당 유저의 작성글을 불러오는 데 실패했습니다.");
+      console.error(error);
+      showToast("해당 유저의 작성글을 불러오는 데 실패했습니다.", "error");
     } finally {
       setSubLoadingId(null);
     }
   };
 
-  const handleBlockToggle = async (userId, isBlocked) => {
+  const handleBlockToggle = (userId, isBlocked) => {
     const actionText = isBlocked ? "차단 해제" : "차단";
-    if (!confirm(`해당 회원을 ${actionText}하시겠습니까?`)) return;
-    try {
-      if (isBlocked) await unblockUser(userId);
-      else await blockUser(userId);
-      alert(`${actionText} 처리되었습니다.`);
-      fetchData();
-    } catch (error) {
-      alert(error.message || "처리에 실패했습니다.");
-    }
+    setPendingAction({
+      title: `회원 ${actionText}`,
+      message: `해당 회원을 ${actionText}하시겠습니까?`,
+      confirmLabel: actionText,
+      danger: !isBlocked,
+      run: async () => {
+        if (isBlocked) {
+          await unblockUser(userId);
+        } else {
+          await blockUser(userId);
+        }
+        showToast(`${actionText} 처리되었습니다.`, "success");
+        fetchData();
+      },
+    });
   };
 
-  const handleDeleteUser = async (userId, userName) => {
-    if (!confirm(`정말로 회원 '${userName}'(ID: ${userId})을 강제 삭제하시겠습니까?\n이 작업은 복구할 수 없습니다.`)) return;
-    try {
-      await deleteUserByAdmin(userId);
-      alert("회원이 삭제되었습니다.");
-      fetchData();
-    } catch (error) {
-      alert(error.message || "삭제에 실패했습니다.");
-    }
+  const handleDeleteUser = (userId, userName) => {
+    setPendingAction({
+      title: "회원 강제 삭제",
+      message: `정말로 회원 '${userName}'(ID: ${userId})을 강제 삭제하시겠습니까?\n이 작업은 복구할 수 없습니다.`,
+      confirmLabel: "삭제",
+      danger: true,
+      run: async () => {
+        await deleteUserByAdmin(userId);
+        showToast("회원이 삭제되었습니다.", "success");
+        fetchData();
+      },
+    });
   };
 
-  const handleApprove = async (userId) => {
-    if (!confirm("해당 회원을 멘토로 승인하시겠습니까?")) return;
-    try {
-      await approveMentor(userId);
-      alert("멘토 승인이 완료되었습니다.");
-      fetchData();
-    } catch (error) {
-      alert(error.message || "승인 처리에 실패했습니다.");
-    }
+  const handleApprove = (userId) => {
+    setPendingAction({
+      title: "멘토 승인",
+      message: "해당 회원을 멘토로 승인하시겠습니까?",
+      confirmLabel: "승인",
+      run: async () => {
+        await approveMentor(userId);
+        showToast("멘토 승인이 완료되었습니다.", "success");
+        fetchData();
+      },
+    });
   };
 
-  const handleReject = async (userId) => {
-    if (!confirm("해당 회원의 멘토 신청을 거절하시겠습니까?")) return;
-    try {
-      await rejectMentor(userId);
-      alert("멘토 신청이 거절되었습니다.");
-      fetchData();
-    } catch (error) {
-      alert(error.message || "거절 처리에 실패했습니다.");
-    }
+  const handleReject = (userId) => {
+    setPendingAction({
+      title: "멘토 신청 거절",
+      message: "해당 회원의 멘토 신청을 거절하시겠습니까?",
+      confirmLabel: "거절",
+      danger: true,
+      run: async () => {
+        await rejectMentor(userId);
+        showToast("멘토 신청이 거절되었습니다.", "success");
+        fetchData();
+      },
+    });
   };
 
-  const handleApproveCancellation = async (id, paymentId) => {
-    if (!confirm(`결제 ${paymentId}의 환불을 승인하시겠습니까? \n PortOne에 실제 취소 요청이 전송되며 되돌릴 수 없습니다.`)) return;
-    setCancelBusyId(id);
-    try {
-      await approveCancellation(id);
-      alert("환불이 승인되었습니다.");
-      fetchData();
-    } catch (error) {
-      alert(error.message || "승인 처리에 실패했습니다.");
-    } finally {
-      setCancelBusyId(null);
-    }
+  const handleApproveCancellation = (id, paymentId) => {
+    setPendingAction({
+      title: "환불 승인",
+      message: `결제 ${paymentId}의 환불을 승인하시겠습니까?\nPortOne에 실제 취소 요청이 전송되며 되돌릴 수 없습니다.`,
+      confirmLabel: "승인",
+      danger: true,
+      run: async () => {
+        await approveCancellation(id);
+        showToast("환불이 승인되었습니다.", "success");
+        fetchData();
+      },
+    });
   };
 
-  const handleRejectCancellation = async (id, paymentId) => {
-    const adminNote = window.prompt(`결제 ${paymentId} 건 환불을 거절합니다.`);
-    if (adminNote === null) return;
-    setCancelBusyId(id);
-    try {
-      await rejectCancellation(id, adminNote.trim());
-      alert("환불 요청이 거절되었습니다.");
-      fetchData();
-    } catch (error) {
-      alert(error.message || "거절 처리에 실패했습니다.");
-    } finally {
-      setCancelBusyId(null);
-    }
+  const handleRejectCancellation = (id, paymentId) => {
+    setPendingAction({
+      title: "환불 거절",
+      message: `결제 ${paymentId} 건 환불을 거절합니다.`,
+      confirmLabel: "거절",
+      showInput: true,
+      inputLabel: "거절 사유 (선택)",
+      inputPlaceholder: "거절 사유를 입력하세요",
+      run: async (adminNote) => {
+        await rejectCancellation(id, adminNote);
+        showToast("환불 요청이 거절되었습니다.", "success");
+        fetchData();
+      },
+    });
   };
 
-  const handleStatusChange = async (id, currentStatus) => {
+  const handleStatusChange = (id, currentStatus) => {
     const nextStatus = currentStatus === "PENDING" ? "COMPLETED" : "PENDING";
     const actionText = nextStatus === "COMPLETED" ? "완료" : "대기중";
-    if (!confirm(`해당 문의를 '${actionText}' 상태로 변경하시겠습니까?`)) return;
-    try {
-      await updateInquiryStatus(id, nextStatus);
-      alert("상태가 변경되었습니다.");
-      fetchData();
-    } catch (error) {
-      alert(error.message || "상태 변경에 실패했습니다.");
-    }
-  };
+
+    setPendingAction({
+      title: "문의 상태 변경",
+      message: `해당 문의를 '${actionText}' 상태로 변경하시겠습니까?`,
+      confirmLabel: "변경",
+      run: async () => {
+        await updateInquiryStatus(id, nextStatus);
+        showToast("상태가 변경되었습니다.", "success");
+        fetchData();
+      },
+    });
 
   // 정산 완료 처리 핸들러
   const handleCompleteSettlement = async (id, mentorName, netAmount) => {
@@ -365,12 +503,41 @@ export default function AdminPage() {
 
         <section className={styles.panel}>
           <div className={styles.tabGroup}>
-            <button type="button" className={`${styles.tabButton} ${activeTab === "users" ? styles.tabActive : ""}`} onClick={() => handleTabChange("users")}>전체 회원 관리</button>
-            <button type="button" className={`${styles.tabButton} ${activeTab === "mentors" ? styles.tabActive : ""}`} onClick={() => handleTabChange("mentors")}>멘토 신청 관리</button>
-            <button type="button" className={`${styles.tabButton} ${activeTab === "settlements" ? styles.tabActive : ""}`} onClick={() => handleTabChange("settlements")}>💰 정산 관리</button>
-            <button type="button" className={`${styles.tabButton} ${activeTab === "refunds" ? styles.tabActive : ""}`} onClick={() => handleTabChange("refunds")}>환불 관리</button>
-            <button type="button" className={`${styles.tabButton} ${activeTab === "questions" ? styles.tabActive : ""}`} onClick={() => handleTabChange("questions")}>질문 관리</button>
-            <button type="button" className={`${styles.tabButton} ${activeTab === "inquiries" ? styles.tabActive : ""}`} onClick={() => handleTabChange("inquiries")}>1:1 문의 관리</button>
+            <button
+                type="button"
+                className={`${styles.tabButton} ${activeTab === "users" ? styles.tabActive : ""}`}
+                onClick={() => handleTabChange("users")}
+            >
+              전체 회원 관리
+            </button>
+            <button
+                type="button"
+                className={`${styles.tabButton} ${activeTab === "mentors" ? styles.tabActive : ""}`}
+                onClick={() => handleTabChange("mentors")}
+            >
+              멘토 신청 관리
+            </button>
+            <button
+                type="button"
+                className={`${styles.tabButton} ${activeTab === "questions" ? styles.tabActive : ""}`}
+                onClick={() => handleTabChange("questions")}
+            >
+              질문 관리
+            </button>
+            <button
+                type="button"
+                className={`${styles.tabButton} ${activeTab === "refunds" ? styles.tabActive : ""}`}
+                onClick={() => handleTabChange("refunds")}
+            >
+              환불 관리
+            </button>
+            <button
+                type="button"
+                className={`${styles.tabButton} ${activeTab === "inquiries" ? styles.tabActive : ""}`}
+                onClick={() => handleTabChange("inquiries")}
+            >
+              1:1 문의 관리
+            </button>
           </div>
 
           {/* 검색/정렬 바 노출 (환불 제외) */}
@@ -419,41 +586,109 @@ export default function AdminPage() {
           {loading && <p className={styles.statusText}>불러오는 중...</p>}
           {!loading && errorMessage && <p className={styles.errorMessage}>{errorMessage}</p>}
 
-          {/* 1. 전체 회원 관리 탭 */}
-          {!loading && !errorMessage && activeTab === "users" && (
-              <>
-                {filteredUsers.length === 0 ? <p className={styles.statusText}>결과가 없습니다.</p> : (
-                    <table className={styles.table}>
-                      <thead>
-                      <tr><th>ID</th><th>이메일</th><th>이름</th><th>역할</th><th>상태</th><th>가입일</th><th>관리</th></tr>
-                      </thead>
-                      <tbody>
-                      {filteredUsers.map((u) => {
-                        const isUserBlocked = Boolean(u.blocked ?? u.isBlocked);
-                        return (
-                            <tr key={u.id}>
-                              <td className={styles.centerText}>{u.id}</td>
-                              <td className={styles.ellipsisCell}>{u.email || "OAuth 계정"}</td>
-                              <td className={styles.boldText}>{u.name}</td>
-                              <td><span className={u.role === "ADMIN" ? styles.roleAdmin : u.role === "MENTOR" ? styles.roleMentor : styles.roleUser}>{u.role}</span></td>
-                              <td className={styles.centerText}>{isUserBlocked ? <span className={styles.badgeBlocked}>차단됨</span> : <span className={styles.badgeActive}>정상</span>}</td>
-                              <td>{formatDate(u.createdAt)}</td>
-                              <td className={styles.centerText}>
-                                <div className={styles.actionButtons}>
-                                  <button type="button" className={isUserBlocked ? styles.unblockBtn : styles.blockBtn} onClick={() => handleBlockToggle(u.id, isUserBlocked)}>
-                                    {isUserBlocked ? "해제" : "차단"}
-                                  </button>
-                                  <button type="button" className={styles.deleteBtn} onClick={() => handleDeleteUser(u.id, u.name)}>삭제</button>
-                                </div>
-                              </td>
-                            </tr>
-                        );
-                      })}
-                      </tbody>
-                    </table>
-                )}
-              </>
-          )}
+        {/* 1. 전체 회원 관리 탭 */}
+        {!loading && !errorMessage && activeTab === "users" && (
+          <>
+            {usersPageData.content.length === 0 ? (
+              <p className={styles.statusText}>
+                {searchQuery ? "검색 결과가 없습니다." : "등록된 회원이 없습니다."}
+              </p>
+            ) : (
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>이메일</th>
+                    <th>이름</th>
+                    <th>역할</th>
+                    <th>상태</th>
+                    <th>가입일</th>
+                    <th>관리</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usersPageData.content.map((u) => {
+                    const isUserBlocked = Boolean(u.blocked ?? u.isBlocked);
+                    return (
+                      <tr key={u.id}>
+                        <td className={styles.centerText}>{u.id}</td>
+                        <td className={styles.ellipsisCell}>{u.email || "OAuth 계정"}</td>
+                        <td className={styles.boldText}>{u.name}</td>
+                        <td>
+                          <span
+                            className={
+                              u.role === "ADMIN"
+                                ? styles.roleAdmin
+                                : u.role === "MENTOR"
+                                ? styles.roleMentor
+                                : styles.roleUser
+                            }
+                          >
+                            {u.role}
+                          </span>
+                        </td>
+                        <td className={styles.centerText}>
+                          {isUserBlocked ? (
+                            <span className={styles.badgeBlocked}>차단됨</span>
+                          ) : (
+                            <span className={styles.badgeActive}>정상</span>
+                          )}
+                        </td>
+                        <td>{formatDate(u.createdAt)}</td>
+                        <td className={styles.centerText}>
+                          <div className={styles.actionButtons}>
+                            <button
+                              type="button"
+                              className={
+                                isUserBlocked
+                                  ? styles.unblockBtn
+                                  : styles.blockBtn
+                              }
+                              onClick={() => handleBlockToggle(u.id, isUserBlocked)}
+                            >
+                              {isUserBlocked ? "해제" : "차단"}
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.deleteBtn}
+                              onClick={() => handleDeleteUser(u.id, u.name)}
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+
+            {usersPageData.totalPages > 1 && (
+              <div className={styles.pager}>
+                <button
+                  type="button"
+                  className={styles.pagerBtn}
+                  onClick={() => goToUsersPage(usersPageNumber - 1)}
+                  disabled={usersPageNumber <= 0}
+                >
+                  이전
+                </button>
+                <span className={styles.pagerInfo}>
+                  {usersPageNumber + 1} / {usersPageData.totalPages} 페이지 (총 {usersPageData.totalElements}명)
+                </span>
+                <button
+                  type="button"
+                  className={styles.pagerBtn}
+                  onClick={() => goToUsersPage(usersPageNumber + 1)}
+                  disabled={usersPageNumber >= usersPageData.totalPages - 1}
+                >
+                  다음
+                </button>
+              </div>
+            )}
+          </>
+        )}
 
           {/* 2. 멘토 신청 관리 탭 */}
           {!loading && !errorMessage && activeTab === "mentors" && (
@@ -645,37 +880,66 @@ export default function AdminPage() {
               </>
           )}
 
-          {/* 5. 환불 관리 탭 */}
-          {!loading && !errorMessage && activeTab === "refunds" && (
-              <>
-                {cancellations.length === 0 ? <p className={styles.statusText}>환불 요청이 없습니다.</p> : (
-                    <table className={styles.table}>
-                      <thead>
-                      <tr><th>ID</th><th>결제 ID</th><th>신청자</th><th>멘토</th><th>금액</th><th>환불 사유</th><th>요청일</th><th>처리</th></tr>
-                      </thead>
-                      <tbody>
-                      {cancellations.map((c) => (
-                          <tr key={c.id}>
-                            <td className={styles.centerText}>{c.id}</td>
-                            <td className={styles.ellipsisCell}>{c.paymentId}</td>
-                            <td className={styles.ellipsisCell}>{c.userName || "-"}</td>
-                            <td className={styles.ellipsisCell}>{c.mentorName || "-"}</td>
-                            <td className={styles.rightText}>{Number(c.amount || 0).toLocaleString()}원</td>
-                            <td className={styles.reasonCell}>{c.reason || "-"}</td>
-                            <td>{formatDate(c.createdAt)}</td>
-                            <td className={styles.centerText}>
-                              <div className={styles.actionButtons}>
-                                <button type="button" className={styles.approveBtn} disabled={cancelBusyId === c.id} onClick={() => handleApproveCancellation(c.id, c.paymentId)}>승인</button>
-                                <button type="button" className={styles.rejectBtn} disabled={cancelBusyId === c.id} onClick={() => handleRejectCancellation(c.id, c.paymentId)}>거절</button>
-                              </div>
-                            </td>
-                          </tr>
-                      ))}
-                      </tbody>
-                    </table>
-                )}
-              </>
-          )}
+        {/* 4. 환불 관리 탭 */}
+        {!loading && !errorMessage && activeTab === "refunds" && (
+          <>
+            {cancellations.length === 0 ? (
+              <p className={styles.statusText}>대기 중인 환불 요청이 없습니다.</p>
+            ) : (
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>결제 ID</th>
+                    <th>신청자</th>
+                    <th>멘토</th>
+                    <th>금액</th>
+                    <th>환불 사유</th>
+                    <th>요청일</th>
+                    <th>처리</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cancellations.map((c) => (
+                    <tr key={c.id}>
+                      <td className={styles.centerText}>{c.id}</td>
+                      <td className={styles.ellipsisCell}>{c.paymentId}</td>
+                      <td className={styles.ellipsisCell}>
+                        {c.userName || "-"}
+                        {c.userId != null && <span className={styles.subText}> (#{c.userId})</span>}
+                      </td>
+                      <td className={styles.ellipsisCell}>
+                        {c.mentorName || "-"}
+                        {c.mentorId != null && <span className={styles.subText}> (#{c.mentorId})</span>}
+                      </td>
+                      <td className={styles.rightText}>{Number(c.amount || 0).toLocaleString()}원</td>
+                      <td className={styles.reasonCell}>{c.reason || "-"}</td>
+                      <td>{formatDate(c.createdAt)}</td>
+                      <td className={styles.centerText}>
+                        <div className={styles.actionButtons}>
+                          <button
+                            type="button"
+                            className={styles.approveBtn}
+                            onClick={() => handleApproveCancellation(c.id, c.paymentId)}
+                          >
+                            승인
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.rejectBtn}
+                            onClick={() => handleRejectCancellation(c.id, c.paymentId)}
+                          >
+                            거절
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </>
+        )}
 
           {/* 6. 1:1 문의 관리 탭 */}
           {!loading && !errorMessage && activeTab === "inquiries" && (
@@ -710,33 +974,89 @@ export default function AdminPage() {
 
         {/* 1:1 문의 상세 보기 모달 */}
         {selectedInquiry && (
-            <div className={styles.modalOverlay} onClick={() => setSelectedInquiry(null)}>
-              <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div
+                className={styles.modalOverlay}
+                onClick={() => setSelectedInquiry(null)}
+            >
+              <div
+                  className={styles.modalContent}
+                  onClick={(e) => e.stopPropagation()}
+              >
                 <div className={styles.modalHeader}>
                   <h3>1:1 문의 상세 내용</h3>
-                  <button type="button" className={styles.modalCloseBtn} onClick={() => setSelectedInquiry(null)}>✕</button>
+                  <button
+                      type="button"
+                      className={styles.modalCloseBtn}
+                      onClick={() => setSelectedInquiry(null)}
+                  >
+                    ✕
+                  </button>
                 </div>
+
                 <div className={styles.modalBody}>
-                  <div><strong>유형:</strong> <span className={styles.inquiryCategory}>[{selectedInquiry.category}]</span></div>
-                  <div><strong>이메일:</strong> {selectedInquiry.email}</div>
-                  <div><strong>접수일:</strong> {formatDate(selectedInquiry.createdAt)}</div>
-                  <div><strong>상태:</strong> {selectedInquiry.status === "PENDING" ? "대기중" : "완료"}</div>
-                  <div><strong>제목:</strong> {selectedInquiry.title}</div>
-                  <div><strong>상세 내용:</strong><div className={styles.modalTextBox}>{selectedInquiry.content}</div></div>
+                  <div>
+                    <strong>유형:</strong>{" "}
+                    <span className={styles.inquiryCategory}>
+                  [{selectedInquiry.category}]
+                </span>
+                  </div>
+                  <div>
+                    <strong>회신 이메일:</strong> {selectedInquiry.email}
+                  </div>
+                  <div>
+                    <strong>접수일:</strong> {formatDate(selectedInquiry.createdAt)}
+                  </div>
+                  <div>
+                    <strong>상태:</strong>{" "}
+                    {selectedInquiry.status === "PENDING" ? "대기중" : "완료"}
+                  </div>
+                  <div>
+                    <strong>제목:</strong> {selectedInquiry.title}
+                  </div>
+                  <div>
+                    <strong>상세 내용:</strong>
+                    <div className={styles.modalTextBox}>
+                      {selectedInquiry.content}
+                    </div>
+                  </div>
                 </div>
+
                 <div className={styles.modalFooter}>
-                  <button type="button" className={styles.modalConfirmBtn} onClick={() => setSelectedInquiry(null)}>확인</button>
+                  <button
+                      type="button"
+                      className={styles.modalConfirmBtn}
+                      onClick={() => setSelectedInquiry(null)}
+                  >
+                    확인
+                  </button>
                 </div>
               </div>
             </div>
         )}
+
+        <ConfirmDialog
+            isOpen={!!pendingAction}
+            title={pendingAction?.title}
+            message={pendingAction?.message}
+            confirmLabel={pendingAction?.confirmLabel || "확인"}
+            danger={pendingAction?.danger}
+            showInput={pendingAction?.showInput}
+            inputLabel={pendingAction?.inputLabel}
+            inputPlaceholder={pendingAction?.inputPlaceholder}
+            submitting={actionSubmitting}
+            onConfirm={runPendingAction}
+            onCancel={() => setPendingAction(null)}
+        />
       </main>
   );
-}
+  }
 
-function formatDate(value) {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "-";
-  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
-}
+  function formatDate(value) {
+    if (!value) return "-";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "-";
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}.${month}.${day}`;
+  }

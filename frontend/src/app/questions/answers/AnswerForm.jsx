@@ -1,30 +1,32 @@
 "use client";
 
-import { useState } from "react"; 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import ConfirmDialog from "@/components/modal/ConfirmDialog";
+import { useToast } from "@/app/contexts/ToastContext";
 import styles from "./page.module.css";
 
-export default function AnswerForm({ 
-  onSubmit, 
-  isSubmitting, 
+export default function AnswerForm({
+  onSubmit,
+  isSubmitting,
   currentUser,
-  placeholder 
+  placeholder
 }) {
   const [content, setContent] = useState("");
+  const [showLoginConfirm, setShowLoginConfirm] = useState(false);
   const router = useRouter();
+  const { showToast } = useToast();
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
     if (!currentUser) {
-      if (confirm("로그인이 필요한 서비스입니다. 로그인 페이지로 이동하시겠습니까?")) {
-        router.push("/login");
-      }
+      setShowLoginConfirm(true);
       return;
     }
 
     if (!content.trim()) {
-      alert("답변 내용을 입력해 주세요.");
+      showToast("답변 내용을 입력해 주세요.", "error");
       return;
     }
 
@@ -54,6 +56,18 @@ export default function AnswerForm({
           {isSubmitting ? "등록 중..." : "답변 등록"}
         </button>
       </div>
+
+      <ConfirmDialog
+        isOpen={showLoginConfirm}
+        title="로그인이 필요합니다"
+        message="로그인이 필요한 서비스입니다. 로그인 페이지로 이동하시겠습니까?"
+        confirmLabel="이동"
+        onConfirm={() => {
+          setShowLoginConfirm(false);
+          router.push("/login");
+        }}
+        onCancel={() => setShowLoginConfirm(false)}
+      />
     </form>
   );
 }

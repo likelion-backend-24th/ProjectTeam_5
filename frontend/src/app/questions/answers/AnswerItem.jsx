@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import AnswerForm from "./AnswerForm";
+import Markdown from "@/components/Markdown/Markdown";
+import { useToast } from "@/app/contexts/ToastContext";
 import styles from "./page.module.css";
 
 const getAnswerId = (obj) => obj?.answer_id ?? obj?.answerId ?? obj?.id;
@@ -19,6 +21,7 @@ export default function AnswerItem({
   depth = 0,
   parentAuthorName = null,
 }) {
+  const { showToast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(answer.content);
   const [isSaving, setIsSaving] = useState(false);
@@ -50,7 +53,7 @@ export default function AnswerItem({
 
   const handleSave = async () => {
     if (!editContent.trim()) {
-      alert("답변 내용을 입력해 주세요.");
+      showToast("답변 내용을 입력해 주세요.", "error");
       return;
     }
 
@@ -59,7 +62,7 @@ export default function AnswerItem({
       await onUpdate(currentAnswerId, editContent);
       setIsEditing(false);
     } catch (error) {
-      alert(error.message || "답변 수정 실패");
+      showToast(error.message || "답변 수정 실패", "error");
     } finally {
       setIsSaving(false);
     }
@@ -133,12 +136,12 @@ export default function AnswerItem({
           </div>
         </div>
       ) : (
-        <p className={styles.answerContent}>
+        <div className={styles.answerContent}>
           {depth >= 1 && parentAuthorName && (
             <span className={styles.mentionTag}>@{parentAuthorName} </span>
           )}
-          {answer.content}
-        </p>
+          <Markdown source={answer.content} />
+        </div>
       )}
 
       {showReplyForm && (

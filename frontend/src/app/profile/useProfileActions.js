@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/contexts/AuthContext";
+import { useToast } from "@/app/contexts/ToastContext";
 import * as usersApi from "@/lib/users";
 import { getToken } from "@/lib/users";
 import { getMySubscriptions, unsubscribeMentor } from "@/lib/subscriptions";
@@ -11,6 +12,24 @@ import { uploadProfileImage, validateImage } from "@/lib/attachments";
 export function useProfileActions() {
   const router = useRouter();
   const { user, isLoggedIn, loading, logout, refreshUser } = useAuth();
+  const { showToast } = useToast();
+
+  // confirm() 게이트(회원 탈퇴, 구독 해지)를 대체하는 범용 확인 상태 — profile/page.jsx가 렌더링한다.
+  const [pendingAction, setPendingAction] = useState(null);
+  const [actionSubmitting, setActionSubmitting] = useState(false);
+
+  const runPendingAction = async (inputValue) => {
+    if (!pendingAction) return;
+    setActionSubmitting(true);
+    try {
+      await pendingAction.run(inputValue);
+      setPendingAction(null);
+    } catch (error) {
+      showToast(error.message || "처리에 실패했습니다.", "error");
+    } finally {
+      setActionSubmitting(false);
+    }
+  };
 
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -139,32 +158,32 @@ export function useProfileActions() {
   };
 
   const handleSendCode = async () => {
-    if (!verifyEmail) return alert("이메일을 입력해주세요.");
+    if (!verifyEmail) return showToast("이메일을 입력해주세요.", "error");
     const token = getToken();
     setVerifyLoading(true);
     try {
       await usersApi.sendVerificationCode(verifyEmail, token);
-      alert("인증번호가 메일로 발송되었습니다. (최대 1~2분 소요)");
+      showToast("인증번호가 메일로 발송되었습니다. (최대 1~2분 소요)", "success");
       setVerifyStep(2);
     } catch (err) {
-      alert(err.message || "인증번호 발송에 실패했습니다.");
+      showToast(err.message || "인증번호 발송에 실패했습니다.", "error");
     } finally {
       setVerifyLoading(false);
     }
   };
 
   const handleVerifyCode = async () => {
-    if (!verifyCode) return alert("인증번호를 입력해주세요.");
+    if (!verifyCode) return showToast("인증번호를 입력해주세요.", "error");
     const token = getToken();
     setVerifyLoading(true);
     try {
       await usersApi.verifyEmailCode(verifyEmail, verifyCode, token);
       closeEmailModal();
-      alert(`이메일 인증이 완료됐습니다.\n다음부터는 ${verifyEmail}(으)로 로그인해주세요.\n다시 로그인해주세요.`);
+      showToast(`이메일 인증이 완료됐습니다.\n다음부터는 ${verifyEmail}(으)로 로그인해주세요.\n다시 로그인해주세요.`, "success");
       logout();
       router.replace("/login");
     } catch (err) {
-      alert(err.message || "인증번호가 올바르지 않거나 만료되었습니다.");
+      showToast(err.message || "인증번호가 올바르지 않거나 만료되었습니다.", "error");
     } finally {
       setVerifyLoading(false);
     }
@@ -180,18 +199,18 @@ export function useProfileActions() {
   };
 
   const handleChangePassword = async () => {
-    if (!currentPassword) return alert("현재 비밀번호를 입력해주세요.");
-    if (newPassword.length < 8) return alert("새 비밀번호는 8자 이상이어야 합니다.");
-    if (newPassword !== newPasswordConfirm) return alert("새 비밀번호가 일치하지 않습니다.");
+    if (!currentPassword) return showToast("현재 비밀번호를 입력해주세요.", "error");
+    if (newPassword.length < 8) return showToast("새 비밀번호는 8자 이상이어야 합니다.", "error");
+    if (newPassword !== newPasswordConfirm) return showToast("새 비밀번호가 일치하지 않습니다.", "error");
 
     const token = getToken();
     setPasswordSubmitting(true);
     try {
       await usersApi.updatePassword(currentPassword, newPassword, token);
       closePasswordModal();
-      alert("비밀번호가 변경되었습니다.");
+      showToast("비밀번호가 변경되었습니다.", "success");
     } catch (err) {
-      alert(err.message || "비밀번호 변경에 실패했습니다.");
+      showToast(err.message || "비밀번호 변경에 실패했습니다.", "error");
     } finally {
       setPasswordSubmitting(false);
     }
@@ -203,7 +222,7 @@ export function useProfileActions() {
     try {
       validateImage(file);
     } catch (err) {
-      alert(err.message);
+      showToast(err.message, "error");
       return;
     }
 
@@ -213,37 +232,37 @@ export function useProfileActions() {
       const imageUrl = await uploadProfileImage(file);
       await usersApi.updateProfileImageUrl(imageUrl, token);
       await refreshUser();
-      alert("프로필 이미지가 변경되었습니다.");
+      showToast("프로필 이미지가 변경되었습니다.", "success");
     } catch (err) {
-      alert(err.message || "프로필 이미지 변경에 실패했습니다.");
+      showToast(err.message || "프로필 이미지 변경에 실패했습니다.", "error");
     } finally {
       setUploadingImage(false);
     }
   };
 
   // 구독 해지 핸들러 (인자로 subscriptionId를 넘겨받도록 명시)
-  const handleUnsubscribe = async (subscriptionId, mentorName) => {
+  const handleUnsubscribe = (subscriptionId, mentorName) => {
     const token = getToken();
     if (!token) return;
 
     if (!subscriptionId) {
-      alert("구독 정보 식별자(ID)를 찾을 수 없습니다.");
+      showToast("구독 정보 식별자(ID)를 찾을 수 없습니다.", "error");
       return;
     }
 
-    const confirmMsg = mentorName
-        ? `'${mentorName}' 멘토 구독을 해지하시겠습니까?`
-        : "정말 구독을 해지하시겠습니까?";
-
-    if (!confirm(confirmMsg)) return;
-
-    try {
-      await unsubscribeMentor(subscriptionId, token);
-      alert("구독이 해지되었습니다.");
-      fetchSubscriptions();
-    } catch (err) {
-      alert(err.message || "구독 해지에 실패했습니다.");
-    }
+    setPendingAction({
+      title: "구독 해지",
+      message: mentorName
+          ? `'${mentorName}' 멘토 구독을 해지하시겠습니까?`
+          : "정말 구독을 해지하시겠습니까?",
+      confirmLabel: "해지",
+      danger: true,
+      run: async () => {
+        await unsubscribeMentor(subscriptionId, token);
+        showToast("구독이 해지되었습니다.", "success");
+        fetchSubscriptions();
+      },
+    });
   };
 
   const handleViewInfo = async () => {
@@ -251,15 +270,16 @@ export function useProfileActions() {
     if (!token) return;
     try {
       const me = await usersApi.getMyProfile(token);
-      alert(
+      showToast(
           `📌 [최신 회원 정보]\n` +
           `• 이름: ${me.name}\n` +
           `• 이메일: ${me.email || "미등록"}\n` +
           `• 권한: ${me.role}\n` +
-          `• 관심 분야: ${me.interests || "-"}`
+          `• 관심 분야: ${me.interests || "-"}`,
+          "info"
       );
     } catch (err) {
-      alert(err.message || "회원 정보를 조회하지 못했습니다.");
+      showToast(err.message || "회원 정보를 조회하지 못했습니다.", "error");
     }
   };
 
@@ -277,9 +297,9 @@ export function useProfileActions() {
       }
       await refreshUser();
       setIsEditing(false);
-      alert("프로필이 수정되었습니다.");
+      showToast("프로필이 수정되었습니다.", "success");
     } catch (err) {
-      alert(err.message || "프로필 수정에 실패했습니다.");
+      showToast(err.message || "프로필 수정에 실패했습니다.", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -308,7 +328,7 @@ export function useProfileActions() {
     if (!token) return;
 
     if (!mentorTerms.privacy || !mentorTerms.fee) {
-      alert("모든 필수 약관에 동의해주세요.");
+      showToast("모든 필수 약관에 동의해주세요.", "error");
       return;
     }
 
@@ -316,30 +336,38 @@ export function useProfileActions() {
       await usersApi.applyMentor(token);
       setHasAppliedMentor(true);
       setShowMentorModal(false); // 약관 모달 닫기
-      setShowSuccessModal(true); // 💡 서류 안내 팝업 띄우기 (alert 대체)
+      setShowSuccessModal(true); // 💡 서류 안내 팝업 띄우기
     } catch (err) {
-      alert(err.message || "이미 신청되었거나 처리할 수 없는 상태입니다.");
+      showToast(err.message || "이미 신청되었거나 처리할 수 없는 상태입니다.", "error");
     }
   };
 
-  const handleDeleteAccount = async () => {
+  const handleDeleteAccount = () => {
     const token = getToken();
     if (!token) return;
-    if (!confirm("정말 탈퇴하시겠습니까? 계정 정보와 활동 내역은 복구되지 않습니다.")) return;
-    try {
-      await usersApi.deleteAccount(token);
-      alert("회원 탈퇴가 완료되었습니다.");
-      logout();
-      router.replace("/");
-    } catch (err) {
-      alert(err.message || "회원 탈퇴 처리에 실패했습니다.");
-    }
+
+    setPendingAction({
+      title: "회원 탈퇴",
+      message: "정말 탈퇴하시겠습니까? 계정 정보와 활동 내역은 복구되지 않습니다.",
+      confirmLabel: "탈퇴",
+      danger: true,
+      run: async () => {
+        await usersApi.deleteAccount(token);
+        showToast("회원 탈퇴가 완료되었습니다.", "success");
+        logout();
+        router.replace("/");
+      },
+    });
   };
 
   return {
     user,
     isLoggedIn,
     loading,
+    pendingAction,
+    actionSubmitting,
+    runPendingAction,
+    setPendingAction,
     isEditing,
     setIsEditing,
     cancelEdit,
