@@ -386,7 +386,7 @@ export default function AdminPage() {
           await blockUser(userId);
         }
         showToast(`${actionText} 처리되었습니다.`, "success");
-        fetchData();
+        loadUsersPage(usersPageNumber);
       },
     });
   };
@@ -400,7 +400,7 @@ export default function AdminPage() {
       run: async () => {
         await deleteUserByAdmin(userId);
         showToast("회원이 삭제되었습니다.", "success");
-        fetchData();
+        loadUsersPage(usersPageNumber);
       },
     });
   };
@@ -520,17 +520,17 @@ export default function AdminPage() {
               </button>
               <button
                   type="button"
-                  className={`${styles.tabButton} ${activeTab === "settlements" ? styles.tabActive : ""}`}
-                  onClick={() => handleTabChange("settlements")}
-              >
-                💰 정산 관리
-              </button>
-              <button
-                  type="button"
                   className={`${styles.tabButton} ${activeTab === "questions" ? styles.tabActive : ""}`}
                   onClick={() => handleTabChange("questions")}
               >
                 질문 관리
+              </button>
+              <button
+                  type="button"
+                  className={`${styles.tabButton} ${activeTab === "settlements" ? styles.tabActive : ""}`}
+                  onClick={() => handleTabChange("settlements")}
+              >
+                정산 관리
               </button>
               <button
                   type="button"
