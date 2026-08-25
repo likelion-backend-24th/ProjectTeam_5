@@ -88,3 +88,7 @@ portone:
   webhook-secret: ${PORTONE_WEBHOOK_SECRET:whsec_0poG6m2/caXMxIy8DbyBj1NaNC4R3OzpjQYoNE26cN0=*=}
   billing-issue-id-prefix: ${PORTONE_BILLING_ISSUE_ID_PREFIX:MB-BK}   # ★ 추가
 
+security:
+  encryption:
+    # 테스트 전용 고정 더미 키 (실제 데이터가 없으므로 노출돼도 무방)
+    settlement-account-key: ${SETTLEMENT_ENCRYPTION_KEY:dGVzdC1vbmx5LWtleS1kby1ub3QtdXNlLTMyYnl0ZSE=}

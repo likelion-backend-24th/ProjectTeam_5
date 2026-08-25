@@ -11,8 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.nio.file.AccessDeniedException;
-import java.util.Map;
+import org.springframework.security.access.AccessDeniedException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -40,23 +39,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
+    // 예전에는 java.nio.file.AccessDeniedException을 import하고 있어서 이 핸들러가 한 번도 발동하지 않았다.
+    // (MentorReviewService 등은 스프링 시큐리티 쪽 예외를 던진다.)
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<Map<String, String>> handleAccessDeniedException(AccessDeniedException e) {
-        return ResponseEntity
-                .status(HttpStatus.FORBIDDEN)
-                .body(Map.of(
-                        "errorCode", "SUBSCRIPTION_REQUIRED",
-                        "message", e.getMessage()
-                ));
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException e) {
+        ErrorResponse response = new ErrorResponse(
+                ErrorCode.ACCESS_DENIED.name(), ErrorCode.ACCESS_DENIED.getMessage(), null);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 
+    // 모든 에러 응답을 ErrorResponse {code, message, field} 한 형태로만 내보낸다.
+    // (일부 핸들러만 {errorCode, message} Map을 반환해서 프론트가 코드로 분기할 수 없었다.)
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, String>> handleIllegalArgumentException(IllegalArgumentException e) {
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(Map.of(
-                        "errorCode", "INVALID_INPUT",
-                        "message", e.getMessage()
-                ));
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException e) {
+        ErrorResponse response = new ErrorResponse(
+                ErrorCode.INVALID_REQUEST.name(), e.getMessage(), null);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 }

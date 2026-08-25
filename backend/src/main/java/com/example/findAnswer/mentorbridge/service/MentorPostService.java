@@ -84,7 +84,14 @@ public class MentorPostService {
         post.update(request.title(), request.content(), request.category(), request.isPublic());
 
         List<QuestionAttachmentFile> current = questionAttachmentFileRepository.findByMentorPost(post);
-        Set<Long> editFile = new HashSet<>(request.attachmentIds() != null ? request.attachmentIds() : List.of());
+
+        // attachmentIds가 없으면 "첨부는 건드리지 않는다"는 뜻으로 해석한다.
+        // (예전에는 빈 목록으로 취급해서, 제목만 고쳐도 첨부 행은 물론 Cloudinary 원본까지 지워졌다.)
+        if (request.attachmentIds() == null) {
+            return MentorPostResponse.from(post, imagesOf(current), filesOf(current), false, post.getLikeCount());
+        }
+
+        Set<Long> editFile = new HashSet<>(request.attachmentIds());
         Set<Long> currentFile = current.stream().map(QuestionAttachmentFile::getId).collect(java.util.stream.Collectors.toSet());
 
         List<QuestionAttachmentFile> lastFiles = new ArrayList<>();
@@ -119,10 +126,10 @@ public class MentorPostService {
     @Transactional
     public void deletePost(Long mentorId, Long postId) {
         MentorPost post = mentorPostRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
         if (!post.getMentor().getId().equals(mentorId)) {
-            throw new IllegalArgumentException("본인의 게시글만 삭제할 수 있습니다.");
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
 
         List<QuestionAttachmentFile> attachments = questionAttachmentFileRepository.findByMentorPost(post);
@@ -131,7 +138,33 @@ public class MentorPostService {
         }
         questionAttachmentFileRepository.deleteAll(attachments);
 
+        // 좋아요·조회 로그가 게시글을 참조하고 있어서, 먼저 지우지 않으면 FK 제약 위반으로 500이 난다.
+        mentorPostLikeRepository.deleteByMentorPostId(postId);
+        viewLogRepository.deleteByPostId(postId);
+        mentorPostLikeRepository.flush();
+        viewLogRepository.flush();
+
         mentorPostRepository.delete(post);
+    }
+
+    /** 유료(비공개) 글을 읽을 수 있는가 — 멘토 본인이거나 유효한 구독자. */
+    private boolean canReadPaidContent(Long userId, Long mentorId) {
+        if (userId == null) {
+            return false;
+        }
+        if (userId.equals(mentorId)) {
+            return true;
+        }
+        return subscriptionService.checkAccessPermission(userId, mentorId).accessAllowed();
+    }
+
+    private void requireReadable(MentorPost post, Long userId, Long mentorId) {
+        if (Boolean.TRUE.equals(post.getIsPublic())) {
+            return;
+        }
+        if (!canReadPaidContent(userId, mentorId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
     }
 
 
@@ -140,13 +173,13 @@ public class MentorPostService {
         MentorPost post = mentorPostRepository.findByIdAndMentor_Id(postId, mentorId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
-        if (userId != null) {
-            if (!viewLogRepository.existsByUserIdAndPostId(userId, postId)) {
-                post.increaseViewCount(); // 조회수 증가
-                viewLogRepository.save(new MentorPostViewLog(userId, postId)); // 기록 저장
-            }
-        } else {
+        requireReadable(post, userId, mentorId);
+
+        // 로그인하지 않은 요청은 조회수를 올리지 않는다.
+        // (예전에는 else 분기에서 무조건 올려서, 헤더 없이 curl을 반복하면 조회수를 무한히 부풀릴 수 있었다.)
+        if (userId != null && !viewLogRepository.existsByUserIdAndPostId(userId, postId)) {
             post.increaseViewCount();
+            viewLogRepository.save(new MentorPostViewLog(userId, postId));
         }
 
         boolean liked = (userId != null) && mentorPostLikeRepository.existsByUserIdAndMentorPostId(userId, postId);
@@ -155,24 +188,26 @@ public class MentorPostService {
         return MentorPostResponse.from(post, imagesOf(attachments), filesOf(attachments), liked, post.getLikeCount());
     }
 
-    public List<MentorPostResponse> getPostsByMentorId(Long userId, Long mentorId) { // userId 파라미터 추가 필요
+    /**
+     * 비공개(구독자 전용) 글은 본문을 빼고 내려준다.
+     * 예전에는 목록에 검사가 아예 없어서, 화면의 🔒 자물쇠와 무관하게 유료 글 본문이 그대로 실려 나갔다.
+     */
+    public List<MentorPostResponse> getPostsByMentorId(Long userId, Long mentorId) {
+        boolean canReadPaid = canReadPaidContent(userId, mentorId);
+
         return mentorPostRepository.findByMentor_IdOrderByCreatedAtDesc(mentorId)
                 .stream()
                 .map(post -> {
+                    boolean readable = canReadPaid || Boolean.TRUE.equals(post.getIsPublic());
+                    boolean liked = (userId != null)
+                            && mentorPostLikeRepository.existsByUserIdAndMentorPostId(userId, post.getId());
+
+                    if (!readable) {
+                        return MentorPostResponse.locked(post, liked);
+                    }
+
                     List<QuestionAttachmentFile> attachments = questionAttachmentFileRepository.findByMentorPost(post);
-                    boolean liked = (userId != null) && mentorPostLikeRepository.existsByUserIdAndMentorPostId(userId, post.getId());
                     return MentorPostResponse.from(post, imagesOf(attachments), filesOf(attachments), liked, post.getLikeCount());
-                })
-                .toList();
-
-    }
-
-    public List<MentorPostResponse> getPostsByMentorId(Long mentorId) {
-        return mentorPostRepository.findByMentor_IdOrderByCreatedAtDesc(mentorId)
-                .stream()
-                .map(post -> {
-                    List<QuestionAttachmentFile> attachments = questionAttachmentFileRepository.findByMentorPost(post);
-                    return MentorPostResponse.from(post, imagesOf(attachments), filesOf(attachments), false, post.getLikeCount());
                 })
                 .toList();
     }

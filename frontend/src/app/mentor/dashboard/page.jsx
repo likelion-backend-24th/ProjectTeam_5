@@ -17,6 +17,7 @@ import {
   getMentorPendingRefunds,
 } from "@/lib/mentorDashboard";
 import { getMyChatRooms } from "@/lib/chat";
+import { getMySettlements, requestSettlementWithdrawal } from "@/lib/settlements";
 import MentorPlanSection from "@/app/profile/MentorPlanSection";
 import styles from "./page.module.css";
 
@@ -37,6 +38,13 @@ const PAYMENT_STATUS_LABEL = {
   PARTIALLY_CANCELED: "부분 취소됨",
 };
 
+const SETTLEMENT_STATUS_LABEL = {
+  PENDING: "누적됨 (신청 전)",
+  REQUESTED: "⏳ 출금 심사중",
+  COMPLETED: "✅ 정산 완료",
+  CANCELED: "❌ 정산 취소",
+};
+
 const NEW_WINDOW_DAYS = 7;
 
 function isRecent(dateString) {
@@ -51,7 +59,7 @@ function DeltaChip({ value }) {
   const isFlat = rounded === 0;
   const isUp = rounded > 0;
   return (
-    <span className={isFlat ? styles.deltaFlat : isUp ? styles.deltaUp : styles.deltaDown}>
+      <span className={isFlat ? styles.deltaFlat : isUp ? styles.deltaUp : styles.deltaDown}>
       {isFlat ? "-" : isUp ? "▲" : "▼"} {Math.abs(rounded)}% 전월 대비
     </span>
   );
@@ -75,87 +83,87 @@ function TrendChart({ trend }) {
   const barWidth = Math.min(28, innerWidth / trend.length / 2);
 
   const linePoints = trend
-    .map((t, i) => {
-      const x = paddingX + step * i;
-      const y = paddingY + innerHeight - (t.revenue / maxRevenue) * innerHeight;
-      return `${x},${y}`;
-    })
-    .join(" ");
+      .map((t, i) => {
+        const x = paddingX + step * i;
+        const y = paddingY + innerHeight - (t.revenue / maxRevenue) * innerHeight;
+        return `${x},${y}`;
+      })
+      .join(" ");
 
   return (
-    <div className={styles.chartWrap}>
-      <svg viewBox={`0 0 ${width} ${height}`} className={styles.chartSvg} role="img" aria-label="구독 및 수익 추이">
-        {[0, 0.25, 0.5, 0.75, 1].map((ratio) => (
-          <line
-            key={ratio}
-            x1={paddingX}
-            x2={width - paddingX}
-            y1={paddingY + innerHeight * ratio}
-            y2={paddingY + innerHeight * ratio}
-            className={styles.chartGridLine}
-          />
-        ))}
+      <div className={styles.chartWrap}>
+        <svg viewBox={`0 0 ${width} ${height}`} className={styles.chartSvg} role="img" aria-label="구독 및 수익 추이">
+          {[0, 0.25, 0.5, 0.75, 1].map((ratio) => (
+              <line
+                  key={ratio}
+                  x1={paddingX}
+                  x2={width - paddingX}
+                  y1={paddingY + innerHeight * ratio}
+                  y2={paddingY + innerHeight * ratio}
+                  className={styles.chartGridLine}
+              />
+          ))}
 
-        {trend.map((t, i) => {
-          const x = paddingX + step * i - barWidth / 2;
-          const barHeight = (t.subscriberCount / maxSubscribers) * innerHeight;
-          const y = paddingY + innerHeight - barHeight;
-          return (
-            <g key={t.month}>
-              <rect x={x} y={y} width={barWidth} height={Math.max(barHeight, 1)} className={styles.chartBar} rx="3" />
-              <text x={x + barWidth / 2} y={y - 6} textAnchor="middle" className={styles.chartBarLabel}>
-                {t.subscriberCount}
-              </text>
-              <text x={paddingX + step * i} y={height - 4} textAnchor="middle" className={styles.chartAxisLabel}>
-                {t.label}
-              </text>
-            </g>
-          );
-        })}
+          {trend.map((t, i) => {
+            const x = paddingX + step * i - barWidth / 2;
+            const barHeight = (t.subscriberCount / maxSubscribers) * innerHeight;
+            const y = paddingY + innerHeight - barHeight;
+            return (
+                <g key={t.month}>
+                  <rect x={x} y={y} width={barWidth} height={Math.max(barHeight, 1)} className={styles.chartBar} rx="3" />
+                  <text x={x + barWidth / 2} y={y - 6} textAnchor="middle" className={styles.chartBarLabel}>
+                    {t.subscriberCount}
+                  </text>
+                  <text x={paddingX + step * i} y={height - 4} textAnchor="middle" className={styles.chartAxisLabel}>
+                    {t.label}
+                  </text>
+                </g>
+            );
+          })}
 
-        <polyline points={linePoints} className={styles.chartLine} />
-        {trend.map((t, i) => {
-          const x = paddingX + step * i;
-          const y = paddingY + innerHeight - (t.revenue / maxRevenue) * innerHeight;
-          return (
-            <g key={`dot-${t.month}`}>
-              <circle cx={x} cy={y} r="4" className={styles.chartDot} />
-              <text x={x} y={y - 10} textAnchor="middle" className={styles.chartRevenueLabel}>
-                {(t.revenue / 10000).toLocaleString()}만
-              </text>
-            </g>
-          );
-        })}
-      </svg>
-      <div className={styles.chartLegend}>
+          <polyline points={linePoints} className={styles.chartLine} />
+          {trend.map((t, i) => {
+            const x = paddingX + step * i;
+            const y = paddingY + innerHeight - (t.revenue / maxRevenue) * innerHeight;
+            return (
+                <g key={`dot-${t.month}`}>
+                  <circle cx={x} cy={y} r="4" className={styles.chartDot} />
+                  <text x={x} y={y - 10} textAnchor="middle" className={styles.chartRevenueLabel}>
+                    {(t.revenue / 10000).toLocaleString()}만
+                  </text>
+                </g>
+            );
+          })}
+        </svg>
+        <div className={styles.chartLegend}>
         <span className={styles.legendItem}>
           <span className={styles.legendDotBar} /> 누적 구독자 수(명)
         </span>
-        <span className={styles.legendItem}>
+          <span className={styles.legendItem}>
           <span className={styles.legendDotLine} /> 월 매출(원)
         </span>
+        </div>
       </div>
-    </div>
   );
 }
 
 function ProfileCompletenessRing({ percentage }) {
   const pct = Math.max(0, Math.min(100, percentage ?? 0));
   return (
-    <div className={styles.completenessRow}>
-      <div className={styles.completenessRing} style={{ "--pct": pct }}>
-        <span className={styles.completenessValue}>{pct}%</span>
+      <div className={styles.completenessRow}>
+        <div className={styles.completenessRing} style={{ "--pct": pct }}>
+          <span className={styles.completenessValue}>{pct}%</span>
+        </div>
+        <p className={styles.mutedSmall}>
+          매력적인 프로필로 더 많은 구독자를 만나보세요.
+          {pct < 100 && (
+              <>
+                {" "}
+                <Link href="/profile">프로필 채우러 가기 →</Link>
+              </>
+          )}
+        </p>
       </div>
-      <p className={styles.mutedSmall}>
-        매력적인 프로필로 더 많은 구독자를 만나보세요.
-        {pct < 100 && (
-          <>
-            {" "}
-            <Link href="/profile">프로필 채우러 가기 →</Link>
-          </>
-        )}
-      </p>
-    </div>
   );
 }
 
@@ -171,26 +179,26 @@ function RatingHistogram({ histogram }) {
   const total = histogram.reviewCount || 0;
 
   return (
-    <div>
-      <div className={styles.ratingHeadline}>
-        <strong>{Number(histogram.average || 0).toFixed(1)}</strong>
-        <span className={styles.mutedSmall}>/ 5.0 · 리뷰 {total}개</span>
+      <div>
+        <div className={styles.ratingHeadline}>
+          <strong>{Number(histogram.average || 0).toFixed(1)}</strong>
+          <span className={styles.mutedSmall}>/ 5.0 · 리뷰 {total}개</span>
+        </div>
+        <div className={styles.histogram}>
+          {rows.map((row) => {
+            const width = total > 0 ? (row.count / total) * 100 : 0;
+            return (
+                <div key={row.star} className={styles.histogramRow}>
+                  <span className={styles.histogramStarLabel}>{row.star}점</span>
+                  <div className={styles.histogramTrack}>
+                    <div className={styles.histogramFill} style={{ width: `${width}%` }} />
+                  </div>
+                  <span className={styles.histogramCount}>{row.count}</span>
+                </div>
+            );
+          })}
+        </div>
       </div>
-      <div className={styles.histogram}>
-        {rows.map((row) => {
-          const width = total > 0 ? (row.count / total) * 100 : 0;
-          return (
-            <div key={row.star} className={styles.histogramRow}>
-              <span className={styles.histogramStarLabel}>{row.star}점</span>
-              <div className={styles.histogramTrack}>
-                <div className={styles.histogramFill} style={{ width: `${width}%` }} />
-              </div>
-              <span className={styles.histogramCount}>{row.count}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
   );
 }
 
@@ -211,6 +219,8 @@ export default function MentorDashboardPage() {
   const [payments, setPayments] = useState([]);
   const [refunds, setRefunds] = useState([]);
   const [chatRooms, setChatRooms] = useState([]);
+  // 🔥 추가: 정산 내역 상태
+  const [settlements, setSettlements] = useState([]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -238,6 +248,7 @@ export default function MentorDashboardPage() {
           paymentsData,
           refundsData,
           roomsData,
+          settlementsData, // 🔥 추가: 정산 내역 조회
         ] = await Promise.all([
           getMentorDashboardSummary(),
           getMentorDashboardTrend(),
@@ -249,6 +260,7 @@ export default function MentorDashboardPage() {
           getMentorPayments(),
           getMentorPendingRefunds(),
           getMyChatRooms().catch(() => []),
+          getMySettlements().catch(() => []), // 🔥 추가
         ]);
         if (ignore) return;
         setSummary(summaryData);
@@ -261,6 +273,7 @@ export default function MentorDashboardPage() {
         setPayments(Array.isArray(paymentsData) ? paymentsData : []);
         setRefunds(Array.isArray(refundsData) ? refundsData : []);
         setChatRooms(Array.isArray(roomsData) ? roomsData : []);
+        setSettlements(Array.isArray(settlementsData) ? settlementsData : []); // 🔥 추가
       } catch (err) {
         if (!ignore) setErrorMessage(err.message || "대시보드 정보를 불러오지 못했습니다.");
       } finally {
@@ -275,233 +288,309 @@ export default function MentorDashboardPage() {
 
   if (authLoading || loading) {
     return (
-      <main className={styles.page}>
-        <p className={styles.statusText}>불러오는 중...</p>
-      </main>
+        <main className={styles.page}>
+          <p className={styles.statusText}>불러오는 중...</p>
+        </main>
     );
   }
 
   if (errorMessage) {
     return (
-      <main className={styles.page}>
-        <p className={styles.errorMessage}>{errorMessage}</p>
-      </main>
+        <main className={styles.page}>
+          <p className={styles.errorMessage}>{errorMessage}</p>
+        </main>
     );
   }
 
   const recentSubscribers = subscribers.slice(0, 5);
 
+  // 🔥 추가: 출금 신청 가능한 (PENDING 상태) 정산 금액 합계 계산
+  const availableToRequest = settlements
+      .filter((s) => s.status === "PENDING")
+      .reduce((sum, s) => sum + (s.netAmount || 0), 0);
+
   return (
-    <main className={styles.page}>
-      <div className={styles.heading}>
-        <h1>멘토 대시보드</h1>
-        <p>{user?.name}님, 구독자와 매출 현황을 한눈에 확인하세요. (이번 달 기준)</p>
-      </div>
-
-      {/* 요약 카드 */}
-      <section className={styles.summaryGrid}>
-        <div className={styles.summaryCard}>
-          <span className={styles.summaryLabel}>총 구독자</span>
-          <strong className={styles.summaryValue}>{summary?.subscriberCount ?? 0}명</strong>
-          <DeltaChip value={summary?.subscriberGrowthRate} />
-        </div>
-        <div className={styles.summaryCard}>
-          <span className={styles.summaryLabel}>이번 달 수익</span>
-          <strong className={styles.summaryValue}>{Number(summary?.monthlyRevenue || 0).toLocaleString()}원</strong>
-          <DeltaChip value={summary?.revenueGrowthRate} />
-        </div>
-        <div className={styles.summaryCard}>
-          <span className={styles.summaryLabel}>전체 게시글</span>
-          <strong className={styles.summaryValue}>{summary?.postCount ?? 0}개</strong>
-          <span className={styles.deltaFlat}>이번 달 {summary?.newPostCountThisMonth ?? 0}개 작성</span>
-        </div>
-        <div className={styles.summaryCard}>
-          <span className={styles.summaryLabel}>평균 평점</span>
-          <strong className={styles.summaryValue}>{Number(summary?.averageRating || 0).toFixed(1)}</strong>
-          <span className={styles.deltaFlat}>리뷰 {summary?.reviewCount ?? 0}개</span>
-        </div>
-      </section>
-
-      {/* 구독 및 수익 추이 */}
-      <section className={styles.card} style={{ marginBottom: 24 }}>
-        <h2 className={styles.cardTitle}>구독 및 수익 추이 (최근 7개월)</h2>
-        <TrendChart trend={trend} />
-      </section>
-
-      <div className={styles.grid}>
-        <div className={styles.col}>
-          {/* 최근 게시글 */}
-          <section className={styles.card}>
-            <h2 className={styles.cardTitle}>최근 게시글</h2>
-            {recentPosts.length === 0 ? (
-              <p className={styles.muted}>작성한 게시글이 없습니다.</p>
-            ) : (
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>제목</th>
-                    <th>공개 범위</th>
-                    <th>작성일</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentPosts.map((p) => (
-                    <tr key={p.id}>
-                      <td>
-                        <Link href={`/mentors/${user?.id}/posts/${p.id}`} className={styles.postTitleLink}>
-                          {p.title}
-                        </Link>
-                      </td>
-                      <td>{p.isPublic ? "전체 공개" : "구독자 전용"}</td>
-                      <td>{p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "-"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </section>
-
-          {/* 구독자 목록 */}
-          <section className={styles.card}>
-            <h2 className={styles.cardTitle}>구독자 ({subscribers.length})</h2>
-            {subscribers.length === 0 ? (
-              <p className={styles.muted}>아직 구독자가 없습니다.</p>
-            ) : (
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>이름</th>
-                    <th>요금제</th>
-                    <th>상태</th>
-                    <th>가입일</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {subscribers.map((s) => (
-                    <tr key={s.subscriptionId}>
-                      <td>
-                        {s.userName}
-                        {isRecent(s.createdAt) && <span className={styles.newBadge}>NEW</span>}
-                      </td>
-                      <td>{s.planName || "-"}</td>
-                      <td>{STATUS_LABEL[s.status] || s.status}</td>
-                      <td>{s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "-"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </section>
-
-          {/* 결제 내역 */}
-          <section className={styles.card}>
-            <h2 className={styles.cardTitle}>결제 내역</h2>
-            {payments.length === 0 ? (
-              <p className={styles.muted}>결제 내역이 없습니다.</p>
-            ) : (
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>구독자</th>
-                    <th>회차</th>
-                    <th>금액</th>
-                    <th>상태</th>
-                    <th>결제일</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {payments.map((p) => (
-                    <tr key={p.paymentId}>
-                      <td>{p.userName}</td>
-                      <td>{p.cycleNo}</td>
-                      <td>{Number(p.amount || 0).toLocaleString()}원</td>
-                      <td>{PAYMENT_STATUS_LABEL[p.status] || p.status}</td>
-                      <td>{p.paidAt ? new Date(p.paidAt).toLocaleDateString() : "-"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </section>
+      <main className={styles.page}>
+        <div className={styles.heading}>
+          <h1>멘토 대시보드</h1>
+          <p>{user?.name}님, 구독자와 매출 현황을 한눈에 확인하세요. (이번 달 기준)</p>
         </div>
 
-        <div className={styles.col}>
-          {/* 프로필 완성도 */}
-          <section className={styles.card}>
-            <h2 className={styles.cardTitle}>프로필 완성도</h2>
-            <ProfileCompletenessRing percentage={completeness?.percentage} />
-          </section>
+        {/* 요약 카드 */}
+        <section className={styles.summaryGrid}>
+          <div className={styles.summaryCard}>
+            <span className={styles.summaryLabel}>총 구독자</span>
+            <strong className={styles.summaryValue}>{summary?.subscriberCount ?? 0}명</strong>
+            <DeltaChip value={summary?.subscriberGrowthRate} />
+          </div>
+          <div className={styles.summaryCard}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span className={styles.summaryLabel}>이번 달 예상 정산금</span>
+              <span style={{ fontSize: "10px", color: "#64748b", backgroundColor: "#f1f5f9", padding: "2px 6px", borderRadius: "4px" }}>
+              수수료 10% 공제
+            </span>
+            </div>
+            <strong className={styles.summaryValue} style={{ color: "#2563eb" }}>
+              {Number(Math.floor((summary?.monthlyRevenue || 0) * 0.9)).toLocaleString()}원
+            </strong>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "4px" }}>
+            <span style={{ fontSize: "11px", color: "#9ca3af" }}>
+              총 결제액 {Number(summary?.monthlyRevenue || 0).toLocaleString()}원
+            </span>
+              <span style={{ fontSize: "11px", color: "#15803d", fontWeight: "700", backgroundColor: "#dcfce7", padding: "3px 8px", borderRadius: "6px" }}>
+              💸 출금신청 금액은 매달 1일 일괄 송금 됩니다
+            </span>
+            </div>
+          </div>
+          <div className={styles.summaryCard}>
+            <span className={styles.summaryLabel}>이번 달 수익</span>
+            <strong className={styles.summaryValue}>{Number(summary?.monthlyRevenue || 0).toLocaleString()}원</strong>
+            <DeltaChip value={summary?.revenueGrowthRate} />
+          </div>
+          <div className={styles.summaryCard}>
+            <span className={styles.summaryLabel}>전체 게시글</span>
+            <strong className={styles.summaryValue}>{summary?.postCount ?? 0}개</strong>
+            <span className={styles.deltaFlat}>이번 달 {summary?.newPostCountThisMonth ?? 0}개 작성</span>
+          </div>
+          <div className={styles.summaryCard}>
+            <span className={styles.summaryLabel}>평균 평점</span>
+            <strong className={styles.summaryValue}>{Number(summary?.averageRating || 0).toFixed(1)}</strong>
+            <span className={styles.deltaFlat}>리뷰 {summary?.reviewCount ?? 0}개</span>
+          </div>
+        </section>
 
-          {/* 빠른 작업 */}
-          <section className={styles.card}>
-            <h2 className={styles.cardTitle}>빠른 작업</h2>
-            <Link href={`/mentors/${user?.id}`} className={styles.linkRow}>
-              새 게시글 작성 / 게시글 관리 →
-            </Link>
-            <Link href="#plan-section" className={styles.linkRow}>
-              구독 혜택(요금제) 수정 →
-            </Link>
-            <Link href="/profile" className={styles.linkRow}>
-              프로필 편집 →
-            </Link>
-            <Link href="/chat" className={styles.linkRow}>
-              채팅방{chatRooms.length > 0 ? ` (${chatRooms.length})` : ""} →
-            </Link>
-          </section>
+        {/* 구독 및 수익 추이 */}
+        <section className={styles.card} style={{ marginBottom: 24 }}>
+          <h2 className={styles.cardTitle}>구독 및 수익 추이 (최근 7개월)</h2>
+          <TrendChart trend={trend} />
+        </section>
 
-          {/* 리뷰 요약 */}
-          <section className={styles.card}>
-            <h2 className={styles.cardTitle}>리뷰 요약</h2>
-            <RatingHistogram histogram={ratingHistogram} />
-          </section>
+        <div className={styles.grid}>
+          <div className={styles.col}>
+            {/* 🔥 추가: 정산 내역 및 출금 신청 섹션 */}
+            <section className={styles.card}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                <h2 className={styles.cardTitle} style={{ margin: 0 }}>정산 내역</h2>
 
-          {/* 최근 리뷰 */}
-          <section className={styles.card}>
-            <h2 className={styles.cardTitle}>최근 리뷰</h2>
-            {recentReviews.length === 0 ? (
-              <p className={styles.muted}>아직 등록된 리뷰가 없습니다.</p>
-            ) : (
-              <div className={styles.reviewList}>
-                {recentReviews.map((r) => (
-                  <div key={r.id} className={styles.reviewRow}>
-                    <div className={styles.reviewHead}>
-                      <span>{r.userName}</span>
-                      <span className={styles.reviewStars}>{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</span>
-                    </div>
-                    {r.comment && <p className={styles.reviewComment}>{r.comment}</p>}
-                    <span className={styles.mutedSmall}>{r.createdAt ? new Date(r.createdAt).toLocaleDateString() : ""}</span>
-                  </div>
-                ))}
+                {/* 출금 신청 가능 금액이 0보다 클 때만 버튼 노출 */}
+                {availableToRequest > 0 && (
+                    <button
+                        onClick={async () => {
+                          if(confirm(`총 ${availableToRequest.toLocaleString()}원의 정산금을 출금 신청하시겠습니까?`)) {
+                            try {
+                              await requestSettlementWithdrawal();
+                              alert("출금 신청이 완료되었습니다! 관리자 승인 후 입금됩니다.");
+                              window.location.reload(); // 새로고침하여 상태 반영
+                            } catch(err) {
+                              alert(err.message || "출금 신청 중 오류가 발생했습니다.");
+                            }
+                          }
+                        }}
+                        style={{ padding: "8px 16px", backgroundColor: "#2563eb", color: "#fff", border: "none", borderRadius: "6px", fontWeight: "600", cursor: "pointer", fontSize: "13px" }}
+                    >
+                      출금 신청하기 ({availableToRequest.toLocaleString()}원)
+                    </button>
+                )}
               </div>
-            )}
-          </section>
 
-          {/* 대기 중인 환불 요청 */}
-          <section className={styles.card}>
-            <h2 className={styles.cardTitle}>대기 중인 환불 요청 ({refunds.length})</h2>
-            {refunds.length === 0 ? (
-              <p className={styles.muted}>대기 중인 환불 요청이 없습니다.</p>
-            ) : (
-              <div style={{ display: "grid", gap: 8 }}>
-                {refunds.map((r) => (
-                  <div key={r.id} className={styles.refundRow}>
-                    <div>{r.userName} · {Number(r.amount || 0).toLocaleString()}원</div>
-                    <div className={styles.mutedSmall}>{r.reason || "-"}</div>
+              {settlements.length === 0 ? (
+                  <p className={styles.muted}>정산 내역이 없습니다.</p>
+              ) : (
+                  <table className={styles.table}>
+                    <thead>
+                    <tr>
+                      <th>상태</th>
+                      <th>총 결제액</th>
+                      <th>최종 정산금</th>
+                      <th>발생일</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {settlements.map((s) => (
+                        <tr key={s.id}>
+                          <td>{SETTLEMENT_STATUS_LABEL[s.status] || s.status}</td>
+                          <td>{Number(s.totalAmount || 0).toLocaleString()}원</td>
+                          <td style={{ fontWeight: "bold", color: "#2563eb" }}>{Number(s.netAmount || 0).toLocaleString()}원</td>
+                          <td>{s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "-"}</td>
+                        </tr>
+                    ))}
+                    </tbody>
+                  </table>
+              )}
+            </section>
+
+            {/* 최근 게시글 */}
+            <section className={styles.card}>
+              <h2 className={styles.cardTitle}>최근 게시글</h2>
+              {recentPosts.length === 0 ? (
+                  <p className={styles.muted}>작성한 게시글이 없습니다.</p>
+              ) : (
+                  <table className={styles.table}>
+                    <thead>
+                    <tr>
+                      <th>제목</th>
+                      <th>공개 범위</th>
+                      <th>작성일</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {recentPosts.map((p) => (
+                        <tr key={p.id}>
+                          <td>
+                            <Link href={`/mentors/${user?.id}/posts/${p.id}`} className={styles.postTitleLink}>
+                              {p.title}
+                            </Link>
+                          </td>
+                          <td>{p.isPublic ? "전체 공개" : "구독자 전용"}</td>
+                          <td>{p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "-"}</td>
+                        </tr>
+                    ))}
+                    </tbody>
+                  </table>
+              )}
+            </section>
+
+            {/* 구독자 목록 */}
+            <section className={styles.card}>
+              <h2 className={styles.cardTitle}>구독자 ({subscribers.length})</h2>
+              {subscribers.length === 0 ? (
+                  <p className={styles.muted}>아직 구독자가 없습니다.</p>
+              ) : (
+                  <table className={styles.table}>
+                    <thead>
+                    <tr>
+                      <th>이름</th>
+                      <th>요금제</th>
+                      <th>상태</th>
+                      <th>가입일</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {subscribers.map((s) => (
+                        <tr key={s.subscriptionId}>
+                          <td>
+                            {s.userName}
+                            {isRecent(s.createdAt) && <span className={styles.newBadge}>NEW</span>}
+                          </td>
+                          <td>{s.planName || "-"}</td>
+                          <td>{STATUS_LABEL[s.status] || s.status}</td>
+                          <td>{s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "-"}</td>
+                        </tr>
+                    ))}
+                    </tbody>
+                  </table>
+              )}
+            </section>
+
+            {/* 결제 내역 */}
+            <section className={styles.card}>
+              <h2 className={styles.cardTitle}>결제 내역</h2>
+              {payments.length === 0 ? (
+                  <p className={styles.muted}>결제 내역이 없습니다.</p>
+              ) : (
+                  <table className={styles.table}>
+                    <thead>
+                    <tr>
+                      <th>구독자</th>
+                      <th>회차</th>
+                      <th>금액</th>
+                      <th>상태</th>
+                      <th>결제일</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {payments.map((p) => (
+                        <tr key={p.paymentId}>
+                          <td>{p.userName}</td>
+                          <td>{p.cycleNo}</td>
+                          <td>{Number(p.amount || 0).toLocaleString()}원</td>
+                          <td>{PAYMENT_STATUS_LABEL[p.status] || p.status}</td>
+                          <td>{p.paidAt ? new Date(p.paidAt).toLocaleDateString() : "-"}</td>
+                        </tr>
+                    ))}
+                    </tbody>
+                  </table>
+              )}
+            </section>
+          </div>
+
+          <div className={styles.col}>
+            {/* 프로필 완성도 */}
+            <section className={styles.card}>
+              <h2 className={styles.cardTitle}>프로필 완성도</h2>
+              <ProfileCompletenessRing percentage={completeness?.percentage} />
+            </section>
+
+            {/* 빠른 작업 */}
+            <section className={styles.card}>
+              <h2 className={styles.cardTitle}>빠른 작업</h2>
+              <Link href={`/mentors/${user?.id}`} className={styles.linkRow}>
+                새 게시글 작성 / 게시글 관리 →
+              </Link>
+              <Link href="#plan-section" className={styles.linkRow}>
+                구독 혜택(요금제) 수정 →
+              </Link>
+              <Link href="/profile" className={styles.linkRow}>
+                프로필 편집 →
+              </Link>
+              <Link href="/chat" className={styles.linkRow}>
+                채팅방{chatRooms.length > 0 ? ` (${chatRooms.length})` : ""} →
+              </Link>
+            </section>
+
+            {/* 리뷰 요약 */}
+            <section className={styles.card}>
+              <h2 className={styles.cardTitle}>리뷰 요약</h2>
+              <RatingHistogram histogram={ratingHistogram} />
+            </section>
+
+            {/* 최근 리뷰 */}
+            <section className={styles.card}>
+              <h2 className={styles.cardTitle}>최근 리뷰</h2>
+              {recentReviews.length === 0 ? (
+                  <p className={styles.muted}>아직 등록된 리뷰가 없습니다.</p>
+              ) : (
+                  <div className={styles.reviewList}>
+                    {recentReviews.map((r) => (
+                        <div key={r.id} className={styles.reviewRow}>
+                          <div className={styles.reviewHead}>
+                            <span>{r.userName}</span>
+                            <span className={styles.reviewStars}>{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</span>
+                          </div>
+                          {r.comment && <p className={styles.reviewComment}>{r.comment}</p>}
+                          <span className={styles.mutedSmall}>{r.createdAt ? new Date(r.createdAt).toLocaleDateString() : ""}</span>
+                        </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-            <p className={styles.mutedSmall} style={{ marginTop: 8 }}>
-              환불 승인/거절은 관리자만 처리할 수 있습니다.
-            </p>
-          </section>
+              )}
+            </section>
 
-          {/* 요금제 관리 (기존 프로필 페이지 컴포넌트 재사용) */}
-          <div id="plan-section">
-            <MentorPlanSection />
+            {/* 대기 중인 환불 요청 */}
+            <section className={styles.card}>
+              <h2 className={styles.cardTitle}>대기 중인 환불 요청 ({refunds.length})</h2>
+              {refunds.length === 0 ? (
+                  <p className={styles.muted}>대기 중인 환불 요청이 없습니다.</p>
+              ) : (
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {refunds.map((r) => (
+                        <div key={r.id} className={styles.refundRow}>
+                          <div>{r.userName} · {Number(r.amount || 0).toLocaleString()}원</div>
+                          <div className={styles.mutedSmall}>{r.reason || "-"}</div>
+                        </div>
+                    ))}
+                  </div>
+              )}
+              <p className={styles.mutedSmall} style={{ marginTop: 8 }}>
+                환불 승인/거절은 관리자만 처리할 수 있습니다.
+              </p>
+            </section>
+
+            {/* 요금제 관리 (기존 프로필 페이지 컴포넌트 재사용) */}
+            <div id="plan-section">
+              <MentorPlanSection />
+            </div>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
   );
 }

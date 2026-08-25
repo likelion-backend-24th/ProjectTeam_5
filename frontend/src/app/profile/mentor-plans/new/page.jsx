@@ -37,6 +37,13 @@ export default function MentorPlanNewPage() {
       showToast("요금제가 등록됐습니다. 이제 멘토 목록에 노출됩니다.", "success");
       router.push("/profile"); // 등록 성공 → 프로필로 복귀
     } catch (err) {
+
+      if (err.data?.code === "SETTLEMENT_ACCOUNT_REQUIRED") {
+        alert("수익을 정산받을 계좌를 먼저 등록해야 요금제를 만들 수 있습니다.\n프로필의 '정산 계좌 관리'에서 등록해주세요.");
+        router.push("/profile");
+        return;
+      }
+
       if (err.status === 401 || err.status === 403) {
         router.push("/login");
         return;

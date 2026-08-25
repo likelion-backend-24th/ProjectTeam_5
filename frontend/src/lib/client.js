@@ -15,7 +15,22 @@ export function startOAuth(provider) {
 
 // AccessToken 만료(401) 시 refresh 토큰(HttpOnly 쿠키)으로 새 AccessToken을 발급받는다.
 // 새로고침 직후처럼 메모리에 AccessToken이 아예 없을 때 세션을 복구하는 용도로도 쓴다(AuthContext 참고).
-export async function tryRefreshToken() {
+// 동시에 여러 요청이 401을 받으면 각자 refresh를 호출하는데, 서버는 refresh 토큰을 회전시킨다
+// (RefreshTokenService). 두 번째 호출은 이미 무효가 된 쿠키를 제시해 실패하고, 그러면 세션이 끊긴 것으로
+// 판단해 로그아웃돼 버린다. 멘토 대시보드가 Promise.all로 11개를 동시에 쏘기 때문에 확실하게 재현된다.
+// 진행 중인 refresh가 있으면 그 약속을 그대로 나눠 쓴다.
+let refreshPromise = null;
+
+export function tryRefreshToken() {
+  if (!refreshPromise) {
+    refreshPromise = doRefreshToken().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+}
+
+async function doRefreshToken() {
   try {
     const res = await fetch(`${API_URL}/api/auth/refresh`, {
       method: "POST",
