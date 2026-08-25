@@ -851,3 +851,35 @@
   accent-color: #2867e8;
   cursor: pointer;
 }
+
+/* 글 내용과 썸네일을 나란히 배치 */
+.articleContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.articleBody {
+  flex: 1;
+  min-width: 0; /* 텍스트 말줄임표(ellipsis) 작동 보장 */
+}
+
+/* 썸네일 컨테이너 */
+.thumbnailWrapper {
+  width: 84px;
+  height: 84px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #f1f3f5;
+  border: 1px solid #e9ecef;
+}
+
+/* 썸네일 이미지 비율 조절 */
+.articleThumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

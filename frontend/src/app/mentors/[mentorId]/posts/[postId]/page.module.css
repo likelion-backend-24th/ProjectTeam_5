@@ -256,3 +256,175 @@
   font-weight: 700;
   color: #374151;
 }
+
+/* 댓글(MentorPostComment) 영역 스타일 */
+.commentSection {
+  margin-top: 40px;
+  padding-top: 32px;
+  border-top: 1px solid #2751a5;
+}
+
+.commentTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 20px;
+}
+
+.commentForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.commentInput {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.commentInput:focus {
+  border-color: #2867e8;
+}
+
+.commentSubmitBtn {
+  align-self: flex-end;
+  padding: 8px 18px;
+  background-color: #2867e8;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.commentSubmitBtn:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.commentList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.commentItem {
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.commentItem:last-child {
+  border-bottom: none;
+}
+
+.commentMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.commentAuthorInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.commentAuthor {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.commentDate {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.commentDeleteBtn {
+  background: none;
+  border: none;
+  color: #989393;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.commentDeleteBtn:hover {
+opacity: 0.8;}
+
+.commentBody {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.emptyComments {
+  text-align: center;
+  padding: 32px 0;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+/* 리뷰 섹션 전용 컨테이너 (empty와 독립되어 왼쪽 정렬이 보장됨) */
+.reviewContainer {
+  padding: 32px 28px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  text-align: left; /* 왼쪽 정렬 보장 */
+  color: #1e293b;
+  font-size: 14px;
+  box-sizing: border-box;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.02);
+}
+
+.reviewContainer h3 {
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #172033;
+}
+
+.reviewForm { 
+  border: 1px solid #e5e7eb; 
+  border-radius: 10px; 
+  padding: 16px; 
+  margin-top: 16px; 
+  background: #ffffff;
+}
+
+.reviewStars { display: flex; gap: 4px; margin-bottom: 10px; }
+.starBtn { border: none; background: none; cursor: pointer; font-size: 22px; color: #d1d5db; padding: 0; }
+.starBtnActive { color: #f59e0b; }
+.reviewTextarea { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; font-family: inherit; font-size: 14px; resize: vertical; }
+.reviewSubmitRow { display: flex; justify-content: flex-end; margin-top: 8px; }
+.reviewSubmitBtn { padding: 8px 16px; border-radius: 8px; border: none; background: #1261f5; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; }
+.reviewSubmitBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+.reviewFormNotice { font-size: 11px; color: #9ca3af; margin-top: 6px; }
+.reviewStatusText { margin-top: 16px; color: #7b8799; }
+
+.reviewList { display: grid; gap: 12px; margin-top: 16px; }
+.reviewCard { 
+  border: 1px solid #edf0f5; 
+  border-radius: 10px; 
+  padding: 16px; 
+  background: #ffffff;
+}
+.reviewCardHeader { display: flex; justify-content: space-between; align-items: center; }
+.reviewCardAuthor { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.reviewCardStars { color: #f59e0b; font-size: 13px; }
+.reviewDeleteBtn { border: none; background: none; color: #ef4444; font-size: 12px; cursor: pointer; }
+.reviewComment { margin-top: 8px; font-size: 13px; color: #374151; white-space: pre-wrap; }
+.reviewDate { margin-top: 6px; font-size: 11px; color: #9ca3af; }
