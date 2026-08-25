@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import { getMentors } from "@/lib/mentors";
 import styles from "./page.module.css";
+import { DEFAULT_PROFILE_IMAGE, fallbackToDefaultProfile } from "@/constants/images";
 import {
   CATEGORY_FILTER_OPTIONS,
   CAREER_FILTER_OPTIONS,
@@ -440,20 +441,12 @@ export default function MentorListPage() {
                   <Link key={mentor.mentorId} href={`/mentors/${mentor.mentorId}`} className={styles.mentorCard}>
                     <div className={styles.cardHeader}>
                       <div className={styles.avatarWrapper}>
-                        {mentor.profileImageUrl ? (
-                          <img
-                            src={mentor.profileImageUrl}
-                            alt={`${mentor.name || "멘토"} 프로필`}
-                            className={styles.avatar}
-                            onError={(event) => {
-                              event.currentTarget.style.display = "none";
-                            }}
-                          />
-                        ) : null}
-
-                        <div className={styles.avatarFallback}>
-                          {mentor.name ? mentor.name.charAt(0) : "멘"}
-                        </div>
+                        <img
+                          src={mentor.profileImageUrl || DEFAULT_PROFILE_IMAGE}
+                          alt={`${mentor.name || "멘토"} 프로필`}
+                          className={styles.avatar}
+                          onError={fallbackToDefaultProfile}
+                        />
 
                         <span
                           className={styles.onlineBadge}

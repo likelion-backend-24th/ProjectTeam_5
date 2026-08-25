@@ -331,23 +331,6 @@
   background: #f8fafc;
 }
 
-.avatarFallback {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 0;
-  width: 50px;
-  height: 50px;
-  border: 1px solid #e2e8f0;
-  border-radius: 50%;
-  background: #f1f5f9;
-  color: #64748b;
-  font-size: 16px; /* 기존 14px -> 확대 */
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
 .onlineBadge {
   position: absolute;
