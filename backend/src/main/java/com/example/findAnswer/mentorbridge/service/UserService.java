@@ -6,7 +6,6 @@ import com.example.findAnswer.mentorbridge.dto.oauth.UserDisconnectEvent;
 import com.example.findAnswer.mentorbridge.dto.user.*;
 import com.example.findAnswer.mentorbridge.entity.EmailVerification;
 import com.example.findAnswer.mentorbridge.entity.Follow;
-import com.example.findAnswer.mentorbridge.entity.MentorProfile;
 import com.example.findAnswer.mentorbridge.entity.User;
 import com.example.findAnswer.mentorbridge.exception.CustomException;
 import com.example.findAnswer.mentorbridge.constants.ErrorCode;
@@ -265,25 +264,20 @@ public class UserService {
         return UserResponse.from(user);
     }
 
-    // 공개 프로필(멘토 프로필) 텍스트 정보 업데이트
+    /**
+     * 공개 프로필 수정 — 모든 회원(일반/멘토/관리자)이 쓸 수 있다.
+     * 멘토 프로필은 PUT /api/mentors/{mentorId} 가 따로 담당하므로 여기서 건드리지 않는다.
+     */
     @Transactional
     public UserResponse updatePublicProfile(Long userId, PublicProfileUpdateRequest request) {
         User user = getUserById(userId);
 
-        // 멘토 프로필이 존재하지 않는 경우 처리
-        if (user.getMentorProfile() == null) {
-            throw new CustomException(ErrorCode.INVALID_REQUEST);
-        }
-
-        MentorProfile mentorProfile = user.getMentorProfile();
-        mentorProfile.update(
+        user.updatePublicProfile(
                 request.getBio(),
-                request.getCompany(),
-                request.getCareer(),
-                request.getTags(),
-                request.getEducation(),
-                request.getSchedule(),
-                request.getPortfolioUrl()
+                request.getIntroduction(),
+                request.getCareers(),
+                request.getInterests(),
+                request.getLocation()
         );
 
         return UserResponse.from(user);
