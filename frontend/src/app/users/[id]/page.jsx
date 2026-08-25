@@ -28,7 +28,7 @@ export default function PublicProfilePage() {
     const [isEditing, setIsEditing] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [editForm, setEditForm] = useState({
-        bio: "", careers: "", description: "", location: "", tags: "",
+        bio: "", introduction: "", careers: "", interests: "", location: "",
     });
 
     const fileInputRef = useRef(null);
@@ -68,10 +68,10 @@ export default function PublicProfilePage() {
                 setAnsweredQuestions(aqData?.content || []); // 👈 데이터 세팅
                 setEditForm({
                     bio: profData.bio || "",
+                    introduction: profData.introduction || "",
                     careers: profData.careers || "",
-                    description: profData.description || "",
+                    interests: profData.interests || "",
                     location: profData.location || "",
-                    tags: profData.tags || "",
                 });
             })
             .catch((err) => console.error(err))
@@ -85,7 +85,11 @@ export default function PublicProfilePage() {
         setNewImageFile(null);
         setImagePreview(null);
         setEditForm({
-            bio: profile.bio || "", careers: profile.careers || "", description: profile.description || "", location: profile.location || "", tags: profile.tags || "",
+            bio: profile.bio || "",
+            introduction: profile.introduction || "",
+            careers: profile.careers || "",
+            interests: profile.interests || "",
+            location: profile.location || "",
         });
     };
 
@@ -135,7 +139,7 @@ export default function PublicProfilePage() {
     if (!profile) return <main className={styles.page}><div className={styles.emptyState}>유저를 찾을 수 없습니다.</div></main>;
 
     const avatarUrl = imagePreview || profile.profileImageUrl || DEFAULT_PROFILE_IMAGE;
-    const tagsArray = profile.tags ? profile.tags.split(/[\s,]+/).filter(t => t.trim()) : [];
+    const tagsArray = profile.interests ? profile.interests.split(/[\s,]+/).filter(t => t.trim()) : [];
 
     return (
         <main className={styles.page}>
@@ -289,13 +293,13 @@ export default function PublicProfilePage() {
                             {isEditing ? (
                                 <textarea
                                     className={styles.editTextarea}
-                                    value={editForm.description}
-                                    onChange={e => setEditForm({...editForm, description: e.target.value})}
+                                    value={editForm.introduction}
+                                    onChange={e => setEditForm({...editForm, introduction: e.target.value})}
                                     placeholder="자세한 소개를 작성해주세요."
                                     rows={5}
                                 />
                             ) : (
-                                <p className={styles.bio}>{profile.description || "등록된 상세 소개가 없습니다."}</p>
+                                <p className={styles.bio}>{profile.introduction || "등록된 상세 소개가 없습니다."}</p>
                             )}
                         </div>
                     )}
@@ -321,8 +325,8 @@ export default function PublicProfilePage() {
                     {isEditing ? (
                         <input
                             className={styles.editInput}
-                            value={editForm.tags}
-                            onChange={e => setEditForm({...editForm, tags: e.target.value})}
+                            value={editForm.interests}
+                            onChange={e => setEditForm({...editForm, interests: e.target.value})}
                             placeholder="예: #백엔드 #Java"
                         />
                     ) : (

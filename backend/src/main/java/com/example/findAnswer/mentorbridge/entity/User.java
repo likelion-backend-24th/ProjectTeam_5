@@ -52,12 +52,35 @@ public class User extends BaseTimeEntity {
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
 
+
+    @Column(length = 500)
+    private String bio;              // 한 줄 소개
+
+    @Column(length = 2000)
+    private String introduction;     // 상세 소개
+
+    @Column(length = 1000)
+    private String careers;          // 경력 / 이력
+
+    @Column(length = 100)
+    private String location;         // 활동 지역
+
     // 멘토 프로필과 1:1 관계 설정 (정규화 유지)
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private MentorProfile mentorProfile;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<MentorApplication> mentorApplications = new ArrayList<>();
+
+
+    public void updatePublicProfile(String bio, String introduction, String careers,
+                                    String interests, String location) {
+        this.bio = bio;
+        this.introduction = introduction;
+        this.careers = careers;
+        this.interests = interests;
+        this.location = location;
+    }
 
     public void updateProfile(String name, String interests) {
         this.name = name;
