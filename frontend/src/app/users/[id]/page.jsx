@@ -16,6 +16,7 @@ export default function PublicProfilePage() {
     const { user: currentUser } = useAuth();
     const [profile, setProfile] = useState(null);
     const [questions, setQuestions] = useState([]);
+    const { showToast } = useToast();
 
     // 👇 답변한 질문 데이터를 담을 상태 추가
     const [answeredQuestions, setAnsweredQuestions] = useState([]);
