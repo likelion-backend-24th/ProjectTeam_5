@@ -7,6 +7,7 @@ import ProfilePaymentSection from "./ProfilePaymentSection";
 import MentorPlanSection from "./MentorPlanSection";
 import { useToast } from "@/app/contexts/ToastContext";
 import ConfirmDialog from "@/components/modal/ConfirmDialog";
+import SettlementAccountSection from "./SettlementAccountSection";
 import styles from "./page.module.css";
 
 export default function ProfilePage() {
@@ -115,7 +116,7 @@ export default function ProfilePage() {
                 ref={imageInputRef}
                 onChange={(e) => {
                   const file = e.target.files[0];
-                  e.target.value = ""; // 같은 파일 다시 선택해도 onChange 발생하도록
+                  e.target.value = "";
                   handleProfileImageChange(file);
                 }}
                 accept="image/png,image/jpeg,image/gif,image/webp"
@@ -256,6 +257,9 @@ export default function ProfilePage() {
           <div className={styles.col}>
             {/* 결제 수단 관리 */}
             <ProfilePaymentSection />
+
+            {/* 정산 계좌 관리 */}
+            <SettlementAccountSection />
 
             {/* 구독 플랜 관리 */}
             <MentorPlanSection />

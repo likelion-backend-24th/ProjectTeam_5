@@ -80,6 +80,13 @@ server:
   forward-headers-strategy: framework
 
 
+security:
+  encryption:
+    # 계좌번호 암호화 키(Base64, 32바이트 권장). 기본값을 두지 않는다 —
+    # 값이 없으면 앱이 뜨지 않고, 조용히 평문으로 저장되는 일이 없다.
+    # 생성: openssl rand -base64 32
+    settlement-account-key: ${SETTLEMENT_ENCRYPTION_KEY}
+
 kakao:
   admin-key: ${KAKAO_ADMIN_KEY:kakao_admin_key}
 
@@ -89,14 +96,14 @@ cloudinary:
 
 
 portone:
-  store-id: ${PORTONE_STORE_ID:store-test-0000}
-  channel-key-payment: ${PORTONE_CHANNEL_KEY_PAYMENT:channel-key-test-0000}
-  channel-key-billing: ${PORTONE_CHANNEL_KEY_BILLING:channel-key-test-0000}
-  api-secret: ${PORTONE_API_SECRET:portone-test-api-secret}
+  store-id: ${PORTONE_STORE_ID}
+  channel-key-payment: ${PORTONE_CHANNEL_KEY_PAYMENT}
+  channel-key-billing: ${PORTONE_CHANNEL_KEY_BILLING}
+  api-secret: ${PORTONE_API_SECRET}
   api-base-url: ${PORTONE_API_BASE_URL:https://api.portone.io}
   payment-id-prefix: ${PORTONE_PAYMENT_ID_PREFIX:MB}
-  webhook-secret: ${PORTONE_WEBHOOK_SECRET:whsec_dGVzdC13ZWJob29rLXNlY3JldC1rZXk=}   # ★ 추가
-  billing-issue-id-prefix: ${PORTONE_BILLING_ISSUE_ID_PREFIX:MB-BK}   # ★ 추가
+  webhook-secret: ${PORTONE_WEBHOOK_SECRET}
+  billing-issue-id-prefix: ${PORTONE_BILLING_ISSUE_ID_PREFIX:MB-BK}
 
 
 #cloudinary:

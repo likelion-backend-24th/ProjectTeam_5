@@ -452,3 +452,59 @@
   cursor: pointer;
   font-weight: 600;
 }
+
+/* 정산 관리 — 멘토 정산 계좌 셀 */
+.accountCell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 190px;
+}
+
+.accountBank {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.accountNumberRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.accountNumber {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: #111827;
+}
+
+.copyBtn {
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid #d0d7e2;
+  border-radius: 5px;
+  background: #fff;
+  color: #4b5563;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.copyBtn:hover {
+  border-color: #2867e8;
+  color: #2867e8;
+  background: #f5f8ff;
+}
+
+.accountHolder {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.accountMissing {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ef4444;
+}

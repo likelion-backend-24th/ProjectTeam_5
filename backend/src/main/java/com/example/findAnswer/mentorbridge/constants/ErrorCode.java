@@ -37,7 +37,12 @@ public enum ErrorCode {
     PAYMENT_CANCEL_FAILED(HttpStatus.BAD_REQUEST, "결제 취소에 실패했습니다."),
     PAYMENT_NOT_CANCELLABLE(HttpStatus.BAD_REQUEST, "취소할 수 없는 결제 상태입니다."),
     SUBSCRIPTION_REQUIRED(HttpStatus.FORBIDDEN, "구독자 전용 콘텐츠입니다."),
-    POST_NOT_FOUND(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다.");
+    POST_NOT_FOUND(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."),
+    SETTLEMENT_ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "등록된 정산 계좌가 없습니다."),
+    SETTLEMENT_ACCOUNT_REQUIRED(HttpStatus.BAD_REQUEST, "구독 요금제를 생성하려면 정산 계좌를 먼저 등록해야 합니다."),
+    SETTLEMENT_REQUIRED(HttpStatus.BAD_REQUEST, "신청할 정산 금액이 없습니다."),
+    INVALID_ACCOUNT_INFO(HttpStatus.BAD_REQUEST, "계좌가 유효하지 않거나 예금주명이 일치하지 않습니다."),
+    SETTLEMENT_NOT_COMPLETABLE(HttpStatus.BAD_REQUEST, "출금 신청된 정산 건만 송금 완료로 처리할 수 있습니다.");
 
 
     private final HttpStatus status;
