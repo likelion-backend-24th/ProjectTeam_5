@@ -815,18 +815,19 @@ export default function AdminPage() {
                   </div>
 
                   {filteredSettlements.length === 0 ? <p className={styles.statusText}>조회된 정산 내역이 없습니다.</p> : (
-                      <table className={styles.table}>
+                      <div className={styles.tableScroll}>
+                      <table className={`${styles.table} ${styles.settlementTable}`}>
                         <thead>
                         <tr>
-                          <th>결제ID (원거래)</th>
-                          <th>멘토 이름</th>
-                          <th>정산 계좌</th>
-                          <th>결제 총액</th>
-                          <th>수수료 공제</th>
-                          <th>최종 정산금</th>
-                          <th>상태</th>
-                          <th>발생일</th>
-                          <th>송금 처리</th>
+                          <th style={{width: "130px"}}>결제ID (원거래)</th>
+                          <th style={{width: "110px"}}>멘토 이름</th>
+                          <th style={{width: "180px"}}>정산 계좌</th>
+                          <th style={{width: "100px"}}>결제 총액</th>
+                          <th style={{width: "100px"}}>수수료 공제</th>
+                          <th style={{width: "110px"}}>최종 정산금</th>
+                          <th style={{width: "80px"}}>상태</th>
+                          <th style={{width: "95px"}}>발생일</th>
+                          <th style={{width: "120px"}}>송금 처리</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -893,6 +894,7 @@ export default function AdminPage() {
                         ))}
                         </tbody>
                       </table>
+                      </div>
                   )}
                 </>
             )}

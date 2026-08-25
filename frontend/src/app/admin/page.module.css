@@ -454,14 +454,26 @@
 }
 
 /* 정산 관리 — 멘토 정산 계좌 셀 */
+/* 정산 표는 열이 9개라 가로가 좁다. 셀 밖으로 삐져나가지 않게 하고,
+   화면이 좁으면 표 전체가 가로 스크롤되도록 .tableScroll 안에 넣는다. */
+.tableScroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.settlementTable {
+  min-width: 1025px;
+}
+
 .accountCell {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  min-width: 190px;
+  min-width: 0;
 }
 
 .accountBank {
+  overflow-wrap: anywhere;
   font-size: 12px;
   font-weight: 700;
   color: #1f2937;
@@ -470,7 +482,8 @@
 .accountNumberRow {
   display: flex;
   align-items: center;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 4px 6px;
 }
 
 .accountNumber {
@@ -478,6 +491,10 @@
   font-size: 13px;
   letter-spacing: 0.02em;
   color: #111827;
+  /* 계좌번호는 띄어쓰기가 없는 긴 숫자라, 명시하지 않으면 줄바꿈되지 않고 옆 칸을 침범한다. */
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  min-width: 0;
 }
 
 .copyBtn {
@@ -499,6 +516,7 @@
 }
 
 .accountHolder {
+  overflow-wrap: anywhere;
   font-size: 11px;
   color: #6b7280;
 }
