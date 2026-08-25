@@ -520,6 +520,13 @@ export default function AdminPage() {
               </button>
               <button
                   type="button"
+                  className={`${styles.tabButton} ${activeTab === "settlements" ? styles.tabActive : ""}`}
+                  onClick={() => handleTabChange("settlements")}
+              >
+                💰 정산 관리
+              </button>
+              <button
+                  type="button"
                   className={`${styles.tabButton} ${activeTab === "questions" ? styles.tabActive : ""}`}
                   onClick={() => handleTabChange("questions")}
               >
