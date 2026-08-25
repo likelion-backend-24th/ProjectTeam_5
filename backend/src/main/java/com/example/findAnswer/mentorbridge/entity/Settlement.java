@@ -55,7 +55,16 @@ public class Settlement extends BaseTimeEntity {
         this.status = SettlementStatus.CANCELED;
     }
 
+    /**
+     * 출금 신청된 건만 송금 완료로 바꿀 수 있다.
+     * 예전에는 상태를 보지 않아서, 환불로 CANCELED가 된 건도 COMPLETED로 되돌릴 수 있었다.
+     * (실제 이체는 시스템 밖에서 일어나므로 중복 호출을 막을 다른 장치가 없다.)
+     */
     public void complete() {
+        if (this.status != SettlementStatus.REQUESTED) {
+            throw new IllegalStateException(
+                    "출금 신청(REQUESTED) 상태에서만 송금 완료로 바꿀 수 있습니다. 현재 상태: " + this.status);
+        }
         this.status = SettlementStatus.COMPLETED;
     }
 

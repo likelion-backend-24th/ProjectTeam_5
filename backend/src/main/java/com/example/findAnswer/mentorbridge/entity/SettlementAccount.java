@@ -1,5 +1,6 @@
 package com.example.findAnswer.mentorbridge.entity;
 
+import com.example.findAnswer.mentorbridge.converter.EncryptedStringConverter;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -21,8 +22,10 @@ public class SettlementAccount extends BaseTimeEntity {
     @Column(nullable = false, length = 50)
     private String bankName; // 은행명 (예: 신한은행, 토스뱅크 등)
 
-    @Column(nullable = false, length = 100)
-    private String accountNumber; // 계좌번호 (추후 AES-256 등 암호화 고려 가능)
+    // 계좌번호는 AES-256-GCM으로 암호화해 저장한다. 암호문 + Base64라 원문보다 길어서 컬럼도 넓혀야 한다.
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(nullable = false, length = 255)
+    private String accountNumber;
 
     @Column(nullable = false, length = 50)
     private String accountHolder; // 예금주명

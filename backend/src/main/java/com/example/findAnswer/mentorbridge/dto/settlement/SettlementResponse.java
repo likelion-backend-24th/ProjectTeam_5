@@ -16,9 +16,16 @@ public record SettlementResponse(
         Long netAmount,
         SettlementStatus status,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        // 관리자가 실제로 송금할 때 필요한 멘토 정산 계좌.
+        // 관리자 목록(getAllSettlements)에서만 채우고, 멘토 본인 목록에서는 null이다.
+        SettlementAccountResponse account
 ) {
     public static SettlementResponse from(Settlement settlement) {
+        return from(settlement, null);
+    }
+
+    public static SettlementResponse from(Settlement settlement, SettlementAccountResponse account) {
         return new SettlementResponse(
                 settlement.getId(),
                 settlement.getPayment().getPaymentId(),
@@ -30,7 +37,8 @@ public record SettlementResponse(
                 settlement.getNetAmount(),
                 settlement.getStatus(),
                 settlement.getCreatedAt(),
-                settlement.getUpdatedAt()
+                settlement.getUpdatedAt(),
+                account
         );
     }
 }

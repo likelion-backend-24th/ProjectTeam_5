@@ -51,6 +51,7 @@ export default function AdminPage() {
   const [selectedInquiry, setSelectedInquiry] = useState(null);
 
   const [settlements, setSettlements] = useState([]);
+  const [copiedAccount, setCopiedAccount] = useState(null);
   const [settlementBusyId, setSettlementBusyId] = useState(null);
 
   const fetchData = useCallback(async () => {
@@ -146,6 +147,18 @@ export default function AdminPage() {
     });
     return list;
   }, [inquiries, searchQuery, sortOption]);
+
+  // 계좌번호는 손으로 옮겨 적다 한 자리만 틀려도 엉뚱한 곳으로 송금된다. 복사로 옮기게 한다.
+  const copyAccountNumber = async (accountNumber) => {
+    if (!accountNumber) return;
+    try {
+      await navigator.clipboard.writeText(accountNumber);
+      setCopiedAccount(accountNumber);
+      setTimeout(() => setCopiedAccount(null), 1500);
+    } catch {
+      alert("복사에 실패했습니다. 계좌번호를 직접 선택해 복사해주세요.");
+    }
+  };
 
   // 🔥 정산 통계 계산 (화면 상단 대시보드용) - 이제 REQUESTED 상태만 대기 건수로 잡습니다.
   const settlementStats = useMemo(() => {
@@ -500,6 +513,7 @@ export default function AdminPage() {
                       <tr>
                         <th>결제ID (원거래)</th>
                         <th>멘토 이름</th>
+                        <th>정산 계좌</th>
                         <th>결제 총액</th>
                         <th>수수료 공제</th>
                         <th>최종 정산금</th>
@@ -513,6 +527,27 @@ export default function AdminPage() {
                           <tr key={s.id}>
                             <td className={styles.ellipsisCell} title={s.paymentId} style={{fontSize:"11px", color:"#64748b"}}>{s.paymentId}</td>
                             <td className={styles.boldText}>{s.mentorName} <span style={{fontSize:11, color:"#9ca3af"}}>(#{s.mentorId})</span></td>
+                            <td>
+                              {s.account ? (
+                                  <div className={styles.accountCell}>
+                                    <div className={styles.accountBank}>{s.account.bankName}</div>
+                                    <div className={styles.accountNumberRow}>
+                                      <span className={styles.accountNumber}>{s.account.accountNumber}</span>
+                                      <button
+                                          type="button"
+                                          className={styles.copyBtn}
+                                          onClick={() => copyAccountNumber(s.account.accountNumber)}
+                                          title="계좌번호 복사"
+                                      >
+                                        {copiedAccount === s.account.accountNumber ? "복사됨" : "복사"}
+                                      </button>
+                                    </div>
+                                    <div className={styles.accountHolder}>예금주 {s.account.accountHolder}</div>
+                                  </div>
+                              ) : (
+                                  <span className={styles.accountMissing}>계좌 미등록</span>
+                              )}
+                            </td>
                             <td className={styles.rightText}>{Number(s.totalAmount).toLocaleString()}원</td>
                             <td className={styles.rightText} style={{color:"#ef4444"}}>-{Number(s.pgFee + s.platformFee).toLocaleString()}원</td>
                             <td className={styles.rightText} style={{color:"#2563eb", fontWeight:"bold"}}>{Number(s.netAmount).toLocaleString()}원</td>
@@ -528,11 +563,18 @@ export default function AdminPage() {
                                   type="button"
                                   className={styles.approveBtn}
                                   // 🔥 송금 버튼은 REQUESTED 일 때만 활성화됩니다!
-                                  disabled={s.status !== "REQUESTED" || settlementBusyId === s.id}
-                                  style={{ opacity: s.status !== "REQUESTED" ? 0.3 : 1 }}
+                                  disabled={s.status !== "REQUESTED" || !s.account || settlementBusyId === s.id}
+                                  style={{ opacity: s.status !== "REQUESTED" || !s.account ? 0.3 : 1 }}
+                                  title={!s.account ? "멘토가 정산 계좌를 등록하지 않았습니다." : undefined}
                                   onClick={() => handleCompleteSettlement(s.id, s.mentorName, s.netAmount)}
                               >
-                                {settlementBusyId === s.id ? "처리중" : s.status === "COMPLETED" ? "송금완료" : "송금 완료하기"}
+                                {settlementBusyId === s.id
+                                    ? "처리중"
+                                    : s.status === "COMPLETED"
+                                        ? "송금완료"
+                                        : !s.account
+                                            ? "계좌 없음"
+                                            : "송금 완료하기"}
                               </button>
                             </td>
                           </tr>
