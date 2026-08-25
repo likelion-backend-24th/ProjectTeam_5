@@ -25,6 +25,7 @@ import { downloadFile } from "@/lib/attachments";
 import ConfirmDialog from "@/components/modal/ConfirmDialog";
 import { useToast } from "@/app/contexts/ToastContext";
 import styles from "./page.module.css";
+import { DEFAULT_PROFILE_IMAGE } from "@/constants/images";
 
 export default function QuestionDetailPage() {
   const { id } = useParams();
@@ -300,7 +301,7 @@ export default function QuestionDetailPage() {
               <section className={styles.panel}>
                 <div className={styles.profileSection}>
                   <img
-                      src={question.authorProfileImageUrl || `https://ui-avatars.com/api/?name=${question.authorName || question.name || "익명"}&background=f3f4f6&color=6b7280`}
+                      src={question.authorProfileImageUrl || DEFAULT_PROFILE_IMAGE}
                       alt="프로필"
                       className={styles.profileImage}
                   />

@@ -2,6 +2,7 @@
 
 import { DAYS_OF_WEEK, MAX_BIO_LENGTH, parseScheduleMap } from "../utils";
 import styles from "../page.module.css";
+import { DEFAULT_PROFILE_IMAGE, fallbackToDefaultProfile } from "@/constants/images";
 
 export default function ProfileHero({
   mentorInfo,
@@ -32,7 +33,12 @@ export default function ProfileHero({
     <section className={styles.profileBanner}>
       <div className={styles.heroLeft}>
         <div className={styles.avatarWrapper}>
-          <img src={mentorInfo.profileImageUrl || "/images/default-profile.png"} alt={mentorInfo.name || "멘토"} className={styles.avatar} />
+          <img
+            src={mentorInfo.profileImageUrl || DEFAULT_PROFILE_IMAGE}
+            alt={mentorInfo.name || "멘토"}
+            className={styles.avatar}
+            onError={fallbackToDefaultProfile}
+          />
           <span className={styles.onlineDot} style={{ backgroundColor: statusColor }} />
         </div>
         <div className={styles.heroText}>
