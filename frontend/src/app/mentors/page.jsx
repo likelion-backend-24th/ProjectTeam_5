@@ -4,28 +4,21 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import { getMentors } from "@/lib/mentors";
 import styles from "./page.module.css";
+import {
+  CATEGORY_FILTER_OPTIONS,
+  CAREER_FILTER_OPTIONS,
+  MENTOR_CATEGORIES,
+  splitTags,
+  careerCodeOf,
+} from "@/constants/mentorOptions";
 
 const PAGE_SIZE = 16;
 const DAYS_OF_WEEK = ["일", "월", "화", "수", "목", "금", "토"];
 
-const CATEGORY_OPTIONS = [
-  "전체",
-  "개발",
-  "데이터 사이언스",
-  "디자인",
-  "마케팅",
-  "커리어",
-  "창업",
-  "기타",
-];
-
-const CAREER_OPTIONS = [
-  { label: "전체", value: "전체" },
-  { label: "신입 (1~3년)", value: "JUNIOR" },
-  { label: "주니어 (3~7년)", value: "MID" },
-  { label: "시니어 (7~15년)", value: "SENIOR" },
-  { label: "전문가 (15년+)", value: "EXPERT" },
-];
+// 목록은 constants/mentorOptions.js 한 곳에서만 관리한다.
+// 멘토 정보 입력 폼(MentorInfoCard)도 같은 파일을 보므로 값이 어긋날 일이 없다.
+const CATEGORY_OPTIONS = CATEGORY_FILTER_OPTIONS;
+const CAREER_OPTIONS = CAREER_FILTER_OPTIONS;
 
 const STATUS_OPTIONS = ["전체", "상담 가능", "오프라인"];
 
@@ -82,51 +75,38 @@ function parseTags(tags) {
     .filter(Boolean);
 }
 
-function getCareerYears(mentor) {
-  const source = [
-    mentor?.career,
-    mentor?.careerYears,
-    mentor?.experience,
-    mentor?.experienceYears,
-  ]
-    .filter((value) => value !== null && value !== undefined)
-    .join(" ");
 
-  const matches = String(source).match(/\d+(?:\.\d+)?/g);
-  if (!matches?.length) return null;
-  return Number(matches[0]);
-}
-
+// 드롭다운에서 고른 값("주니어 (3~7년)")이면 그대로, 예전에 자유 입력한 "3년" 같은 값이면
+// 숫자를 뽑아 구간으로 판정한다. careerCodeOf가 두 경우를 모두 처리한다.
 function matchesCareer(mentor, career) {
   if (career === "전체") return true;
-  const years = getCareerYears(mentor);
-  if (years === null) return false;
-
-  if (career === "JUNIOR") return years >= 1 && years < 3;
-  if (career === "MID") return years >= 3 && years < 7;
-  if (career === "SENIOR") return years >= 7 && years < 15;
-  if (career === "EXPERT") return years >= 15;
-
-  return true;
+  return careerCodeOf(mentor?.career) === career;
 }
 
 function matchesCategory(mentor, category) {
   if (category === "전체") return true;
 
-  const searchableText = [
-    mentor?.tags,
-    mentor?.category,
-    mentor?.specialty,
-    mentor?.field,
-    mentor?.bio,
-    mentor?.company,
-  ]
+  // 체크박스로 고른 분야는 tags에 정확히 저장되므로 이걸 우선 본다.
+  const tagList = splitTags(mentor?.tags);
+  if (tagList.length > 0) {
+    if (category === "기타") {
+      // 정식 분야를 하나도 안 고르고 자유 키워드만 있는 경우까지 '기타'로 본다.
+      return (
+        tagList.includes("기타") ||
+        !tagList.some((tag) => MENTOR_CATEGORIES.includes(tag))
+      );
+    }
+    return tagList.includes(category);
+  }
+
+  // 분야를 아직 안 고른 예전 멘토는 소개/현직 텍스트로 느슨하게 판정한다.
+  const searchableText = [mentor?.bio, mentor?.company]
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
 
   if (category === "기타") {
-    return !CATEGORY_OPTIONS.slice(1, -1).some((item) =>
+    return !MENTOR_CATEGORIES.slice(0, -1).some((item) =>
       searchableText.includes(item.toLowerCase())
     );
   }

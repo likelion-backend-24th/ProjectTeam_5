@@ -23,6 +23,7 @@ import ScheduleCard from "./components/ScheduleCard";
 import SubscribeModal from "./components/SubscribeModal";
 import CardRegistrationModal from "./components/CardRegistrationModal";
 import styles from "./page.module.css";
+import { normalizeCategories } from "@/constants/mentorOptions";
 
 export default function MentorProfilePage() {
   const params = useParams();
@@ -372,7 +373,7 @@ export default function MentorProfilePage() {
       bio: editForm.bio.trim(),
       company: editForm.company.trim(),
       career: editForm.career.trim(),
-      tags: editForm.tags.split(",").map((tag) => tag.trim()).filter(Boolean).join(", "),
+      tags: normalizeCategories(editForm.tags).join(", "),
       education: editForm.education.trim(),
       schedule: editForm.schedule.trim(),
     };

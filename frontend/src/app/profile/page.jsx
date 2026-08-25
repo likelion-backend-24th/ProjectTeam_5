@@ -143,7 +143,6 @@ export default function ProfilePage() {
                   ? `관심 분야: ${user.interests}`
                   : "소개가 아직 등록되지 않았습니다."}
             </p>
-            <div className={styles.meta}>전문 분야 {tags.length ? tags.join(", ") : "미등록"}</div>
             <div className={styles.meta}>MentorBridge 가입일 {joinedAt}</div>
           </div>
 
@@ -190,7 +189,7 @@ export default function ProfilePage() {
                 <span className={styles.muted}>{handle}</span>
               </InfoRow>
 
-              <InfoRow label="전문 분야">
+              <InfoRow label="관심 분야">
                 {isEditing ? (
                     <input
                         className={styles.inlineInput}
@@ -305,7 +304,7 @@ export default function ProfilePage() {
                 <span className={styles.rowIcon}>👤</span>
                 <span className={styles.rowText}>
                 <strong>프로필 정보 수정</strong>
-                <p>이름, 이메일, 전문 분야 등 프로필 정보를 수정합니다.</p>
+                <p>이름, 이메일, 관심 분야 등 프로필 정보를 수정합니다.</p>
               </span>
                 <span className={styles.chev}>›</span>
               </button>
