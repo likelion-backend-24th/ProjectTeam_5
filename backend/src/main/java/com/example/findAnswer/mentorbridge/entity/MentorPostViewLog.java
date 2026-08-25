@@ -2,6 +2,8 @@ package com.example.findAnswer.mentorbridge.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Getter
@@ -9,7 +11,7 @@ import lombok.*;
 public class MentorPostViewLog {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Long userId;
     private Long postId;
 

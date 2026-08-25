@@ -3,6 +3,8 @@ package com.example.findAnswer.mentorbridge.entity;
 import com.example.findAnswer.mentorbridge.constants.Provider;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "oauth_accounts",
@@ -28,6 +30,7 @@ public class OAuthAccount {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private User user;
 
     @Enumerated(EnumType.STRING)

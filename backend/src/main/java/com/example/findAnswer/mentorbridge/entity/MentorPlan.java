@@ -2,6 +2,8 @@ package com.example.findAnswer.mentorbridge.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "mentor_plan")
@@ -15,6 +17,7 @@ public class MentorPlan extends BaseTimeEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "mentor_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private User mentor;
 
     @Column(nullable = false, length = 50)

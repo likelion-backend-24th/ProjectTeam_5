@@ -3,6 +3,8 @@ package com.example.findAnswer.mentorbridge.entity;
 import com.example.findAnswer.mentorbridge.constants.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 
@@ -23,6 +25,7 @@ public class Payment extends BaseTimeEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subscription_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Subscription subscription;
 
     @Column(name = "cycle_no", nullable = false)

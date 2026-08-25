@@ -5,6 +5,8 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 
@@ -19,9 +21,11 @@ public class ChatRoom {
     private Long id;
 
     @Column(name = "mentor_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Long mentorId;
 
     @Column(name = "subscriber_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Long subscriberId;
 
     @Column(name = "created_at", nullable = false, updatable = false)

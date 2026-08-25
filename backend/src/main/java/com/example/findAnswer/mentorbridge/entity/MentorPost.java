@@ -5,6 +5,8 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +23,7 @@ public class MentorPost extends BaseTimeEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "mentor_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private User mentor;
 
     @Column(nullable = false)
@@ -42,6 +45,7 @@ public class MentorPost extends BaseTimeEntity {
     private long likeCount = 0;
 
     @OneToMany(mappedBy = "mentorPost")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private List<QuestionAttachmentFile> attachments = new ArrayList<>();
 
     @Builder

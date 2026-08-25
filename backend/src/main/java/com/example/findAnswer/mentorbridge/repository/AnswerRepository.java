@@ -10,4 +10,5 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
 
     @EntityGraph(attributePaths = {"user"})
     List<Answer> findByQuestion_IdOrderByCreatedAtAsc(Long questionId);
+    void deleteByUserId(Long userId);
 }

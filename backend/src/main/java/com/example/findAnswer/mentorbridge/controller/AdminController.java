@@ -96,7 +96,7 @@ public class AdminController {
     // 회원 강제 탈퇴 (DELETE /api/admin/users/{userId}) — 소프트 삭제. DB 행은 남고 로그인만 차단된다.
     @DeleteMapping("/users/{userId}")
     public ResponseEntity<Void> deleteUserByAdmin(@PathVariable Long userId) {
-        userService.deleteUser(userId);
+        userService.deleteUserByAdmin(userId);
         return ResponseEntity.ok().build();
     }
 
