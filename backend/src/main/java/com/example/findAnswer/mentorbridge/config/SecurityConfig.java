@@ -65,6 +65,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
 
                         .requestMatchers("/api/auth/signup", "/api/auth/login", "/api/auth/refresh").permitAll()
+                        // "/api/questions/**" permitAll보다 먼저 와야 한다 — 안 그러면 아래의 더 넓은 permitAll
+                        // 규칙이 먼저 매칭돼서 이 ADMIN 전용 규칙이 절대 적용되지 않는다(항상 첫 매칭 규칙이 이김).
+                        .requestMatchers(HttpMethod.GET, "/api/questions/user/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/questions/**").permitAll()
                         // 멘토 대시보드는 "내(로그인한 멘토)" 개인 데이터라 인증 필요 — 아래 /api/mentors/** permitAll보다
                         // 먼저 와야 한다(스프링 시큐리티는 먼저 매칭되는 규칙을 씀).
@@ -78,7 +81,6 @@ public class SecurityConfig {
                         .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/questions/user/**").hasRole("ADMIN")
                         // "/api/users/{userId}"는 "me"도 매칭해버려서, 아래 permitAll보다 먼저 와야
                         // GET /api/users/me(내 프로필)가 비로그인 상태로 새는 걸 막을 수 있다.
                         .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated()
