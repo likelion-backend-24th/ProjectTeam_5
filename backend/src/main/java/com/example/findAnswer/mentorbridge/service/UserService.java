@@ -92,7 +92,7 @@ public class UserService {
     public void updatePassword(Long userId, UserPasswordUpdateRequest request) {
         User user = getUserById(userId);
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new CustomException(ErrorCode.AUTH_INVALID_CREDENTIALS);
+            throw new CustomException(ErrorCode.PASSWORD_MISMATCH);
         }
         String encodedNewPassword = passwordEncoder.encode(request.getNewPassword());
         user.updatePassword(encodedNewPassword);
