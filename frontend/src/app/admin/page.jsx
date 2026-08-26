@@ -957,7 +957,7 @@ export default function AdminPage() {
                                                     {userQuestions.map((q) => (
                                                         <tr key={q.id}>
                                                           <td className={styles.subTableCategory}>[{q.category || "기타"}]</td>
-                                                          <td><Link href={`/questions/${q.id}`} target="_blank"
+                                                          <td><Link href={`/questions/${q.id}`}
                                                                     className={styles.subTableLink}>{q.title}</Link>
                                                           </td>
                                                           <td className={styles.centerText}>{q.answerCount ?? 0}</td>

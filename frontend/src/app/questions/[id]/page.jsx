@@ -144,8 +144,7 @@ export default function QuestionDetailPage() {
   // 좋아요 토글 핸들러
   const handleToggleLike = async () => {
     if (!currentUser) {
-      showToast("로그인 후 이용 가능합니다.", "error");
-      router.push("/login");
+      showToast("로그인해야 좋아요를 누를 수 있습니다.", "error");
       return;
     }
 
@@ -190,8 +189,7 @@ export default function QuestionDetailPage() {
   const handleFollow = async () => {
     const token = getToken();
     if (!token) {
-      showToast("로그인이 필요합니다.", "error");
-      router.push("/login");
+      showToast("로그인해야 팔로우할 수 있습니다.", "error");
       return;
     }
 
@@ -218,9 +216,11 @@ export default function QuestionDetailPage() {
       if (reset) reset();
       await fetchAnswers();
     } catch (error) {
-      showToast(error.message || "답변 등록에 실패했습니다.", "error");
+      // 로그인 화면으로 튕기면 작성 중이던 답변이 통째로 날아간다. 페이지를 유지한다.
       if (error.status === 401 || error.status === 403) {
-        router.push("/login");
+        showToast("로그인이 필요합니다. 작성한 내용은 그대로 있으니 로그인 후 다시 등록해주세요.", "error");
+      } else {
+        showToast(error.message || "답변 등록에 실패했습니다.", "error");
       }
     } finally {
       setIsSubmitting(false);
@@ -231,9 +231,10 @@ export default function QuestionDetailPage() {
     try {
       await downloadFile(file.attachId, file.originalFileName);
     } catch (error) {
-      showToast(error.message || "파일 다운로드에 실패했습니다.", "error");
       if (error.status === 401 || error.status === 403) {
-        router.push("/login");
+        showToast("로그인해야 첨부파일을 받을 수 있습니다.", "error");
+      } else {
+        showToast(error.message || "파일 다운로드에 실패했습니다.", "error");
       }
     }
   };
@@ -243,9 +244,10 @@ export default function QuestionDetailPage() {
       await updateAnswer(answerId, { content });
       await fetchAnswers();
     } catch (error) {
-      showToast(error.message || "답변 수정에 실패했습니다.", "error");
       if (error.status === 401 || error.status === 403) {
-        router.push("/login");
+        showToast("로그인이 필요합니다. 수정한 내용은 그대로 있으니 로그인 후 다시 저장해주세요.", "error");
+      } else {
+        showToast(error.message || "답변 수정에 실패했습니다.", "error");
       }
       throw error;
     }
@@ -262,9 +264,7 @@ export default function QuestionDetailPage() {
           await deleteAnswer(answerId);
           await fetchAnswers();
         } catch (error) {
-          if (error.status === 401 || error.status === 403) {
-            router.push("/login");
-          }
+          // 실패 메시지는 runPendingAction이 띄운다. 여기서 페이지를 옮기지 않는다.
           throw error;
         }
       },

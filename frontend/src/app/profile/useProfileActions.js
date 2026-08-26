@@ -208,7 +208,10 @@ export function useProfileActions() {
     try {
       await usersApi.updatePassword(currentPassword, newPassword, token);
       closePasswordModal();
-      showToast("비밀번호가 변경되었습니다.", "success");
+      // 비밀번호가 바뀌었으니 기존 세션은 더 이상 유효하지 않다고 보는 게 맞다.
+      showToast("비밀번호가 변경되었습니다.\n변경된 비밀번호로 다시 로그인해주세요.", "success");
+      await logout();
+      router.replace("/login");
     } catch (err) {
       showToast(err.message || "비밀번호 변경에 실패했습니다.", "error");
     } finally {
