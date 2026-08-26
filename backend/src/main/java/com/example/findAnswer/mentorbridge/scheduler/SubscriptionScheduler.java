@@ -21,7 +21,8 @@ public class SubscriptionScheduler {
     private final NotificationService notificationService;
 
     // 매 10초마다 체크 (테스트용, 잘 적용되는지 보려고 짧게 설정)
-    @Scheduled(cron = "*/10 * * * * *")
+    // @Scheduled(cron = "*/10 * * * * *")
+    @Scheduled(cron = "0 0 * * * *")
     @Transactional
     public void expireSubscriptions() {
         LocalDateTime now = LocalDateTime.now();

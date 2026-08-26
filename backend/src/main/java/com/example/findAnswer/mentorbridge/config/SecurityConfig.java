@@ -79,6 +79,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/questions/user/**").hasRole("ADMIN")
+                        // "/api/users/{userId}"는 "me"도 매칭해버려서, 아래 permitAll보다 먼저 와야
+                        // GET /api/users/me(내 프로필)가 비로그인 상태로 새는 걸 막을 수 있다.
+                        .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/users/{userId}").permitAll()
                         .requestMatchers("/api/v1/webhooks/**").permitAll() // 웹훅 설정 인증은 서명으로 대체
                         // 1:1 문의는 전역 Footer에 있어 로그인 페이지에서도 열린다.
