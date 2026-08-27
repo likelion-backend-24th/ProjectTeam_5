@@ -193,7 +193,7 @@ class UserServiceTest {
 
         assertThatThrownBy(() -> userService.updatePassword(USER_ID, passwordUpdateRequest("wrong-password", "new-password")))
                 .isInstanceOf(CustomException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.AUTH_INVALID_CREDENTIALS);
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PASSWORD_MISMATCH);
 
         assertThat(user.getPassword()).isEqualTo("encoded-old");
     }

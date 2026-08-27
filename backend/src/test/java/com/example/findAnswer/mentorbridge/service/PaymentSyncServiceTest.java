@@ -59,6 +59,10 @@ class PaymentSyncServiceTest {
     PortOnePaymentClient portOnePaymentClient;
     @Mock
     PortOneBillingClient portOneBillingClient;
+    @Mock
+    NotificationService notificationService;
+    @Mock
+    com.example.findAnswer.mentorbridge.repository.SettlementRepository settlementRepository;
 
     @InjectMocks
     PaymentSyncService paymentSyncService;

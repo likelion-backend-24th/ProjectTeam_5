@@ -41,6 +41,8 @@ class SubscriptionServiceTest {
     PaymentRepository paymentRepository;
     @Mock
     PortOneBillingClient portOneBillingClient;
+    @Mock
+    NotificationService notificationService;
 
     @InjectMocks
     SubscriptionService subscriptionService;
