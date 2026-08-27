@@ -7,19 +7,18 @@
 | 서비스 | https://like-lion-team5-find-answer.vercel.app |
 | API 문서 | 로컬 실행 후 Swagger UI `http://localhost:8080/swagger-ui/index.html` |
 | 헬스체크 | `http://localhost:8080/health` (Actuator + Prometheus) |
-| 코드 진단 리포트 | [docs/재진단-2026-08-24.md](./docs/재진단-2026-08-24.md) |
 
 > 멋쟁이사자처럼 백엔드 24기 5팀 포트폴리오 프로젝트입니다.
 
 ## 프로젝트 개요
 
-| 항목 | 내용                                                                   |
-| --- |----------------------------------------------------------------------|
-| 개발 기간 | <!-- TODO: 2026.07.29 ~ 2026.08.27 -->                               |
-| 팀 구성 | Backend 4명 (프론트엔드 공통 작업 병행)                                          |
-| 주요 사용자 | 실무 질문에 답을 찾는 학생·주니어와, 지식을 유료로 제공하려는 현직자                              |
+| 항목 | 내용 |
+| --- | --- |
+| 개발 기간 | <!-- TODO: 2026.MM.DD ~ 2026.MM.DD --> |
+| 팀 구성 | Backend 4명 (프론트엔드 공통 작업 병행) |
+| 주요 사용자 | 실무 질문에 답을 찾는 학생·주니어와, 지식을 유료로 제공하려는 현직자 |
 | 해결하려는 문제 | 질문은 커뮤니티에, 깊은 상담은 유료 플랫폼에 흩어져 있어 "무료 Q&A → 특정 멘토 심화"로 이어지는 경로가 없습니다. |
-| 핵심 가치 | 무료 질문·답변으로 멘토를 먼저 발견하게 하고, 그 멘토를 구독하면 전용 아티클·1:1 채팅으로 연결되도록 만들었습니다.  |
+| 핵심 가치 | 무료 질문·답변으로 멘토를 먼저 발견하게 하고, 그 멘토를 구독하면 전용 아티클·1:1 채팅으로 연결되도록 만들었습니다. |
 
 ### 핵심 사용자 흐름
 
@@ -161,9 +160,12 @@ Base URL은 `/api`이며, 결제·구독·채팅·알림·문의 등 후반에 �
 | --- | --- |
 | Auth | `POST /api/auth/signup · /login · /refresh · /logout` |
 | User | `GET·PATCH /api/users/me`, `PATCH /me/public-profile`, `POST /api/users/{id}/follow` |
+| Question | `GET·POST /api/questions`, `POST /{id}/like`, `GET /following` |
+| Answer | `POST·GET /api/questions/{id}/answers`, `PATCH·DELETE /api/answers/{id}` |
 | Mentor | `GET /api/mentors`, `GET·PUT /api/mentors/{mentorId}`, `/{mentorId}/reviews` |
 | Mentor Plan | `GET·POST·PUT·DELETE /api/v1/mentors/{mentorId}/plans` |
 | Mentor Post | `GET·POST·PUT·DELETE /api/v1/mentors/{mentorId}/posts`, `/{postId}/likes` |
+| Dashboard | `GET /api/mentors/me/dashboard/{summary,trend,rating-histogram,...}` |
 | Subscription | `POST /api/v1/subscriptions`, `PATCH /{id}/cancel`, `GET /check`, `GET /me` |
 | Payment | `POST /api/v1/payments/{id}/complete`, `/{id}/cancellations` |
 | Payment Method | `POST /api/payment-methods/prepare`, `POST·GET /api/payment-methods` |
@@ -346,15 +348,16 @@ Frontend 자동화 테스트는 미구축이며, 대신 `@babel/parser` 기반 �
 
 멋쟁이사자처럼 백엔드 24기 — 5팀 (FindAnswer)
 
-
-| 김선우 | 팀장 |
-| 이상민 | 부팀장 |
-| 박준성 | 팀원 |
-| 이동건 | 팀원 |
+| 이름 | 역할 | 담당 도메인 |
+| --- | --- | --- |
+| 김선우 | 팀장 | <!-- TODO --> |
+| 이상민 | 부팀장 | <!-- TODO --> |
+| 박준성 | 팀원 | <!-- TODO --> |
+| 이동건 | 팀원 | <!-- TODO --> |
 
 - **결제·구독(PortOne)** 은 팀 공통 과제로 진행했습니다.
 - 프론트엔드는 공통 플랫폼(공통 API 클라이언트·레이아웃·인증 컨텍스트)을 나눠 맡고, 각 도메인 화면은 백엔드 담당자가 함께 작업했습니다.
-- 병합 이후에는 전체 코드 진단을 두 차례 수행해 인증·결제·권한 관련 문제를 정리했습니다(→ [docs/재진단-2026-08-24.md](./docs/재진단-2026-08-24.md)).
+- 병합 이후에는 전체 코드 진단을 두 차례 수행해 인증·결제·권한 관련 문제를 정리했습니다.
 
 ## 개선 계획
 
