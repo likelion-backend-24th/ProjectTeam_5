@@ -347,3 +347,15 @@ Frontend 자동화 테스트는 미구축이며, 대신 `@babel/parser` 기반 �
 - 정산 완료에 **비관적 락** 적용, 예금주명 암호화, 기존 평문 계좌 일괄 마이그레이션
 - 수수료 표기 불일치(화면 10% vs 계산 13%) 정정
 - 관리자 페이지를 탭 단위 컴포넌트로 분리하고, 프론트엔드 테스트 도입
+
+- ## Documentation
+
+| 문서 | 위치 | 용도 |
+| --- | --- | --- |
+| ERD | [docs/design/erd.md](./docs/design/erd.md) | 데이터 모델 |
+| DDL | [docs/sql/00_ddl.sql](./docs/sql/00_ddl.sql) | 스키마 정의 |
+| 요구사항 | [docs/requirement.md](./docs/requirement.md) | 기능 범위 |
+| 시드 데이터 | [docs/sql](./docs/sql) | 초기 데이터 스크립트 |
+| 설계 문서 | [docs/design](./docs/design) | 요구사항·기능명세·API·ERD·권한·사용자흐름·시퀀스·화면설계·컨벤션 |
+| API 문서 | Swagger UI (`/swagger-ui/index.html`) | 전체 API 명세 (로컬/서버 실행 시 확인) |
+| 회의록 | 팀 노션 (접근 제한) | 결정 이력 |
