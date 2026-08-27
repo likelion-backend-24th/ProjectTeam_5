@@ -352,10 +352,10 @@ Frontend 자동화 테스트는 미구축이며, 대신 `@babel/parser` 기반 �
 
 | 문서 | 위치 | 용도 |
 | --- | --- | --- |
-| ERD | [docs/design/erd.md](./docs/design/erd.md) | 데이터 모델 |
-| DDL | [docs/sql/00_ddl.sql](./docs/sql/00_ddl.sql) | 스키마 정의 |
+| ERD | [docs/design/erd.md](./docs/erd.md) | 데이터 모델 |
+| DDL | [docs/sql/00_ddl.sql](./docs/postgres_ddl.sql) | 스키마 정의 |
 | 요구사항 | [docs/requirement.md](./docs/requirement.md) | 기능 범위 |
-| 시드 데이터 | [docs/sql](./docs/sql) | 초기 데이터 스크립트 |
-| 설계 문서 | [docs/design](./docs/design) | 요구사항·기능명세·API·ERD·권한·사용자흐름·시퀀스·화면설계·컨벤션 |
+| 시드 데이터 | [docs/sql](./docs/postgres) | 초기 데이터 스크립트 |
+| 설계 문서 | [docs/design](./docs/..) | 요구사항·기능명세·API·ERD·권한·사용자흐름·시퀀스·화면설계·컨벤션 |
 | API 문서 | Swagger UI (`/swagger-ui/index.html`) | 전체 API 명세 (로컬/서버 실행 시 확인) |
 | 회의록 | 팀 노션 (접근 제한) | 결정 이력 |
