@@ -85,7 +85,7 @@ security:
     # 계좌번호 암호화 키(Base64, 32바이트 권장). 기본값을 두지 않는다 —
     # 값이 없으면 앱이 뜨지 않고, 조용히 평문으로 저장되는 일이 없다.
     # 생성: openssl rand -base64 32
-    settlement-account-key: ${SETTLEMENT_ENCRYPTION_KEY:c2VjdXJpdHktc2V0dGxlbWVudC1rZXktMDI1Ni1kZXY=}
+    settlement-account-key: ${SETTLEMENT_ENCRYPTION_KEY}
 kakao:
   admin-key: ${KAKAO_ADMIN_KEY:kakao_admin_key}
 
@@ -103,28 +103,3 @@ portone:
   payment-id-prefix: ${PORTONE_PAYMENT_ID_PREFIX:MB}
   webhook-secret: ${PORTONE_WEBHOOK_SECRET}
   billing-issue-id-prefix: ${PORTONE_BILLING_ISSUE_ID_PREFIX:MB-BK}
-
-
-#cloudinary:
-#  url: ${CLOUDINARY_URL}
-#  folder: findanswer/posts
-#spring:
-#  datasource:
-#    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:findanswer}?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
-#    username: ${DB_USERNAME:findanswer}
-#    password: ${DB_PASSWORD:findanswer123}
-#    driver-class-name: com.mysql.cj.jdbc.Driver
-#
-#  jpa:
-#    hibernate:
-#      ddl-auto: update
-#    show-sql: true
-#    properties:
-#      hibernate:
-#        format_sql: true
-#
-#
-#jwt:
-#  secret: ${JWT_SECRET_KEY:sJTRcN0TIqSRtYdbHF1h0fY4eA0lIiZ5t2uND9rasib}
-#  access-token-expiration-ms: ${JWT_ACCESS_TOKEN_EXPIRATION_MS:900000}
-#  refresh-token-expiration-ms: ${JWT_REFRESH_TOKEN_EXPIRATION_MS:1209600000}
