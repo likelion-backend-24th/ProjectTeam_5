@@ -356,7 +356,7 @@ Frontend 자동화 테스트는 미구축이며, 대신 `@babel/parser` 기반 �
 | DDL | [docs/postgres/00_ddl.sql](./docs/postgres_ddl.sql) | 스키마 정의 |
 | 시드 데이터 | [docs/postgres](./docs/postgres) | 초기 데이터 스크립트 |
 | 설계 문서 | [docs/..](./docs/..) | 요구사항·기능명세·API·ERD·권한·사용자흐름·시퀀스·화면설계 |
-| API 문서 | Swagger UI (`/swagger-ui/index.html`) | 전체 API 명세 (로컬/서버 실행 시 확인) |
+| API 문서 | Swagger UI (`https://api-findanswer.duckdns.org/swagger-ui/index.html`) | 전체 API 명세 |
 
 
 Notion : https://app.notion.com/p/5-db7f03c41e89838d945001e855fcb7b4
