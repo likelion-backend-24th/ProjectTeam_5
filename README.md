@@ -5,8 +5,8 @@
 | 구분 | 링크 |
 | --- | --- |
 | 서비스 | https://like-lion-team5-find-answer.vercel.app |
-| API 문서 | `https://api-findanswer.duckdns.org/swagger-ui/index.html` |
-| 헬스체크 | `https://like-lion-team5-find-answer.vercel.app/health` |
+| API 문서 | https://api-findanswer.duckdns.org/swagger-ui/index.html |
+| 헬스체크 | https://like-lion-team5-find-answer.vercel.app/health |
 
 > 멋쟁이사자처럼 백엔드 24기 5팀 포트폴리오 프로젝트입니다.
 
