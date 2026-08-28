@@ -355,7 +355,7 @@ Frontend 자동화 테스트는 미구축이며, 대신 `@babel/parser` 기반 �
 | ERD | [docs/erd.md](./docs/ERD.md) | 데이터 모델 |
 | DDL | [docs/postgres/00_ddl.sql](./docs/schema_mentorbridge.sql) | 스키마 정의 |
 | 시드 데이터 | [docs/postgres](./docs/질문_더미데이터.sql) | 초기 데이터 스크립트 |
-| 설계 문서 | [docs/..](./docs/) | 요구사항·기능명세·API·ERD·권한·사용자흐름·시퀀스·화면설계 |
+| 설계 문서 | [docs/](./docs/) | 요구사항·기능명세·API·ERD·권한·사용자흐름·시퀀스·화면설계 |
 | API 문서 | Swagger UI (`https://api-findanswer.duckdns.org/swagger-ui/index.html`) | 전체 API 명세 |
 
 
